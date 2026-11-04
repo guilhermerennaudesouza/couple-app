@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Krivo</string>
+    <string name="note_glance_widget_name">Couple Sticky Note</string>
+    <string name="note_glance_widget_description">Live sticky love note shared between you and your partner</string>
+</resources>

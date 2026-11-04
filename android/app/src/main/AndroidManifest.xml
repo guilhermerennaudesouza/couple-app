@@ -1,0 +1,23 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.personal.couple_app">
+
+    <application
+        android:label="@string/app_name"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+
+        <!-- Jetpack Glance Sticky Note Widget Receiver -->
+        <receiver
+            android:name=".NoteGlanceWidget"
+            android:label="@string/note_glance_widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/note_glance_widget_info" />
+        </receiver>
+
+    </application>
+</manifest>
