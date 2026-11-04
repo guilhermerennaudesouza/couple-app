@@ -84,7 +84,7 @@ class DailyQuestionModel {
     required this.prompt,
     this.answers = const {},
     bool? isRevealed,
-  }) : isRevealed = isRevealed ?? (answers.length >= 2);
+  }) : isRevealed = (isRevealed ?? false) || (answers.length >= 2);
 
   /// Checks whether a specific partner has answered this prompt.
   bool hasUserAnswered(String uid) => answers.containsKey(uid);
@@ -164,8 +164,8 @@ class DailyQuestionModel {
       });
     }
 
-    final explicitRevealed = map['isRevealed'] as bool?;
-    final isRevealed = explicitRevealed ?? (parsedAnswers.length >= 2);
+    final isRevealed =
+        (map['isRevealed'] as bool? ?? false) || (parsedAnswers.length >= 2);
 
     return DailyQuestionModel(
       id: id,

@@ -60,6 +60,31 @@ void main() {
       );
     });
 
+    test('DailyQuestionModel fromMap with explicit isRevealed: false but 2 answers evaluates to isRevealed: true', () {
+      final map = {
+        'date': '2026-11-04',
+        'prompt': 'Favorite morning ritual?',
+        'isRevealed': false, // Desynced or stale flag
+        'answers': {
+          'uid_1': {
+            'uid': 'uid_1',
+            'text': 'Making coffee together',
+            'answeredAt': '2026-11-04T08:00:00.000',
+          },
+          'uid_2': {
+            'uid': 'uid_2',
+            'text': 'Listening to music in bed',
+            'answeredAt': '2026-11-04T08:30:00.000',
+          },
+        },
+      };
+
+      final restored = DailyQuestionModel.fromMap('q3', map);
+      expect(restored.isRevealed, isTrue);
+      expect(restored.isAnsweredByBoth, isTrue);
+      expect(restored.answers.length, equals(2));
+    });
+
     test('DailyQuestionAnswer serialization round-trip', () {
       final answer = DailyQuestionAnswer(
         uid: 'user_a',

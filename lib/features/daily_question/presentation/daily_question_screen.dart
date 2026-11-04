@@ -814,8 +814,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(20),
           topRight: const Radius.circular(20),
-          bottomLeft: Radius.circular(isMe ? 4 : 20),
-          bottomRight: Radius.circular(isMe ? 20 : 4),
+          bottomLeft: Radius.circular(isMe ? 20 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 20),
         ),
         border: Border.all(color: borderColor, width: 1.2),
         boxShadow: [

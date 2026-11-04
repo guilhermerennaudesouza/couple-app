@@ -177,44 +177,66 @@ class DailyQuestionRepository {
         .collection('daily_questions')
         .doc(questionId);
 
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(docRef);
-      final now = DateTime.now();
-      final newAnswer = DailyQuestionAnswer(
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        final now = DateTime.now();
+        final newAnswer = DailyQuestionAnswer(
+          uid: uid,
+          text: trimmedText,
+          answeredAt: now,
+        );
+
+        if (!snapshot.exists || snapshot.data() == null) {
+          final prompt = getPromptForDate(questionId);
+          final newQuestion = DailyQuestionModel(
+            id: questionId,
+            date: questionId,
+            prompt: prompt,
+            answers: {uid: newAnswer},
+            isRevealed: false,
+          );
+          transaction.set(docRef, newQuestion.toMap());
+        } else {
+          final data = snapshot.data()!;
+          final rawAnswers = data['answers'];
+          final Map<String, dynamic> answersMap =
+              rawAnswers is Map ? Map<String, dynamic>.from(rawAnswers) : {};
+
+          answersMap[uid] = newAnswer.toMap();
+          final shouldReveal = answersMap.length >= 2;
+
+          transaction.update(docRef, {
+            'answers.$uid': newAnswer.toMap(),
+            if (shouldReveal) 'isRevealed': true,
+          });
+        }
+      });
+    } catch (_) {
+      // Offline fallback: transactions fail without active network connection.
+      // Using set with merge: true persists immediately into local Firestore cache
+      // and synchronizes to cloud once reconnected.
+      final prompt = getPromptForDate(questionId);
+      final fallbackAnswer = DailyQuestionAnswer(
         uid: uid,
         text: trimmedText,
-        answeredAt: now,
+        answeredAt: DateTime.now(),
       );
-
-      if (!snapshot.exists || snapshot.data() == null) {
-        final prompt = getPromptForDate(questionId);
-        final newQuestion = DailyQuestionModel(
-          id: questionId,
-          date: questionId,
-          prompt: prompt,
-          answers: {uid: newAnswer},
-          isRevealed: false,
-        );
-        transaction.set(docRef, newQuestion.toMap());
-      } else {
-        final data = snapshot.data()!;
-        final rawAnswers = data['answers'];
-        final Map<String, dynamic> answersMap =
-            rawAnswers is Map ? Map<String, dynamic>.from(rawAnswers) : {};
-
-        answersMap[uid] = newAnswer.toMap();
-        final shouldReveal = answersMap.length >= 2;
-
-        transaction.update(docRef, {
-          'answers.$uid': newAnswer.toMap(),
-          if (shouldReveal) 'isRevealed': true,
-        });
-      }
-    });
+      await docRef.set({
+        'id': questionId,
+        'date': questionId,
+        'prompt': prompt,
+        'answers': {
+          uid: fallbackAnswer.toMap(),
+        },
+      }, SetOptions(merge: true));
+    }
   }
 
   /// Watches all historical daily questions for [coupleId], ordered by date descending.
+  /// Filters out today's active question and unseeded or empty entries.
   Stream<List<DailyQuestionModel>> watchPastQuestions(String coupleId) {
+    final today = todayDateString;
     return _firestore
         .collection('couples')
         .doc(coupleId)
@@ -224,6 +246,7 @@ class DailyQuestionRepository {
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => DailyQuestionModel.fromMap(doc.id, doc.data()))
+          .where((dq) => dq.date != today && dq.answers.isNotEmpty)
           .toList();
     });
   }
