@@ -67,7 +67,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
       }
     }
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.displayName != null && user.displayName!.isNotEmpty) {
+    if (user != null &&
+        user.uid == uid &&
+        user.displayName != null &&
+        user.displayName!.isNotEmpty) {
       return user.displayName!;
     }
     return 'Sweetheart';
@@ -337,35 +340,39 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 if (memory.location != null && memory.location!.isNotEmpty) ...[
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.pastelLavender.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.location_on_rounded, size: 13, color: AppTheme.tertiaryMauve),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              memory.location!,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimaryLight,
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.pastelLavender.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_on_rounded, size: 13, color: AppTheme.tertiaryMauve),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                memory.location!,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimaryLight,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                ] else ...[
+                  const Spacer(),
                 ],
-                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryLight),
                   onPressed: () => _confirmDeleteMemory(context, coupleId, memory),
@@ -1687,6 +1694,13 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
   }
 
   Future<void> _saveMemory() async {
+    if (_isUploading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please wait for photo upload to finish')),
+      );
+      return;
+    }
+
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1789,7 +1803,7 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                     firstDate: DateTime(2000),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
-                  if (picked != null) {
+                  if (picked != null && mounted) {
                     setState(() => _selectedDate = picked);
                   }
                 },
@@ -1929,7 +1943,7 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                     borderRadius: BorderRadius.circular(AppTheme.buttonBorderRadius),
                   ),
                 ),
-                onPressed: _isSaving ? null : _saveMemory,
+                onPressed: (_isSaving || _isUploading) ? null : _saveMemory,
                 child: _isSaving
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Save Memory ✨', style: TextStyle(fontSize: 16)),
@@ -2025,6 +2039,13 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
   }
 
   Future<void> _sealCapsule() async {
+    if (_isUploading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please wait for photo upload to finish')),
+      );
+      return;
+    }
+
     final title = _titleController.text.trim();
     final message = _messageController.text.trim();
 
@@ -2149,7 +2170,7 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                       context: context,
                       initialTime: TimeOfDay.fromDateTime(_unlockDate),
                     );
-                    if (pickedTime != null) {
+                    if (pickedTime != null && mounted) {
                       setState(() {
                         _unlockDate = DateTime(
                           pickedDate.year,
@@ -2286,7 +2307,7 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                     borderRadius: BorderRadius.circular(AppTheme.buttonBorderRadius),
                   ),
                 ),
-                onPressed: _isSaving ? null : _sealCapsule,
+                onPressed: (_isSaving || _isUploading) ? null : _sealCapsule,
                 icon: const Icon(Icons.lock_outline_rounded),
                 label: _isSaving
                     ? const CircularProgressIndicator(color: Colors.white)
