@@ -155,14 +155,8 @@ class TaskRepository {
   }
 
   /// Watches all shared checklists in real time.
-  /// Automatically triggers seeding default templates if no lists exist yet.
   Stream<List<ChecklistModel>> watchLists(String coupleId) {
     return _listsCollection(coupleId).snapshots().map((snapshot) {
-      if (snapshot.docs.isEmpty) {
-        // Trigger non-blocking seeding of templates
-        unawaited(seedDefaultListsIfEmpty(coupleId));
-      }
-
       final lists = snapshot.docs
           .map((doc) => ChecklistModel.fromMap(doc.id, doc.data()))
           .toList();
@@ -235,7 +229,7 @@ class TaskRepository {
     }
   }
 
-  /// Appends an item to an existing checklist.
+  /// Appends an item to an existing checklist with offline-resilient handling.
   Future<void> addChecklistItem(
     String coupleId,
     String listId,
@@ -243,26 +237,48 @@ class TaskRepository {
     String addedBy,
   ) async {
     final docRef = _listsCollection(coupleId).doc(listId);
-    final snapshot = await docRef.get();
-    if (snapshot.exists && snapshot.data() != null) {
-      final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
-      final updatedList = currentList.addItem(text, addedBy);
-      await docRef.set(updatedList.toMap(), SetOptions(merge: true));
+    try {
+      final snapshot = await docRef.get();
+      if (snapshot.exists && snapshot.data() != null) {
+        final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
+        final updatedList = currentList.addItem(text, addedBy);
+        await docRef.set(updatedList.toMap(), SetOptions(merge: true));
+      }
+    } catch (_) {
+      try {
+        final snapshot = await docRef.get(const GetOptions(source: Source.cache));
+        if (snapshot.exists && snapshot.data() != null) {
+          final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
+          final updatedList = currentList.addItem(text, addedBy);
+          await docRef.set(updatedList.toMap(), SetOptions(merge: true));
+        }
+      } catch (_) {}
     }
   }
 
-  /// Removes an item from an existing checklist.
+  /// Removes an item from an existing checklist with offline-resilient handling.
   Future<void> removeChecklistItem(
     String coupleId,
     String listId,
     String itemId,
   ) async {
     final docRef = _listsCollection(coupleId).doc(listId);
-    final snapshot = await docRef.get();
-    if (snapshot.exists && snapshot.data() != null) {
-      final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
-      final updatedList = currentList.removeItem(itemId);
-      await docRef.set(updatedList.toMap(), SetOptions(merge: true));
+    try {
+      final snapshot = await docRef.get();
+      if (snapshot.exists && snapshot.data() != null) {
+        final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
+        final updatedList = currentList.removeItem(itemId);
+        await docRef.set(updatedList.toMap(), SetOptions(merge: true));
+      }
+    } catch (_) {
+      try {
+        final snapshot = await docRef.get(const GetOptions(source: Source.cache));
+        if (snapshot.exists && snapshot.data() != null) {
+          final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
+          final updatedList = currentList.removeItem(itemId);
+          await docRef.set(updatedList.toMap(), SetOptions(merge: true));
+        }
+      } catch (_) {}
     }
   }
 

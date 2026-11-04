@@ -237,7 +237,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     myUid,
                     partnerUid,
                     partnerName,
-                  ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0);
+                  );
                 },
               );
             },
@@ -600,10 +600,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           itemCount: lists.length,
           itemBuilder: (context, index) {
             final list = lists[index];
-            return _buildChecklistCard(list, coupleId, myUid, partnerName)
-                .animate()
-                .fadeIn(duration: 250.ms)
-                .slideY(begin: 0.05, end: 0);
+            return _buildChecklistCard(list, coupleId, myUid, partnerName);
           },
         );
       },
@@ -994,27 +991,26 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         ChoiceChip(
                           label: const Text('Unassigned'),
                           selected: assignedTo == null,
                           onSelected: (_) => setSheetState(() => assignedTo = null),
                         ),
-                        const SizedBox(width: 8),
                         ChoiceChip(
                           label: const Text('Me'),
                           selected: assignedTo == myUid,
                           onSelected: (_) => setSheetState(() => assignedTo = myUid),
                         ),
-                        if (partnerUid != null) ...[
-                          const SizedBox(width: 8),
+                        if (partnerUid != null)
                           ChoiceChip(
                             label: Text(partnerName),
                             selected: assignedTo == partnerUid,
                             onSelected: (_) => setSheetState(() => assignedTo = partnerUid),
                           ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -1095,7 +1091,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           },
         );
       },
-    );
+    ).then((_) {
+      titleController.dispose();
+      descController.dispose();
+    });
   }
 
   void _showAddListSheet(BuildContext context, String coupleId, String myUid) {
@@ -1119,108 +1118,112 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 right: 20,
                 top: 24,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Create Shared Checklist',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryLight,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Create Shared Checklist',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimaryLight,
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
 
-                  TextField(
-                    controller: titleController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'List Title *',
-                      hintText: 'e.g., Weekly Farmers Market',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
+                    TextField(
+                      controller: titleController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: 'List Title *',
+                        hintText: 'e.g., Weekly Farmers Market',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  const Text(
-                    'Category',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: TaskRepository.standardCategories.map((cat) {
-                      final isSel = selectedCategory == cat;
-                      return ChoiceChip(
-                        label: Text(cat),
-                        selected: isSel,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setSheetState(() => selectedCategory = cat);
-                          }
-                        },
-                        selectedColor: AppTheme.primaryRoseLight.withOpacity(0.3),
-                        side: BorderSide(
-                          color: isSel ? AppTheme.primaryRose : AppTheme.outlineLight,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryRose,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.buttonBorderRadius),
-                        ),
-                      ),
-                      onPressed: () {
-                        final title = titleController.text.trim();
-                        if (title.isEmpty) return;
-
-                        final list = ChecklistModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: title,
-                          category: selectedCategory,
-                          items: const [],
-                          updatedAt: DateTime.now(),
+                    const Text(
+                      'Category',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: TaskRepository.standardCategories.map((cat) {
+                        final isSel = selectedCategory == cat;
+                        return ChoiceChip(
+                          label: Text(cat),
+                          selected: isSel,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setSheetState(() => selectedCategory = cat);
+                            }
+                          },
+                          selectedColor: AppTheme.primaryRoseLight.withOpacity(0.3),
+                          side: BorderSide(
+                            color: isSel ? AppTheme.primaryRose : AppTheme.outlineLight,
+                          ),
                         );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
 
-                        ref.read(taskRepositoryProvider).addList(coupleId, list);
-                        Navigator.pop(ctx);
-                      },
-                      child: const Text(
-                        'Create List',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryRose,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.buttonBorderRadius),
+                          ),
+                        ),
+                        onPressed: () {
+                          final title = titleController.text.trim();
+                          if (title.isEmpty) return;
+
+                          final list = ChecklistModel(
+                            id: DateTime.now().millisecondsSinceEpoch.toString(),
+                            title: title,
+                            category: selectedCategory,
+                            items: const [],
+                            updatedAt: DateTime.now(),
+                          );
+
+                          ref.read(taskRepositoryProvider).addList(coupleId, list);
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text(
+                          'Create List',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             );
           },
         );
       },
-    );
+    ).then((_) {
+      titleController.dispose();
+    });
   }
 
   // ==========================================
