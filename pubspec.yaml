@@ -23,6 +23,7 @@ dependencies:
 
   # Notifications & Android Widgets
   flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
   home_widget: ^0.7.0
 
   # Storage, Biometrics & Cryptography

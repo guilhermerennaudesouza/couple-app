@@ -510,11 +510,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   icon: const Icon(Icons.chevron_left_rounded),
                   onPressed: () {
                     setState(() {
-                      _focusedMonth = DateTime(
+                      final newMonth = DateTime(
                         _focusedMonth.year,
                         _focusedMonth.month - 1,
                         1,
                       );
+                      _focusedMonth = newMonth;
+                      _selectedDay = DateTime(newMonth.year, newMonth.month, 1);
                     });
                   },
                 ),
@@ -529,11 +531,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   icon: const Icon(Icons.chevron_right_rounded),
                   onPressed: () {
                     setState(() {
-                      _focusedMonth = DateTime(
+                      final newMonth = DateTime(
                         _focusedMonth.year,
                         _focusedMonth.month + 1,
                         1,
                       );
+                      _focusedMonth = newMonth;
+                      _selectedDay = DateTime(newMonth.year, newMonth.month, 1);
                     });
                   },
                 ),
@@ -1244,7 +1248,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           isAnnual: isAnnual,
                           category: selectedCategory,
                           reminderDaysBefore: reminderDays,
-                          createdBy: _getEffectiveUid(),
+                          createdBy: (existingEvent?.createdBy != null &&
+                                  existingEvent!.createdBy.isNotEmpty)
+                              ? existingEvent.createdBy
+                              : _getEffectiveUid(),
                           createdAt: existingEvent?.createdAt,
                         );
 

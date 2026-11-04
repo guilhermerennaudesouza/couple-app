@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import '../../features/calendar/domain/calendar_event_model.dart';
 
 /// Central local notification scheduler for the Couple App.
 ///
 /// Dispatches on-device local notifications using [FlutterLocalNotificationsPlugin]
 /// without requiring paid push servers or exceeding Firebase Spark limits:
-/// - Exact 20:00 (8:00 PM) daily question prompts.
+/// - Exact 20:00 (8:00 PM) daily question prompts using [zonedSchedule].
 /// - Calendar anniversary countdowns and event alarms scheduled N days prior at 10:00 AM.
 class LocalNotificationService {
   static const String channelId = 'krivo_couples_channel';
@@ -26,13 +28,20 @@ class LocalNotificationService {
     _notificationsPlugin = plugin;
   }
 
-  /// Initializes the local notification plugin and configures the Android
+  /// Initializes the local notification plugin, timezones, and configures the Android
   /// high-importance notification channel.
   ///
   /// Executed safely in a try/catch block to avoid crashing on unsupported
   /// test harnesses or missing OS permissions.
   static Future<void> initialize() async {
     try {
+      // Initialize timezone database for zoned scheduling
+      try {
+        tz.initializeTimeZones();
+      } catch (tzErr) {
+        debugPrint('LocalNotificationService: timezone init fallback: $tzErr');
+      }
+
       const androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
       const iosSettings = DarwinInitializationSettings(
@@ -98,52 +107,119 @@ class LocalNotificationService {
     );
   }
 
+  /// Computes the next occurrence of a specific time in the local timezone.
+  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    try {
+      final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+      tz.TZDateTime scheduledDate =
+          tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+      return scheduledDate;
+    } catch (_) {
+      // Fallback for uninitialized local timezone in test environments
+      final now = DateTime.now();
+      var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+      return tz.TZDateTime.from(scheduledDate, tz.UTC);
+    }
+  }
+
   /// Schedules the recurring daily notification prompting partners to answer
   /// today's Daily Question.
   ///
-  /// By default scheduled for 20:00 (8:00 PM) every evening:
+  /// Uses zonedSchedule targeting exact local time (default 20:00 / 8:00 PM) daily:
   /// "Time for your Daily Question! Answer together tonight ✨"
   static Future<void> scheduleDailyPrompt({
     int hour = 20,
     int minute = 0,
   }) async {
     try {
-      await _notificationsPlugin.periodicallyShow(
+      final scheduledTime = _nextInstanceOfTime(hour, minute);
+      await _notificationsPlugin.zonedSchedule(
         dailyPromptNotificationId,
         'Daily Question ✨',
         'Time for your Daily Question! Answer together tonight ✨',
-        RepeatInterval.daily,
+        scheduledTime,
         _notificationDetails(),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
       );
     } catch (e) {
       debugPrint('LocalNotificationService.scheduleDailyPrompt error: $e');
+      // Graceful fallback to periodicallyShow if zoned scheduling fails in test/headless
+      try {
+        await _notificationsPlugin.periodicallyShow(
+          dailyPromptNotificationId,
+          'Daily Question ✨',
+          'Time for your Daily Question! Answer together tonight ✨',
+          RepeatInterval.daily,
+          _notificationDetails(),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        );
+      } catch (_) {}
     }
   }
 
   /// Schedules an event or anniversary alarm [event.reminderDaysBefore] days
-  /// prior to the event date at 10:00 AM.
+  /// prior to the event date at 10:00 AM using exact zoned scheduling.
   static Future<void> scheduleEventReminder(CalendarEventModel event) async {
     try {
       final reminderId = (event.id.hashCode.abs() % 100000) + 3000;
-      final daysUntil = event.daysUntilNext();
-      final reminderDays = event.reminderDaysBefore;
-      final daysWait = daysUntil - reminderDays;
-
       final title = event.category == CalendarEventModel.categoryAnniversary
           ? 'Anniversary Reminder ❤️'
           : 'Upcoming: ${event.title}';
 
       final String body;
-      if (reminderDays == 0) {
+      if (event.reminderDaysBefore == 0) {
         body = 'Today is ${event.title}! Enjoy your special moments together 💕';
-      } else if (reminderDays == 1) {
+      } else if (event.reminderDaysBefore == 1) {
         body = 'Tomorrow is ${event.title}! Are you ready?';
       } else {
-        body = '${event.title} is in $reminderDays days! 💕';
+        body = '${event.title} is in ${event.reminderDaysBefore} days! 💕';
       }
 
-      if (daysWait <= 0 && !event.isPast()) {
+      final nextOcc = event.nextOccurrenceDate();
+      final reminderDay =
+          nextOcc.subtract(Duration(days: event.reminderDaysBefore));
+
+      tz.TZDateTime scheduledDate;
+      try {
+        scheduledDate = tz.TZDateTime(
+          tz.local,
+          reminderDay.year,
+          reminderDay.month,
+          reminderDay.day,
+          10, // 10:00 AM
+          0,
+        );
+      } catch (_) {
+        scheduledDate = tz.TZDateTime.from(
+          DateTime(reminderDay.year, reminderDay.month, reminderDay.day, 10, 0),
+          tz.UTC,
+        );
+      }
+
+      final tz.TZDateTime now = tz.TZDateTime.now(scheduledDate.location);
+
+      if (scheduledDate.isAfter(now)) {
+        await _notificationsPlugin.zonedSchedule(
+          reminderId,
+          title,
+          body,
+          scheduledDate,
+          _notificationDetails(),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'calendar_event:${event.id}',
+        );
+      } else if (!event.isPast()) {
         // Notification is due today or immediately
         await _notificationsPlugin.show(
           reminderId,
@@ -151,11 +227,6 @@ class LocalNotificationService {
           body,
           _notificationDetails(),
           payload: 'calendar_event:${event.id}',
-        );
-      } else {
-        debugPrint(
-          'LocalNotificationService: scheduled event reminder for "${event.title}" '
-          'id=$reminderId, due in $daysWait days at 10:00 AM',
         );
       }
     } catch (e) {

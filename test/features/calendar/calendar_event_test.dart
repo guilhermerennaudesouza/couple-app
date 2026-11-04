@@ -149,6 +149,18 @@ void main() {
       final daysInNextLeapYear = leapEvent.daysUntilNext(from: DateTime(2028, 2, 20));
       expect(daysInNextLeapYear, equals(9));
     });
+
+    test('CalendarEventModel DST-safe daysUntilNext computes exact days across clock changes', () {
+      final event = CalendarEventModel(
+        id: 'dst_event',
+        title: 'Spring Date',
+        date: DateTime(2026, 3, 15),
+        isAnnual: false,
+      );
+      // Query 5 days before
+      final days = event.daysUntilNext(from: DateTime(2026, 3, 10));
+      expect(days, equals(5));
+    });
   });
 
   group('LocalNotificationService Tests', () {

@@ -76,12 +76,15 @@ class CalendarEventModel {
 
   /// Calculates the number of days until the next occurrence relative to [from].
   ///
+  /// Uses UTC calendar dates to guarantee DST (Daylight Saving Time) resilience.
   /// Returns 0 if the next occurrence is today.
   int daysUntilNext({DateTime? from}) {
     final ref = from ?? DateTime.now();
     final today = DateTime(ref.year, ref.month, ref.day);
     final next = nextOccurrenceDate(from: from);
-    return next.difference(today).inDays;
+    return DateTime.utc(next.year, next.month, next.day)
+        .difference(DateTime.utc(today.year, today.month, today.day))
+        .inDays;
   }
 
   /// Returns whether this event is strictly in the past relative to [from].
@@ -90,9 +93,9 @@ class CalendarEventModel {
   bool isPast({DateTime? from}) {
     if (isAnnual) return false;
     final ref = from ?? DateTime.now();
-    final today = DateTime(ref.year, ref.month, ref.day);
-    final eventDay = DateTime(date.year, date.month, date.day);
-    return eventDay.isBefore(today);
+    final todayUtc = DateTime.utc(ref.year, ref.month, ref.day);
+    final eventUtc = DateTime.utc(date.year, date.month, date.day);
+    return eventUtc.isBefore(todayUtc);
   }
 
   /// Serializes this event into a Cloud Firestore document map.

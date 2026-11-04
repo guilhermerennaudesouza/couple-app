@@ -66,8 +66,7 @@ class CalendarRepository {
     try {
       await docRef.set(eventToSave.toMap(), SetOptions(merge: true));
     } catch (e) {
-      debugPrint('CalendarRepository.addEvent offline fallback: $e');
-      await docRef.set(eventToSave.toMap(), SetOptions(merge: true));
+      debugPrint('CalendarRepository.addEvent error: $e');
     }
 
     // Schedule on-device notification reminder
@@ -85,7 +84,6 @@ class CalendarRepository {
       await docRef.delete();
     } catch (e) {
       debugPrint('CalendarRepository.deleteEvent error: $e');
-      await docRef.delete();
     }
 
     // Cancel pending notification

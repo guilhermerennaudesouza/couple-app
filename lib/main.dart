@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:couple_app/core/firebase/firebase_config.dart';
+import 'package:couple_app/core/notifications/local_notification_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseConfig.initialize();
+  await LocalNotificationService.initialize();
 
   runApp(
     const ProviderScope(
