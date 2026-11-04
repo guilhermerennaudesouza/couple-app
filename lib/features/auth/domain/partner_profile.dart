@@ -8,13 +8,17 @@ class PartnerProfile {
   final String? fcmToken;
   final DateTime joinedAt;
 
-  const PartnerProfile({
+  String get displayName => name;
+
+  PartnerProfile({
     required this.uid,
-    required this.name,
+    String? name,
+    String? displayName,
     this.avatarUrl,
     this.fcmToken,
-    required this.joinedAt,
-  });
+    DateTime? joinedAt,
+  })  : name = name ?? displayName ?? '',
+        joinedAt = joinedAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {

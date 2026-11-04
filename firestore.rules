@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for authentication and couple authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isCoupleMember(coupleId) {
+      return isAuthenticated() && (
+        request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.members
+      );
+    }
+
+    // Couples root collection
+    // - Authenticated users can create a new couple space with themselves as a member.
+    // - Existing members can read/update/delete their space.
+    // - Prospective partners can query and join a pending space if members < 2.
+    match /couples/{coupleId} {
+      allow create: if isAuthenticated() && (
+        request.auth.uid in request.resource.data.members &&
+        request.resource.data.members.size() <= 2
+      );
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.members ||
+        resource.data.members.size() < 2
+      );
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.members || (
+          resource.data.members.size() < 2 &&
+          request.auth.uid in request.resource.data.members &&
+          request.resource.data.members.size() <= 2
+        )
+      );
+      allow delete: if isAuthenticated() && (
+        request.auth.uid in resource.data.members
+      );
+
+      // 1. Daily Questions & Revealed Answers
+      match /daily_questions/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 2. Shared Tasks & Chores
+      match /tasks/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 3. Shared Checklists (Groceries, Packing, Prep)
+      match /lists/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 4. Digital Sticky Notes & Love Notes
+      match /notes/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 5. Calendar Events & Anniversaries
+      match /calendar_events/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 6. Decide Together Ballots ("This or That")
+      match /decide_sessions/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 7. Date Ideas & Bucket List
+      match /date_ideas/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 8. Shared Memories & Milestone Timeline
+      match /memories/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 9. Digital Time Capsules
+      match /time_capsules/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 10. Shared Wishlist & Gift Ideas
+      match /wishlist/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 11. Finance Entries (50/50 & Custom Splits)
+      match /finance_entries/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 12. Savings Goals & Piggy Bank Contributions
+      match /savings_goals/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 13. Zero-Knowledge Encrypted Private Vault
+      match /vault_items/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 14. Partner Romantic Cheatsheet & Preferences
+      match /partner_cheatsheet/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // Fallback rule for any nested couple subcollection documents
+      match /{allSubcollections=**} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+    }
+
+    // Optional user metadata collection
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}

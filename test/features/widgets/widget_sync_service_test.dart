@@ -329,8 +329,8 @@ void main() {
         anniversaryDate: DateTime(2024, 6, 1),
         inviteCode: 'LOVE24',
         partnerProfiles: {
-          'u1': const PartnerProfile(uid: 'u1', displayName: 'Me'),
-          'u2': const PartnerProfile(uid: 'u2', displayName: 'Sweetheart'),
+          'u1': PartnerProfile(uid: 'u1', displayName: 'Me'),
+          'u2': PartnerProfile(uid: 'u2', displayName: 'Sweetheart'),
         },
       );
 
