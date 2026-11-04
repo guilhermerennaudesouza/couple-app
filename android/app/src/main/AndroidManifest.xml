@@ -24,5 +24,44 @@
                 android:resource="@xml/note_glance_widget_info" />
         </receiver>
 
+        <!-- Jetpack Glance Days Together Widget Receiver -->
+        <receiver
+            android:name=".CoupleGlanceWidget"
+            android:label="@string/couple_glance_widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/couple_glance_widget_info" />
+        </receiver>
+
+        <!-- Jetpack Glance Daily Prompt Widget Receiver -->
+        <receiver
+            android:name=".DailyPromptGlanceWidget"
+            android:label="@string/daily_prompt_glance_widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/daily_prompt_glance_widget_info" />
+        </receiver>
+
+        <!-- Jetpack Glance Shared Tasks Widget Receiver -->
+        <receiver
+            android:name=".TasksGlanceWidget"
+            android:label="@string/tasks_glance_widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/tasks_glance_widget_info" />
+        </receiver>
+
     </application>
 </manifest>

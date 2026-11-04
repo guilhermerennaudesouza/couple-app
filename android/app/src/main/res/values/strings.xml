@@ -3,4 +3,10 @@
     <string name="app_name">Krivo</string>
     <string name="note_glance_widget_name">Couple Sticky Note</string>
     <string name="note_glance_widget_description">Live sticky love note shared between you and your partner</string>
+    <string name="couple_glance_widget_name">Days Together</string>
+    <string name="couple_glance_widget_description">Milestone countdown and love counter tracking your days together</string>
+    <string name="daily_prompt_glance_widget_name">Daily Question</string>
+    <string name="daily_prompt_glance_widget_description">Today\'s couple question and mutual answer status</string>
+    <string name="tasks_glance_widget_name">Couple Tasks</string>
+    <string name="tasks_glance_widget_description">Shared task checklist and pending chores</string>
 </resources>
