@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:couple_app/features/decide/domain/decide_model.dart';
 import 'package:couple_app/features/date_ideas/domain/date_idea_model.dart';
+import 'package:couple_app/features/date_ideas/data/date_ideas_repository.dart';
 
 void main() {
   group('DecideSessionModel tests', () {
@@ -103,6 +104,89 @@ void main() {
       final sessionCopy = session1.copyWith();
       expect(session1, equals(sessionCopy));
     });
+
+    test('DecideSession resolves tie-breaker with explicit winner on split vote', () {
+      final session = DecideSessionModel(
+        id: 's6',
+        title: 'Friday Movie',
+        options: ['Sci-Fi', 'Rom-Com'],
+        votes: {'uid_1': 'Sci-Fi', 'uid_2': 'Rom-Com'},
+        status: DecideSessionModel.statusResolved,
+        winningOption: 'Sci-Fi',
+        createdBy: 'uid_1',
+      );
+
+      expect(session.isResolved, isTrue);
+      expect(session.isMatch, isFalse);
+      expect(session.isSplit, isTrue);
+      expect(session.winningOption, equals('Sci-Fi'));
+    });
+
+    test('DecideSession partner secrecy hides choice until both vote, then reveals', () {
+      final oneVoteSession = DecideSessionModel(
+        id: 's7',
+        title: 'Dinner Choice',
+        options: ['Italian', 'Mexican'],
+        votes: {'uid_1': 'Italian'},
+        createdBy: 'uid_1',
+      );
+
+      expect(oneVoteSession.canUserSeePartnerVote('uid_1'), isFalse);
+      expect(oneVoteSession.getVisiblePartnerVote('uid_1'), isNull);
+      expect(oneVoteSession.canUserSeePartnerVote('uid_2'), isFalse);
+      expect(oneVoteSession.getVisiblePartnerVote('uid_2'), isNull);
+
+      final twoVoteSession = oneVoteSession.copyWith(
+        votes: {'uid_1': 'Italian', 'uid_2': 'Mexican'},
+      );
+
+      expect(twoVoteSession.canUserSeePartnerVote('uid_1'), isTrue);
+      expect(twoVoteSession.getVisiblePartnerVote('uid_1'), equals('Mexican'));
+      expect(twoVoteSession.getVisiblePartnerVote('uid_2'), equals('Italian'));
+    });
+
+    test('DecideSession re-vote reset clears votes and winning option', () {
+      final resolvedSession = DecideSessionModel(
+        id: 's8',
+        title: 'Dessert',
+        options: ['Ice Cream', 'Cake'],
+        votes: {'uid_1': 'Ice Cream', 'uid_2': 'Cake'},
+        status: DecideSessionModel.statusResolved,
+        winningOption: 'Ice Cream',
+        createdBy: 'uid_1',
+      );
+
+      expect(resolvedSession.isResolved, isTrue);
+
+      final revoteSession = resolvedSession.copyWith(
+        status: DecideSessionModel.statusOpen,
+        votes: {},
+        clearWinningOption: true,
+      );
+
+      expect(revoteSession.isResolved, isFalse);
+      expect(revoteSession.isMatch, isFalse);
+      expect(revoteSession.isSplit, isFalse);
+      expect(revoteSession.winningOption, isNull);
+      expect(revoteSession.votes.isEmpty, isTrue);
+    });
+
+    test('DecideSession parses legacy dot-notation keys in fromMap', () {
+      final rawMap = {
+        'title': 'Weekend Trip',
+        'options': ['Mountains', 'Coast'],
+        'votes.uid_1': 'Coast',
+        'votes.uid_2': 'Coast',
+        'status': 'resolved',
+        'createdBy': 'uid_1',
+      };
+
+      final session = DecideSessionModel.fromMap('s9', rawMap);
+      expect(session.votes['uid_1'], equals('Coast'));
+      expect(session.votes['uid_2'], equals('Coast'));
+      expect(session.isMatch, isTrue);
+      expect(session.winningOption, equals('Coast'));
+    });
   });
 
   group('DateIdeaModel tests', () {
@@ -168,6 +252,19 @@ void main() {
 
       final ideaCopy = idea1.copyWith();
       expect(idea1, equals(ideaCopy));
+    });
+
+    test('DateIdeasRepository defaultCuratedIdeas generates 6 curated date cards', () {
+      final ideas = DateIdeasRepository.defaultCuratedIdeas('uid_creator');
+      expect(ideas.length, equals(6));
+      expect(ideas.any((i) => i.category == DateIdeaModel.categoryCozy), isTrue);
+      expect(ideas.any((i) => i.category == DateIdeaModel.categoryRomance), isTrue);
+      expect(ideas.any((i) => i.category == DateIdeaModel.categoryFoodie), isTrue);
+      expect(ideas.any((i) => i.isWeeklyPick), isTrue);
+      for (final i in ideas) {
+        expect(i.createdBy, equals('uid_creator'));
+        expect(i.isCompleted, isFalse);
+      }
     });
   });
 }

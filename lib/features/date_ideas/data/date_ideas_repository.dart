@@ -137,7 +137,11 @@ class DateIdeasRepository {
 
     try {
       if (toSave.isWeeklyPick) {
-        await _clearOtherWeeklyPicks(coupleId, exceptId: toSave.id);
+        try {
+          await _clearOtherWeeklyPicks(coupleId, exceptId: toSave.id);
+        } catch (e) {
+          debugPrint('DateIdeasRepository.addIdea clear others fallback: $e');
+        }
       }
       await docRef.set(toSave.toMap(), SetOptions(merge: true));
     } catch (e) {
@@ -170,7 +174,11 @@ class DateIdeasRepository {
   /// Designates an idea as the featured weekly pick, clearing previous weekly picks.
   Future<void> setWeeklyPick(String coupleId, String ideaId) async {
     try {
-      await _clearOtherWeeklyPicks(coupleId, exceptId: ideaId);
+      try {
+        await _clearOtherWeeklyPicks(coupleId, exceptId: ideaId);
+      } catch (e) {
+        debugPrint('DateIdeasRepository.setWeeklyPick clearing others fallback: $e');
+      }
       final docRef = _ideasCollection(coupleId).doc(ideaId);
       await docRef.set({'isWeeklyPick': true}, SetOptions(merge: true));
     } catch (e) {

@@ -63,6 +63,7 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
     if (_hasSeededDateIdeas || coupleId.isEmpty) return;
     _hasSeededDateIdeas = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(dateIdeasRepositoryProvider).seedDefaultIdeasIfEmpty(
             coupleId,
             createdBy: _getEffectiveUid(),
@@ -883,7 +884,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   String? _selectedWinner;
-  bool _isFlipping = false;
+  bool _isFlipping = true;
 
   @override
   void initState() {
@@ -892,7 +893,16 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    _flipCoin();
+    _animController.forward(from: 0).then((_) {
+      final random = Random();
+      final picked = widget.options[random.nextInt(widget.options.length)];
+      if (mounted) {
+        setState(() {
+          _isFlipping = false;
+          _selectedWinner = picked;
+        });
+      }
+    });
   }
 
   @override
@@ -1466,9 +1476,7 @@ class _DateIdeaCard extends ConsumerWidget {
                     icon: const Icon(Icons.more_vert, size: 18),
                     onSelected: (val) {
                       if (val == 'delete') {
-                        ref
-                            .read(dateIdeasRepositoryProvider)
-                            .deleteIdea(coupleId, idea.id);
+                        _confirmDeleteIdea(context, ref);
                       }
                     },
                     itemBuilder: (ctx) => const [
@@ -1491,6 +1499,33 @@ class _DateIdeaCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteIdea(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Date Idea?'),
+        content: Text('Are you sure you want to delete "${idea.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorRed,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ref.read(dateIdeasRepositoryProvider).deleteIdea(coupleId, idea.id);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
@@ -1597,7 +1632,7 @@ class _CreateBallotBottomSheetState
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1625,8 +1660,16 @@ class _CreateBallotBottomSheetState
       createdBy: widget.myUid,
     );
 
-    ref.read(decideRepositoryProvider).createSession(widget.coupleId, session);
-    Navigator.of(context).pop();
+    try {
+      await ref.read(decideRepositoryProvider).createSession(widget.coupleId, session);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create ballot: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -1828,7 +1871,7 @@ class _AddDateIdeaBottomSheetState
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1846,8 +1889,16 @@ class _AddDateIdeaBottomSheetState
       createdBy: widget.myUid,
     );
 
-    ref.read(dateIdeasRepositoryProvider).addIdea(widget.coupleId, idea);
-    Navigator.of(context).pop();
+    try {
+      await ref.read(dateIdeasRepositoryProvider).addIdea(widget.coupleId, idea);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add date idea: $e')),
+        );
+      }
+    }
   }
 
   @override

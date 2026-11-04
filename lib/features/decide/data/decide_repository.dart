@@ -82,18 +82,35 @@ class DecideRepository {
     final docRef = _sessionsCollection(coupleId).doc(sessionId);
 
     try {
-      final doc = await docRef.get();
       final Map<String, dynamic> existingVotes = {};
-      if (doc.exists && doc.data() != null) {
-        final rawVotes = doc.data()!['votes'];
-        if (rawVotes is Map) {
-          existingVotes.addAll(Map<String, dynamic>.from(rawVotes));
+      try {
+        final doc = await docRef.get();
+        if (doc.exists && doc.data() != null) {
+          final rawVotes = doc.data()!['votes'];
+          if (rawVotes is Map) {
+            existingVotes.addAll(Map<String, dynamic>.from(rawVotes));
+          }
+          // Parse legacy root keys if any
+          doc.data()!.forEach((k, v) {
+            if (k.startsWith('votes.') && v != null) {
+              final voteUid = k.substring('votes.'.length);
+              if (voteUid.isNotEmpty && !existingVotes.containsKey(voteUid)) {
+                existingVotes[voteUid] = v;
+              }
+            }
+          });
         }
+      } catch (e) {
+        debugPrint('DecideRepository.castVote get fallback: $e');
       }
       existingVotes[uid] = choice;
 
+      // Use nested map syntax so SetOptions(merge: true) merges the map key
+      // without creating a literal 'votes.<uid>' string field.
       final updates = <String, dynamic>{
-        'votes.$uid': choice,
+        'votes': {
+          uid: choice,
+        },
       };
 
       // When 2 or more partners have voted, mark resolved

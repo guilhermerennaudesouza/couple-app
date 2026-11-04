@@ -39,11 +39,12 @@ class DecideSessionModel {
       votes.values.every((v) => v.isNotEmpty && v == votes.values.first);
 
   /// Whether the session is resolved but votes did not agree.
-  bool get isSplit => isResolved && !isMatch;
+  bool get isSplit => isResolved && votes.length >= 2 && !isMatch;
 
   /// Returns the winning option: either explicitly designated (e.g. via coin toss)
   /// or naturally resolved via a match. Returns null if unresolved or split without decision.
   String? get winningOption {
+    if (!isResolved) return null;
     if (_explicitWinningOption != null && _explicitWinningOption!.isNotEmpty) {
       return _explicitWinningOption;
     }
@@ -107,6 +108,15 @@ class DecideSessionModel {
         }
       });
     }
+    // Also defensively parse any root keys formatted as "votes.<uid>"
+    map.forEach((key, value) {
+      if (key.startsWith('votes.') && value != null) {
+        final voteUid = key.substring('votes.'.length);
+        if (voteUid.isNotEmpty && !votes.containsKey(voteUid)) {
+          votes[voteUid] = value.toString();
+        }
+      }
+    });
 
     return DecideSessionModel(
       id: id,
