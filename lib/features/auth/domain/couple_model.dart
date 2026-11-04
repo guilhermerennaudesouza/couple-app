@@ -22,11 +22,9 @@ class CoupleModel {
   bool get isFull => members.length >= 2;
 
   String? getOtherUid(String myUid) {
+    if (!isFull || !members.contains(myUid)) return null;
     for (final member in members) {
       if (member != myUid) return member;
-    }
-    for (final profileUid in partnerProfiles.keys) {
-      if (profileUid != myUid) return profileUid;
     }
     return null;
   }

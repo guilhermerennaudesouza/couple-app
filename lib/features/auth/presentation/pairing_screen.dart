@@ -52,10 +52,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     super.dispose();
   }
 
+  late final String _fallbackUid = 'user_${DateTime.now().millisecondsSinceEpoch}';
+
   String _getEffectiveUid() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) return user.uid;
-    return 'user_${DateTime.now().millisecondsSinceEpoch}';
+    return user?.uid ?? _fallbackUid;
   }
 
   Future<void> _handleCreateCouple() async {

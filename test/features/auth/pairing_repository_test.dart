@@ -59,6 +59,33 @@ void main() {
       );
       expect(couple.isFull, isFalse);
       expect(couple.getPartnerProfile('uid_1'), isNull);
+      expect(couple.getOtherUid('uid_1'), isNull);
+    });
+
+    test('CoupleModel getOtherUid returns null when !isFull or when queried with a non-member UID', () {
+      final incompleteCouple = CoupleModel(
+        id: 'couple_incomplete',
+        members: ['uid_1'],
+        anniversaryDate: DateTime(2024, 5, 18),
+        inviteCode: '123456',
+      );
+      expect(incompleteCouple.isFull, isFalse);
+      expect(incompleteCouple.getOtherUid('uid_1'), isNull);
+      expect(incompleteCouple.getOtherUid('uid_unknown'), isNull);
+
+      final fullCouple = CoupleModel(
+        id: 'couple_full',
+        members: ['uid_1', 'uid_2'],
+        anniversaryDate: DateTime(2024, 5, 18),
+        inviteCode: '654321',
+      );
+      expect(fullCouple.isFull, isTrue);
+      // Valid members return the other partner's UID
+      expect(fullCouple.getOtherUid('uid_1'), equals('uid_2'));
+      expect(fullCouple.getOtherUid('uid_2'), equals('uid_1'));
+      // Non-member UID returns null
+      expect(fullCouple.getOtherUid('uid_non_member'), isNull);
+      expect(fullCouple.getPartnerProfile('uid_non_member'), isNull);
     });
 
     test('CoupleModel getPartnerProfile returns the other partner profile', () {
