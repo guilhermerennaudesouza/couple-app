@@ -181,7 +181,9 @@ class SavingsGoalModel {
 
     final target = _parseAmount(map['targetAmount']);
     final current = _parseAmount(map['currentAmount']);
-    final completed = map['isCompleted'] as bool? ?? (current >= target && target > 0);
+    final isExplicitCompleted = map['isCompleted'] as bool? ?? false;
+    final isTargetMet = current >= target && target > 0;
+    final completed = isExplicitCompleted || isTargetMet;
 
     return SavingsGoalModel(
       id: id.isNotEmpty ? id : (map['id'] as String? ?? ''),

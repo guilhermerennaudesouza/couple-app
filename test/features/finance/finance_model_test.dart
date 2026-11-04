@@ -364,5 +364,34 @@ void main() {
       expect(c1 == c2, isFalse);
       expect(c1 == c1.copyWith(), isTrue);
     });
+
+    test('SavingsGoalModel.fromMap recognizes target reached when isCompleted is false in map', () {
+      final rawMap = {
+        'id': 'g_completed',
+        'title': 'Emergency Fund',
+        'targetAmount': 2000.0,
+        'currentAmount': 2100.0,
+        'isCompleted': false, // simulate Firestore document with un-updated isCompleted flag
+        'category': 'Emergency',
+        'createdBy': user1,
+      };
+
+      final restored = SavingsGoalModel.fromMap('g_completed', rawMap);
+      expect(restored.isTargetReached, isTrue);
+      expect(restored.isCompleted, isTrue);
+      expect(restored.progressRatio, equals(1.0));
+      expect(restored.progressPercentage, equals(100));
+    });
+
+    test('FinanceEntry.shareFor returns 0.0 when foreign uid is passed', () {
+      final entry = FinanceEntry(
+        id: 'fe_unknown',
+        title: 'Lunch',
+        amount: 50.0,
+        paidBy: user1,
+        splitRatio: SplitRatio.half,
+      );
+      expect(entry.shareFor('foreign_uid', partnerUid: user2), equals(0.0));
+    });
   });
 }

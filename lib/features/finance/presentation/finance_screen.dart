@@ -470,16 +470,24 @@ class _ExpensesTab extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref
-                  .read(financeRepositoryProvider)
-                  .settleAllBalances(coupleId, settledByUid: myUid);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('All balances settled up! Clean slate 🎉'),
-                    backgroundColor: AppTheme.successGreen,
-                  ),
-                );
+              try {
+                await ref
+                    .read(financeRepositoryProvider)
+                    .settleAllBalances(coupleId, settledByUid: myUid);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('All balances settled up! Clean slate 🎉'),
+                      backgroundColor: AppTheme.successGreen,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to settle balances: $e')),
+                  );
+                }
               }
             },
             style: FilledButton.styleFrom(
@@ -607,14 +615,18 @@ class _ExpensesTab extends ConsumerWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                Text(
-                  '$dateStr • Paid by $payerDisplayName',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondaryLight,
+                Expanded(
+                  child: Text(
+                    '$dateStr • Paid by $payerDisplayName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondaryLight,
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 if (entry.isSettled)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -706,9 +718,17 @@ class _ExpensesTab extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref
-                  .read(financeRepositoryProvider)
-                  .deleteExpense(coupleId, entry.id);
+              try {
+                await ref
+                    .read(financeRepositoryProvider)
+                    .deleteExpense(coupleId, entry.id);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to delete expense: $e')),
+                  );
+                }
+              }
             },
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
             child: const Text('Delete'),
@@ -1069,21 +1089,25 @@ class _SavingsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  isReached
-                      ? 'Target completely fulfilled! 🥳'
-                      : '\$${goal.remainingAmount.toStringAsFixed(2)} remaining',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isReached
-                        ? AppTheme.successGreen
-                        : AppTheme.textSecondaryLight,
-                    fontWeight: isReached ? FontWeight.w600 : FontWeight.normal,
+                Expanded(
+                  child: Text(
+                    isReached
+                        ? 'Target completely fulfilled! 🥳'
+                        : '\$${goal.remainingAmount.toStringAsFixed(2)} remaining',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isReached
+                          ? AppTheme.successGreen
+                          : AppTheme.textSecondaryLight,
+                      fontWeight: isReached ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   ),
                 ),
-                if (countdownText.isNotEmpty)
+                if (countdownText.isNotEmpty) ...[
+                  const SizedBox(width: 8),
                   Text(
                     countdownText,
                     style: const TextStyle(
@@ -1091,6 +1115,7 @@ class _SavingsTab extends ConsumerWidget {
                       color: AppTheme.textSecondaryLight,
                     ),
                   ),
+                ],
               ],
             ),
             const SizedBox(height: 14),
@@ -1158,6 +1183,7 @@ class _SavingsTab extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        final reversedContribs = goal.contributions.reversed.toList();
         return Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -1168,11 +1194,15 @@ class _SavingsTab extends ConsumerWidget {
                 children: [
                   const Icon(Icons.history_rounded, color: AppTheme.primaryRose),
                   const SizedBox(width: 8),
-                  Text(
-                    '${goal.title} Deposits',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      '${goal.title} Deposits',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -1181,11 +1211,10 @@ class _SavingsTab extends ConsumerWidget {
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: goal.contributions.length,
+                  itemCount: reversedContribs.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
-                    final contrib =
-                        goal.contributions.reversed.toList()[index];
+                    final contrib = reversedContribs[index];
                     final dateStr = DateFormat.yMMMd().format(contrib.date);
                     final isMe = contrib.uid == myUid;
                     return ListTile(
@@ -1247,9 +1276,17 @@ class _SavingsTab extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref
-                  .read(financeRepositoryProvider)
-                  .deleteSavingsGoal(coupleId, goal.id);
+              try {
+                await ref
+                    .read(financeRepositoryProvider)
+                    .deleteSavingsGoal(coupleId, goal.id);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to delete savings goal: $e')),
+                  );
+                }
+              }
             },
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
             child: const Text('Delete'),
@@ -1753,6 +1790,13 @@ class _CreateSavingsGoalModalState
     if (target <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a target amount greater than \$0')),
+      );
+      return;
+    }
+
+    if (initialDeposit < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Initial deposit cannot be negative')),
       );
       return;
     }

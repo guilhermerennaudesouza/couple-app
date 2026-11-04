@@ -44,7 +44,11 @@ class FinanceRepository {
           .map((doc) => FinanceEntry.fromMap(doc.id, doc.data()))
           .toList();
 
-      entries.sort((a, b) => b.date.compareTo(a.date));
+      entries.sort((a, b) {
+        final cmp = b.date.compareTo(a.date);
+        if (cmp != 0) return cmp;
+        return b.createdAt.compareTo(a.createdAt);
+      });
       return entries;
     });
   }
@@ -69,27 +73,42 @@ class FinanceRepository {
     final col = _entriesCollection(coupleId);
     final nowIso = DateTime.now().toIso8601String();
 
+    QuerySnapshot<Map<String, dynamic>>? snapshot;
     try {
-      final snapshot = await col.where('isSettled', isEqualTo: false).get();
-      if (snapshot.docs.isEmpty) return;
+      snapshot = await col.where('isSettled', isEqualTo: false).get();
+    } catch (e) {
+      debugPrint('FinanceRepository.settleAllBalances server get fallback to cache: $e');
+      try {
+        snapshot = await col
+            .where('isSettled', isEqualTo: false)
+            .get(const GetOptions(source: Source.cache));
+      } catch (cacheErr) {
+        debugPrint('FinanceRepository.settleAllBalances cache get failed: $cacheErr');
+      }
+    }
 
+    if (snapshot == null || snapshot.docs.isEmpty) return;
+
+    try {
       final batch = _firestore.batch();
       for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {
+        batch.set(doc.reference, {
           'isSettled': true,
           'settledAt': nowIso,
-        });
+        }, SetOptions(merge: true));
       }
       await batch.commit();
     } catch (e) {
       debugPrint('FinanceRepository.settleAllBalances batch fallback: $e');
-      // Offline fallback: query local cache or apply per-doc updates
-      final snapshot = await col.where('isSettled', isEqualTo: false).get();
       for (final doc in snapshot.docs) {
-        await doc.reference.set({
-          'isSettled': true,
-          'settledAt': nowIso,
-        }, SetOptions(merge: true));
+        try {
+          await doc.reference.set({
+            'isSettled': true,
+            'settledAt': nowIso,
+          }, SetOptions(merge: true));
+        } catch (docErr) {
+          debugPrint('FinanceRepository.settleAllBalances per-doc update error: $docErr');
+        }
       }
     }
   }
