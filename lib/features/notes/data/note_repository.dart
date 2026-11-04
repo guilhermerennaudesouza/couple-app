@@ -69,7 +69,17 @@ class NoteRepository {
       }
       await WidgetSyncService.updateGlanceNote(noteToSave);
     } else {
+      bool wasPinned = false;
+      if (note.id.isNotEmpty) {
+        try {
+          final snap = await docRef.get();
+          wasPinned = snap.data()?['isPinnedToWidget'] == true;
+        } catch (_) {}
+      }
       await docRef.set(noteToSave.toMap(), SetOptions(merge: true));
+      if (wasPinned) {
+        await WidgetSyncService.clearGlanceNote();
+      }
     }
   }
 

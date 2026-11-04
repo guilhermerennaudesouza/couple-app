@@ -132,6 +132,21 @@ void main() {
       expect(stats['partnerName'], equals('Sweetheart'));
       expect(stats['formattedDays'], contains('900'));
     });
+
+    test('WidgetSyncService gracefully handles platform channel calls in test environment', () async {
+      final note = NoteModel(
+        id: 'n_test',
+        title: 'Test Note',
+        content: 'Content',
+        authorUid: 'u1',
+        authorName: 'Alex',
+        isPinnedToWidget: true,
+      );
+
+      // Verify that calling updateGlanceNote and clearGlanceNote completes without unhandled exceptions
+      await expectLater(WidgetSyncService.updateGlanceNote(note), completes);
+      await expectLater(WidgetSyncService.clearGlanceNote(), completes);
+    });
   });
 }
 

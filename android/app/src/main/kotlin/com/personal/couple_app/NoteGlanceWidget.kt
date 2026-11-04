@@ -20,6 +20,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.defaultWeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -47,7 +48,11 @@ class NoteGlanceWidget : GlanceAppWidgetReceiver() {
 class NoteGlanceWidgetContent : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val prefs: SharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val prefs: SharedPreferences = try {
+            es.antonborri.home_widget.HomeWidgetPlugin.getData(context)
+        } catch (_: Throwable) {
+            context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        }
 
         // Read note attributes supporting both standard FlutterSharedPreferences prefix and plain keys
         val title = prefs.getString("flutter.note_title", null)

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
@@ -778,6 +777,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                             final repo = ref.read(noteRepositoryProvider);
                             await repo.saveNote(coupleId, note);
+
+                            if (existingNote?.isPinnedToWidget == true && !isPinned) {
+                              await WidgetSyncService.clearGlanceNote();
+                            }
 
                             if (bottomSheetContext.mounted) {
                               Navigator.pop(bottomSheetContext);
