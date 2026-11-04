@@ -7,6 +7,11 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function isCoupleMember(coupleId) {
+      return isAuthenticated() &&
+        request.auth.uid in firestore.get(/databases/(default)/documents/couples/$(coupleId)).data.members;
+    }
+
     function isValidImage() {
       return request.resource == null || (
         request.resource.size < 10 * 1024 * 1024 &&
@@ -16,8 +21,8 @@ service firebase.storage {
 
     // Couple shared photo storage (memories, profile avatars, time capsule photos)
     match /couples/{coupleId}/photos/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isValidImage();
+      allow read: if isCoupleMember(coupleId);
+      allow write: if isCoupleMember(coupleId) && isValidImage();
     }
   }
 }

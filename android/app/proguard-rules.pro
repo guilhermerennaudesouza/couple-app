@@ -20,7 +20,6 @@
 -keep class com.personal.couple_app.CoupleGlanceWidget** { *; }
 -keep class com.personal.couple_app.DailyPromptGlanceWidget** { *; }
 -keep class com.personal.couple_app.TasksGlanceWidget** { *; }
--keep class com.personal.couple_app.** { *; }
 
 # HomeWidget Plugin for Flutter <-> Native Glance synchronization
 -keep class es.antonborri.home_widget.** { *; }

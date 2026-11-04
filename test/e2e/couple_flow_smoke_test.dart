@@ -13,11 +13,14 @@ import 'package:couple_app/features/date_ideas/domain/date_idea_model.dart';
 import 'package:couple_app/features/decide/domain/decide_model.dart';
 import 'package:couple_app/features/finance/domain/finance_model.dart';
 import 'package:couple_app/features/finance/domain/savings_model.dart';
+import 'package:couple_app/features/memories/domain/memory_model.dart';
 import 'package:couple_app/features/notes/domain/note_model.dart';
 import 'package:couple_app/features/tasks/domain/checklist_model.dart';
 import 'package:couple_app/features/tasks/domain/task_model.dart';
+import 'package:couple_app/features/time_capsule/domain/time_capsule_model.dart';
 import 'package:couple_app/features/vault/domain/vault_item_model.dart';
 import 'package:couple_app/features/widgets/widget_sync_service.dart';
+import 'package:couple_app/features/wishlist/domain/wish_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -351,15 +354,53 @@ void main() {
       expect(resolvedTie.winningOption, equals('Sci-Fi Thriller'));
       expect(resolvedTie.isResolved, isTrue);
 
-      // Step C: Curated Date Idea toggle
-      var dateIdea = DateIdeaModel(
-        id: 'date_idea_01',
-        title: 'Stargazing with blankets in the park',
-        description: 'Bring hot cocoa and a constellation guide',
-        category: DateIdeaModel.categoryRomance,
-        createdBy: partner1Uid,
-      );
+      // Step C: Curated Date Ideas category filtering, completion, and weekly pick exclusivity
+      final ideas = [
+        DateIdeaModel(
+          id: 'date_idea_01',
+          title: 'Stargazing with blankets in the park',
+          description: 'Bring hot cocoa and a constellation guide',
+          category: DateIdeaModel.categoryRomance,
+          isWeeklyPick: true,
+          createdBy: partner1Uid,
+        ),
+        DateIdeaModel(
+          id: 'date_idea_02',
+          title: 'Cook homemade pizza together',
+          description: 'Try funny topping combinations',
+          category: DateIdeaModel.categoryFoodie,
+          createdBy: partner2Uid,
+        ),
+        DateIdeaModel(
+          id: 'date_idea_03',
+          title: 'Scenic forest nature hike',
+          description: 'Outdoor nature walk',
+          category: DateIdeaModel.categoryOutdoor,
+          createdBy: partner1Uid,
+        ),
+      ];
 
+      // Category filtering
+      final romanceIdeas = ideas.where((i) => i.category == DateIdeaModel.categoryRomance).toList();
+      final foodieIdeas = ideas.where((i) => i.category == DateIdeaModel.categoryFoodie).toList();
+      expect(romanceIdeas.length, equals(1));
+      expect(foodieIdeas.length, equals(1));
+
+      // Weekly pick exclusivity: only one weekly pick active
+      final initialWeeklyPick = ideas.where((i) => i.isWeeklyPick).toList();
+      expect(initialWeeklyPick.length, equals(1));
+      expect(initialWeeklyPick.first.id, equals('date_idea_01'));
+
+      // Reassigning weekly pick to idea 2
+      final updatedIdeas = ideas.map((i) {
+        return i.id == 'date_idea_02' ? i.copyWith(isWeeklyPick: true) : i.copyWith(isWeeklyPick: false);
+      }).toList();
+      final activeWeeklyPick = updatedIdeas.where((i) => i.isWeeklyPick).toList();
+      expect(activeWeeklyPick.length, equals(1));
+      expect(activeWeeklyPick.first.id, equals('date_idea_02'));
+
+      // Completion toggle
+      var dateIdea = ideas.first;
       expect(dateIdea.isCompleted, isFalse);
       expect(dateIdea.completedAt, isNull);
 
@@ -456,7 +497,90 @@ void main() {
       expect(savingsGoal.isTargetReached, isTrue);
     });
 
-    test('8. Private Vault & Cheatsheet: PBKDF2 key derivation, AES-256-GCM encryption/decryption, tampered payload rejection, and cheatsheet serialization', () async {
+    test('8. Shared Memories, Time Capsules & Wishlist: photo album, unlock date countdown, and wishlist purchase toggle', () {
+      final now = DateTime(2026, 11, 4, 18, 0);
+
+      // Part A: Memory Model with photos and location
+      final memory = MemoryModel(
+        id: 'mem_01',
+        title: 'Our First Trip to Kyoto',
+        date: DateTime(2025, 4, 10),
+        caption: 'Walking through Fushimi Inari gates ⛩️',
+        photoUrls: [
+          'https://firebasestorage.googleapis.com/.../photo1.jpg',
+          'https://firebasestorage.googleapis.com/.../photo2.jpg',
+        ],
+        location: 'Kyoto, Japan',
+        createdBy: partner1Uid,
+        createdAt: now,
+      );
+
+      final memMap = memory.toMap();
+      final restoredMemory = MemoryModel.fromMap('mem_01', memMap);
+      expect(restoredMemory.title, equals('Our First Trip to Kyoto'));
+      expect(restoredMemory.photoUrls.length, equals(2));
+      expect(restoredMemory.location, equals('Kyoto, Japan'));
+      expect(restoredMemory.createdBy, equals(partner1Uid));
+
+      // Part B: Time Capsule with unlockDate and concealment
+      final futureUnlock = now.add(const Duration(days: 365));
+      final lockedCapsule = TimeCapsuleModel(
+        id: 'tc_01',
+        title: 'Open on our 2nd Anniversary',
+        unlockDate: futureUnlock,
+        photoUrls: ['https://firebasestorage.googleapis.com/.../secret.jpg'],
+        message: 'A secret letter for future us ❤️',
+        createdBy: partner1Uid,
+        createdAt: now,
+      );
+
+      // Cannot open before unlock date
+      expect(lockedCapsule.canOpen(at: now), isFalse);
+      expect(lockedCapsule.isOpened, isFalse);
+      expect(lockedCapsule.timeRemaining(at: now).inDays, equals(365));
+
+      // Unlocks when target date arrives or passes
+      final unlockedDate = futureUnlock.add(const Duration(hours: 1));
+      expect(lockedCapsule.canOpen(at: unlockedDate), isTrue);
+
+      // Opened capsule remains permanently open
+      final openedCapsule = lockedCapsule.open(openedAt: unlockedDate);
+      expect(openedCapsule.isOpened, isTrue);
+      expect(openedCapsule.canOpen(at: now), isTrue);
+      expect(openedCapsule.openedAt, equals(unlockedDate));
+
+      // Part C: Shared Wishlist
+      final wish = WishModel(
+        id: 'wish_01',
+        title: 'Espresso Machine for our Kitchen',
+        description: 'Barista quality with milk frother',
+        estimatedPrice: 499.99,
+        category: 'Home',
+        createdBy: partner2Uid,
+        createdAt: now,
+      );
+
+      expect(wish.isPurchased, isFalse);
+      expect(wish.purchasedBy, isNull);
+
+      final purchasedWish = wish.copyWith(
+        isPurchased: true,
+        purchasedBy: partner1Uid,
+      );
+      expect(purchasedWish.isPurchased, isTrue);
+      expect(purchasedWish.purchasedBy, equals(partner1Uid));
+
+      // Serialization round-trip
+      final wishMap = purchasedWish.toMap();
+      final restoredWish = WishModel.fromMap('wish_01', wishMap);
+      expect(restoredWish.title, equals('Espresso Machine for our Kitchen'));
+      expect(restoredWish.estimatedPrice, equals(499.99));
+      expect(restoredWish.category, equals('Home'));
+      expect(restoredWish.isPurchased, isTrue);
+      expect(restoredWish.purchasedBy, equals(partner1Uid));
+    });
+
+    test('9. Private Vault & Cheatsheet: PBKDF2 key derivation, AES-256-GCM encryption/decryption, tampered payload rejection, and cheatsheet serialization', () async {
       final cryptoService = VaultCryptoService();
       const pin = '839201';
       const salt = 'couple_salt_c1_2026';
@@ -526,7 +650,7 @@ void main() {
       expect(restoredSheet.favoriteFlowers, equals('White Peonies and Pink Tulips'));
     });
 
-    test('9. Home Screen Glance Quad-Sync: Format milestone, daily prompt status pill, top tasks, and execute syncAllWidgets', () async {
+    test('10. Home Screen Glance Quad-Sync: Format milestone, daily prompt status pill, top tasks, and execute syncAllWidgets', () async {
       final now = DateTime(2026, 11, 4);
 
       // Format couple milestone
