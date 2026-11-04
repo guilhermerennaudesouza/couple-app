@@ -107,8 +107,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     return 'partner_uid';
   }
 
-  Future<void> _checkSecuritySetup() async {
-    final coupleId = _getActiveCoupleId();
+  Future<void> _checkSecuritySetup([String? explicitCoupleId]) async {
+    final coupleId = (explicitCoupleId != null && explicitCoupleId.isNotEmpty)
+        ? explicitCoupleId
+        : _getActiveCoupleId();
     if (coupleId.isEmpty) return;
 
     try {
@@ -131,15 +133,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   Future<String> _getOrCreateSalt(String coupleId) async {
-    final saltKey = 'vault_salt_$coupleId';
-    String? salt = await _secureStorage.read(key: saltKey);
-    if (salt == null || salt.isEmpty) {
-      final random = Random.secure();
-      final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-      salt = base64Encode(bytes);
-      await _secureStorage.write(key: saltKey, value: salt);
-    }
-    return salt;
+    // Deterministic salt tied to the unique coupleId ensures:
+    // 1. Cross-device consistency between partners
+    // 2. Data recovery after app re-installation
+    // 3. Unique rainbow-table protection per couple space (100k PBKDF2 iterations)
+    return 'krivo_vault_salt_$coupleId';
   }
 
   void _onDigitPressed(String digit) {
@@ -207,6 +205,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
               );
             }
           } catch (e) {
+            if (!mounted) return;
             setState(() {
               _pinErrorMessage = 'Failed to derive key. Please try again.';
               _enteredPin = '';
@@ -214,6 +213,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
             });
           }
         } else {
+          if (!mounted) return;
           setState(() {
             _pinErrorMessage = 'PINs do not match. Please start over.';
             _enteredPin = '';
@@ -235,6 +235,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         final derivedKeyBytes =
             await _cryptoService.exportKeyBytes(derivedKey);
         if (derivedKeyBytes != storedKey) {
+          if (!mounted) return;
           setState(() {
             _pinErrorMessage = 'Incorrect PIN. Please try again.';
             _enteredPin = '';
@@ -260,6 +261,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _pinErrorMessage = 'Unlock error: $e';
         _enteredPin = '';
@@ -331,6 +333,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<String?>>(currentCoupleIdProvider, (previous, next) {
+      final id = next.valueOrNull;
+      if (id != null && id.isNotEmpty) {
+        _checkSecuritySetup(id);
+      }
+    });
+
     final activeCoupleId = _getActiveCoupleId();
     final coupleAsync = activeCoupleId.isNotEmpty
         ? ref.watch(coupleStreamProvider(activeCoupleId))
@@ -857,7 +866,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       isScrollControlled: true,
       builder: (bottomSheetContext) {
         return StatefulBuilder(
-          builder: (context, setSheetState) {
+          builder: (sheetContext, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -865,10 +874,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 left: 20,
                 right: 20,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1024,7 +1034,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   ),
                 ],
               ),
-            );
+            ),
+          );
           },
         );
       },
@@ -1043,7 +1054,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       isScrollControlled: true,
       builder: (bottomSheetContext) {
         return StatefulBuilder(
-          builder: (context, setSheetState) {
+          builder: (sheetContext, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -1172,6 +1183,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                   Navigator.pop(bottomSheetContext);
                                 }
 
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
@@ -1181,12 +1193,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                   ),
                                 );
                               } catch (e) {
-                                setSheetState(() => isSaving = false);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error saving secret: $e'),
-                                  ),
-                                );
+                                if (Navigator.canPop(bottomSheetContext)) {
+                                  setSheetState(() => isSaving = false);
+                                }
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error saving secret: $e'),
+                                    ),
+                                  );
+                                }
                               }
                             },
                       child: isSaving
@@ -1488,7 +1504,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       isScrollControlled: true,
       builder: (sheetCtx) {
         return StatefulBuilder(
-          builder: (context, setSheetState) {
+          builder: (sheetContext, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -1626,6 +1642,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                   Navigator.pop(sheetCtx);
                                 }
 
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Cheatsheet saved 💕'),
@@ -1633,12 +1650,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                   ),
                                 );
                               } catch (e) {
-                                setSheetState(() => isSaving = false);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error saving: $e'),
-                                  ),
-                                );
+                                if (Navigator.canPop(sheetCtx)) {
+                                  setSheetState(() => isSaving = false);
+                                }
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error saving: $e'),
+                                    ),
+                                  );
+                                }
                               }
                             },
                       child: isSaving

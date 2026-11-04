@@ -133,6 +133,22 @@ void main() {
       );
       expect(decrypted, equals(message));
     });
+
+    test('Deterministic couple space salt derives identical key on both partners devices', () async {
+      const coupleId = 'couple_abc_123';
+      const sharedSalt = 'krivo_vault_salt_$coupleId';
+      const masterPin = '739102';
+
+      // Device A (Partner 1)
+      final keyPartner1 = await cryptoService.deriveKey(pin: masterPin, salt: sharedSalt);
+      final payload = await cryptoService.encrypt(plaintext: 'Joint banking PIN: 9988', key: keyPartner1);
+
+      // Device B (Partner 2) using same agreed PIN and couple space salt
+      final keyPartner2 = await cryptoService.deriveKey(pin: masterPin, salt: sharedSalt);
+      final decryptedByPartner2 = await cryptoService.decrypt(payload: payload, key: keyPartner2);
+
+      expect(decryptedByPartner2, equals('Joint banking PIN: 9988'));
+    });
   });
 
   group('EncryptedVaultPayload tests', () {

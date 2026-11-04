@@ -69,8 +69,8 @@ class CheatsheetRepository {
     try {
       await docRef.set(cheatsheet.toMap(), SetOptions(merge: true));
     } catch (e) {
-      debugPrint('CheatsheetRepository.saveCheatsheet error / offline: $e');
-      await docRef.set(cheatsheet.toMap(), SetOptions(merge: true));
+      debugPrint('CheatsheetRepository.saveCheatsheet error: $e');
+      rethrow;
     }
   }
 }

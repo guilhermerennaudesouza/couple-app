@@ -45,8 +45,8 @@ class VaultRepository {
     try {
       await docRef.set(itemToSave.toMap(), SetOptions(merge: true));
     } catch (e) {
-      debugPrint('VaultRepository.saveVaultItem error / offline: $e');
-      await docRef.set(itemToSave.toMap(), SetOptions(merge: true));
+      debugPrint('VaultRepository.saveVaultItem error: $e');
+      rethrow;
     }
   }
 
@@ -56,8 +56,8 @@ class VaultRepository {
     try {
       await docRef.delete();
     } catch (e) {
-      debugPrint('VaultRepository.deleteVaultItem error / offline: $e');
-      await docRef.delete();
+      debugPrint('VaultRepository.deleteVaultItem error: $e');
+      rethrow;
     }
   }
 }
