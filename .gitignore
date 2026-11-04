@@ -1,0 +1,6 @@
+﻿*.apk
+*.xapk
+scratch/
+.superpowers/sdd/
+build/
+.dart_tool/
