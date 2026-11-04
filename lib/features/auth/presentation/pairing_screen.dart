@@ -41,6 +41,18 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _bootstrapAnonymousAuth();
+  }
+
+  Future<void> _bootstrapAnonymousAuth() async {
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+        if (mounted) setState(() {});
+      }
+    } catch (e) {
+      debugPrint('PairingScreen anonymous auth error: $e');
+    }
   }
 
   @override
@@ -55,8 +67,12 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   late final String _fallbackUid = 'user_${DateTime.now().millisecondsSinceEpoch}';
 
   String _getEffectiveUid() {
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? _fallbackUid;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      return user?.uid ?? _fallbackUid;
+    } catch (_) {
+      return _fallbackUid;
+    }
   }
 
   Future<void> _handleCreateCouple() async {

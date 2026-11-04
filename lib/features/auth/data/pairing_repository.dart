@@ -27,7 +27,7 @@ class PairingRepository {
         _storage = storage ?? const FlutterSecureStorage();
 
   static String generateInviteCode() {
-    final random = Random();
+    final random = Random.secure();
     final code = 100000 + random.nextInt(900000);
     return code.toString();
   }

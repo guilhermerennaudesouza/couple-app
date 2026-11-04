@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
+import '../../notes/presentation/notes_screen.dart';
 import '../data/daily_question_repository.dart';
 import '../domain/daily_question_model.dart';
 
@@ -137,6 +138,20 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sticky_note_2_rounded, color: AppTheme.primaryRose),
+            tooltip: 'Love Notes & Sticky Wall',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => NotesScreen(
+                    coupleId: activeCoupleId,
+                    currentUid: _getEffectiveUid(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline_rounded),
             tooltip: 'How Dual Reveal Works',

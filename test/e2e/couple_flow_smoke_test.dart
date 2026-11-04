@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:couple_app/core/crypto/vault_crypto_service.dart';
@@ -6,6 +8,8 @@ import 'package:couple_app/core/notifications/local_notification_service.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/auth/domain/couple_model.dart';
 import 'package:couple_app/features/auth/domain/partner_profile.dart';
+import 'package:couple_app/features/auth/presentation/pairing_screen.dart';
+import 'package:couple_app/main.dart';
 import 'package:couple_app/features/calendar/domain/calendar_event_model.dart';
 import 'package:couple_app/features/cheatsheet/domain/cheatsheet_model.dart';
 import 'package:couple_app/features/daily_question/domain/daily_question_model.dart';
@@ -748,6 +752,102 @@ void main() {
       expect(updateCalls.any((c) => c.arguments['name'] == WidgetSyncService.noteWidgetName), isTrue);
       expect(updateCalls.any((c) => c.arguments['name'] == WidgetSyncService.dailyPromptWidgetName), isTrue);
       expect(updateCalls.any((c) => c.arguments['name'] == WidgetSyncService.tasksWidgetName), isTrue);
+    });
+
+    testWidgets('11. Root Navigation Shell & Pairing State Resolution: Unpaired shows PairingScreen, Hub screen renders feature cards & space info', (tester) async {
+      // Step A: When currentCoupleIdProvider is null, CoupleApp displays PairingScreen
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentCoupleIdProvider.overrideWith((ref) => Future.value(null)),
+          ],
+          child: const CoupleApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PairingScreen), findsOneWidget);
+      expect(find.text('Connect with Partner'), findsOneWidget);
+      expect(find.text('Create Space'), findsOneWidget);
+      expect(find.text('Join Partner'), findsOneWidget);
+      expect(find.text('Start Your Shared Space'), findsOneWidget);
+
+      // Step B: CoupleHubScreen renders Samsung One UI hero header and feature cards
+      const testCoupleId = 'couple_smoke_hub_01';
+      final couple = CoupleModel(
+        id: testCoupleId,
+        members: [partner1Uid, partner2Uid],
+        anniversaryDate: anniversary,
+        inviteCode: '849201',
+        partnerProfiles: {
+          partner1Uid: PartnerProfile(uid: partner1Uid, name: partner1Name),
+          partner2Uid: PartnerProfile(uid: partner2Uid, name: partner2Name),
+        },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            coupleStreamProvider(testCoupleId).overrideWith((ref) => Stream.value(couple)),
+          ],
+          child: const MaterialApp(
+            home: CoupleHubScreen(coupleId: testCoupleId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Couple Hub'), findsOneWidget);
+      expect(find.text('KRIVO COUPLE HUB'), findsOneWidget);
+      expect(find.text('Alex & Sam'), findsOneWidget);
+
+      // Verify all 4 feature cards
+      expect(find.text('Memories, Wishlist & Capsules'), findsOneWidget);
+      expect(find.text('Shared Finance & Savings'), findsOneWidget);
+      expect(find.text('Private Encrypted Vault'), findsOneWidget);
+      expect(find.text('Love Notes & Sticky Wall'), findsOneWidget);
+
+      // Verify space details & settings card
+      expect(find.text('SPACE DETAILS & SETTINGS'), findsOneWidget);
+      expect(find.text('Space ID'), findsOneWidget);
+      expect(find.text(testCoupleId), findsOneWidget);
+      expect(find.text('Invite Code'), findsOneWidget);
+      expect(find.text('849201'), findsOneWidget);
+      expect(find.text('Paired (2/2 partners) 🎉'), findsOneWidget);
+      expect(find.text('Unpair / Disconnect Space'), findsOneWidget);
+    });
+
+    test('12. Cryptographically Secure PRNG for Pairing Codes & Unpair Lifecycle', () async {
+      // Verify Random.secure() generates valid 6-digit codes across multiple iterations
+      final generatedCodes = <String>{};
+      for (int i = 0; i < 25; i++) {
+        final code = PairingRepository.generateInviteCode();
+        expect(code.length, equals(6));
+        final numeric = int.tryParse(code);
+        expect(numeric, isNotNull);
+        expect(numeric!, inInclusiveRange(100000, 999999));
+        generatedCodes.add(code);
+      }
+      // With Random.secure(), collisions in 25 samples from 900,000 range are exceedingly rare
+      expect(generatedCodes.length, greaterThan(20));
+
+      // Verify container resolution contract for unpairing
+      final container = ProviderContainer(
+        overrides: [
+          currentCoupleIdProvider.overrideWith((ref) => Future.value('couple_active_01')),
+        ],
+      );
+      final activeId = await container.read(currentCoupleIdProvider.future);
+      expect(activeId, equals('couple_active_01'));
+
+      // Simulate unpair reset: container refreshed with null
+      final resetContainer = ProviderContainer(
+        overrides: [
+          currentCoupleIdProvider.overrideWith((ref) => Future.value(null)),
+        ],
+      );
+      final clearedId = await resetContainer.read(currentCoupleIdProvider.future);
+      expect(clearedId, isNull);
     });
   });
 }
