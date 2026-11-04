@@ -72,9 +72,9 @@ class WidgetSyncService {
     required String partnerName,
   }) {
     final current = today ?? DateTime.now();
-    // Normalize to date boundaries (midnight) to prevent timezone drift
-    final d1 = DateTime(anniversary.year, anniversary.month, anniversary.day);
-    final d2 = DateTime(current.year, current.month, current.day);
+    // Normalize to UTC date boundaries (midnight) to prevent timezone and DST drift
+    final d1 = DateTime.utc(anniversary.year, anniversary.month, anniversary.day);
+    final d2 = DateTime.utc(current.year, current.month, current.day);
     final daysTogether = d2.difference(d1).inDays;
 
     return {
@@ -307,9 +307,11 @@ class WidgetSyncService {
     if (couple != null) {
       String partnerName = 'Partner';
       if (myUid != null) {
-        partnerName = couple.getPartnerProfile(myUid)?.displayName ?? 'Partner';
+        final name = couple.getPartnerProfile(myUid)?.displayName;
+        partnerName = (name != null && name.trim().isNotEmpty) ? name.trim() : 'Partner';
       } else if (couple.partnerProfiles.isNotEmpty) {
-        partnerName = couple.partnerProfiles.values.first.displayName;
+        final name = couple.partnerProfiles.values.first.displayName;
+        partnerName = name.trim().isNotEmpty ? name.trim() : 'Partner';
       }
       await syncCoupleStats(
         anniversary: couple.anniversaryDate,

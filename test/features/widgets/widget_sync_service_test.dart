@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:couple_app/features/auth/domain/couple_model.dart';
 import 'package:couple_app/features/auth/domain/partner_profile.dart';
@@ -46,6 +47,19 @@ void main() {
       );
       expect(stats['daysTogether'], equals(0));
       expect(stats['formattedDays'], equals('0 days'));
+    });
+
+    test('prevents DST drift across daylight saving time transition dates', () {
+      // Spring forward transition typically occurs in March
+      final springAnniversary = DateTime(2024, 3, 9, 23, 0);
+      final springToday = DateTime(2024, 3, 11, 1, 0);
+      final stats = WidgetSyncService.formatCoupleStats(
+        anniversary: springAnniversary,
+        today: springToday,
+        partnerName: 'Alex',
+      );
+      // Calendar day difference between March 9 and March 11 is exactly 2 days
+      expect(stats['daysTogether'], equals(2));
     });
   });
 
@@ -191,39 +205,124 @@ void main() {
   });
 
   group('WidgetSyncService platform sync methods', () {
-    test('syncCoupleStats executes gracefully in test harness', () async {
-      await expectLater(
-        WidgetSyncService.syncCoupleStats(
-          anniversary: DateTime(2024, 1, 1),
-          partnerName: 'Sweetheart',
-        ),
-        completes,
+    final List<MethodCall> channelCalls = [];
+    const channel1 = MethodChannel('home_widget');
+    const channel2 = MethodChannel('es.antonborri.home_widget');
+
+    setUp(() {
+      channelCalls.clear();
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel1, (MethodCall call) async {
+        channelCalls.add(call);
+        return true;
+      });
+      messenger.setMockMethodCallHandler(channel2, (MethodCall call) async {
+        channelCalls.add(call);
+        return true;
+      });
+    });
+
+    tearDown(() {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel1, null);
+      messenger.setMockMethodCallHandler(channel2, null);
+    });
+
+    test('syncCoupleStats dispatches correct widget data and triggers CoupleGlanceWidget update', () async {
+      await WidgetSyncService.syncCoupleStats(
+        anniversary: DateTime(2024, 1, 1),
+        partnerName: 'Sweetheart',
+        today: DateTime(2024, 1, 11),
+      );
+
+      final saveCalls =
+          channelCalls.where((c) => c.method == 'saveWidgetData').toList();
+      final updateCalls =
+          channelCalls.where((c) => c.method == 'updateWidget').toList();
+
+      expect(
+        saveCalls.any((c) =>
+            c.arguments['id'] == 'days_together' && c.arguments['data'] == 10),
+        isTrue,
+      );
+      expect(
+        saveCalls.any((c) =>
+            c.arguments['id'] == 'partner_name' &&
+            c.arguments['data'] == 'Sweetheart'),
+        isTrue,
+      );
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'CoupleGlanceWidget'),
+        isTrue,
       );
     });
 
-    test('syncDailyPrompt executes gracefully in test harness', () async {
-      await expectLater(
-        WidgetSyncService.syncDailyPrompt(
-          prompt: 'Where should our next date be?',
-          isAnsweredByMe: true,
-          isRevealed: false,
-          isAnsweredByPartner: false,
-        ),
-        completes,
+    test('syncDailyPrompt dispatches prompt text, status, and triggers DailyPromptGlanceWidget', () async {
+      await WidgetSyncService.syncDailyPrompt(
+        prompt: 'Where should our next date be?',
+        isAnsweredByMe: true,
+        isRevealed: false,
+        isAnsweredByPartner: false,
+      );
+
+      final saveCalls =
+          channelCalls.where((c) => c.method == 'saveWidgetData').toList();
+      final updateCalls =
+          channelCalls.where((c) => c.method == 'updateWidget').toList();
+
+      expect(
+        saveCalls.any((c) => c.arguments['id'] == 'prompt_text'),
+        isTrue,
+      );
+      expect(
+        saveCalls.any((c) =>
+            c.arguments['id'] == 'prompt_status' &&
+            c.arguments['data'] == 'Waiting for partner... 🔒'),
+        isTrue,
+      );
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'DailyPromptGlanceWidget'),
+        isTrue,
       );
     });
 
-    test('syncTopTasks executes gracefully in test harness', () async {
+    test('syncTopTasks dispatches task rows, count, and triggers TasksGlanceWidget', () async {
       final tasks = [
         const TaskModel(id: '1', title: 'Task 1', isCompleted: false),
+        const TaskModel(id: '2', title: 'Task 2', isCompleted: true),
       ];
-      await expectLater(
-        WidgetSyncService.syncTopTasks(tasks: tasks),
-        completes,
+      await WidgetSyncService.syncTopTasks(tasks: tasks);
+
+      final saveCalls =
+          channelCalls.where((c) => c.method == 'saveWidgetData').toList();
+      final updateCalls =
+          channelCalls.where((c) => c.method == 'updateWidget').toList();
+
+      expect(
+        saveCalls.any((c) =>
+            c.arguments['id'] == 'task_1_title' &&
+            c.arguments['data'] == 'Task 1'),
+        isTrue,
+      );
+      expect(
+        saveCalls.any((c) =>
+            c.arguments['id'] == 'task_1_done' &&
+            c.arguments['data'] == false),
+        isTrue,
+      );
+      expect(
+        saveCalls.any((c) => c.arguments['id'] == 'remaining_tasks_count'),
+        isTrue,
+      );
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'TasksGlanceWidget'),
+        isTrue,
       );
     });
 
-    test('syncAllWidgets executes gracefully with full and partial models', () async {
+    test('syncAllWidgets executes batch dispatch across all registered widgets', () async {
       final couple = CoupleModel(
         id: 'c1',
         members: ['u1', 'u2'],
@@ -267,27 +366,31 @@ void main() {
         const TaskModel(id: 't2', title: 'Make dinner', isCompleted: false),
       ];
 
-      // Test with all models present
-      await expectLater(
-        WidgetSyncService.syncAllWidgets(
-          couple: couple,
-          pinnedNote: note,
-          todayQuestion: question,
-          tasks: tasks,
-          myUid: 'u1',
-        ),
-        completes,
+      await WidgetSyncService.syncAllWidgets(
+        couple: couple,
+        pinnedNote: note,
+        todayQuestion: question,
+        tasks: tasks,
+        myUid: 'u1',
       );
 
-      // Test with nullable defaults (e.g. no pinned note, no today question)
-      await expectLater(
-        WidgetSyncService.syncAllWidgets(
-          couple: null,
-          pinnedNote: null,
-          todayQuestion: null,
-          tasks: [],
-        ),
-        completes,
+      final updateCalls =
+          channelCalls.where((c) => c.method == 'updateWidget').toList();
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'CoupleGlanceWidget'),
+        isTrue,
+      );
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'NoteGlanceWidget'),
+        isTrue,
+      );
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'DailyPromptGlanceWidget'),
+        isTrue,
+      );
+      expect(
+        updateCalls.any((c) => c.arguments['name'] == 'TasksGlanceWidget'),
+        isTrue,
       );
     });
   });

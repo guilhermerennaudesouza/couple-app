@@ -66,7 +66,8 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             }
         } catch (_: Throwable) {
             try {
-                prefs.getLong("flutter.days_together", 0L).toInt()
+                val fLong = prefs.getLong("flutter.days_together", -1L)
+                if (fLong != -1L) fLong.toInt() else prefs.getLong("days_together", 0L).toInt()
             } catch (_: Throwable) {
                 0
             }
@@ -80,7 +81,12 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("formatted_days", null)
             ?: if (daysTogether > 0) "$daysTogether days" else "Together"
 
-        val hasData = daysTogether > 0 || partnerName.isNotBlank()
+        val hasData = prefs.contains("flutter.days_together") ||
+            prefs.contains("days_together") ||
+            prefs.contains("flutter.anniversary") ||
+            prefs.contains("anniversary") ||
+            daysTogether > 0 ||
+            partnerName.isNotBlank()
 
         provideContent {
             GlanceTheme {

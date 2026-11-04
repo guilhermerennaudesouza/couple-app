@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFE082"
+    android:background="#FFF1F2"
     android:padding="16dp">
 
     <TextView
@@ -10,8 +10,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:text="Loading Love Note..."
-        android:textColor="#3E312D"
+        android:text="Loading Krivo..."
+        android:textColor="#E11D48"
         android:textSize="14sp"
-        android:textStyle="italic" />
+        android:textStyle="bold" />
 </FrameLayout>

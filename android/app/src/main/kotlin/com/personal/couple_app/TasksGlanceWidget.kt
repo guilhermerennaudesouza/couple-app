@@ -232,6 +232,7 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
             Spacer(modifier = GlanceModifier.width(8.dp))
             Text(
                 text = title,
+                modifier = GlanceModifier.defaultWeight(),
                 style = TextStyle(
                     fontSize = 12.sp,
                     fontWeight = if (isDone) FontWeight.Normal else FontWeight.Medium,
