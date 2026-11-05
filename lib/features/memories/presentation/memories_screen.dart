@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,104 @@ class MemoriesScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<MemoriesScreen> createState() => _MemoriesScreenState();
+}
+
+/// Renders either a Base64-encoded compressed image (free Spark tier)
+/// or a network HTTP URL image with responsive loading and error states.
+Widget buildPhotoThumbnail(
+  String photoUrl, {
+  BoxFit fit = BoxFit.cover,
+  double? width,
+  double? height,
+}) {
+  if (photoUrl.startsWith('data:image') || photoUrl.startsWith('base64:')) {
+    try {
+      final base64Data = photoUrl.contains(',')
+          ? photoUrl.substring(photoUrl.indexOf(',') + 1)
+          : (photoUrl.startsWith('base64:') ? photoUrl.substring(7) : photoUrl);
+      final bytes = base64Decode(base64Data);
+      return Image.memory(
+        bytes,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: AppTheme.surfaceVariantLight,
+          width: width,
+          height: height,
+          child: const Center(
+            child: Icon(Icons.broken_image_rounded, color: AppTheme.textSecondaryLight),
+          ),
+        ),
+      );
+    } catch (_) {
+      return Container(
+        color: AppTheme.surfaceVariantLight,
+        width: width,
+        height: height,
+        child: const Center(
+          child: Icon(Icons.broken_image_rounded, color: AppTheme.textSecondaryLight),
+        ),
+      );
+    }
+  }
+
+  return Image.network(
+    photoUrl,
+    fit: fit,
+    width: width,
+    height: height,
+    errorBuilder: (context, error, stackTrace) => Container(
+      color: AppTheme.surfaceVariantLight,
+      width: width,
+      height: height,
+      child: const Center(
+        child: Icon(Icons.image_not_supported_rounded, color: AppTheme.textSecondaryLight),
+      ),
+    ),
+    loadingBuilder: (context, child, loadingProgress) {
+      if (loadingProgress == null) return child;
+      return Container(
+        color: AppTheme.surfaceVariantLight,
+        width: width,
+        height: height,
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryRose),
+        ),
+      );
+    },
+  );
+}
+
+/// Renders a full-screen interactive zoom photo from Base64 or network URL.
+Widget buildFullscreenPhoto(String photoUrl) {
+  if (photoUrl.startsWith('data:image') || photoUrl.startsWith('base64:')) {
+    try {
+      final base64Data = photoUrl.contains(',')
+          ? photoUrl.substring(photoUrl.indexOf(',') + 1)
+          : (photoUrl.startsWith('base64:') ? photoUrl.substring(7) : photoUrl);
+      final bytes = base64Decode(base64Data);
+      return Image.memory(
+        bytes,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Center(
+          child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
+        ),
+      );
+    } catch (_) {
+      return const Center(
+        child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
+      );
+    }
+  }
+
+  return Image.network(
+    photoUrl,
+    fit: BoxFit.contain,
+    errorBuilder: (context, error, stackTrace) => const Center(
+      child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
+    ),
+  );
 }
 
 class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
@@ -459,24 +558,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             child: SizedBox(
               height: 220,
               width: double.infinity,
-              child: Image.network(
+              child: buildPhotoThumbnail(
                 photos.first,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: AppTheme.surfaceVariantLight,
-                  child: const Center(
-                    child: Icon(Icons.image_not_supported_rounded, color: AppTheme.textSecondaryLight),
-                  ),
-                ),
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: AppTheme.surfaceVariantLight,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryRose),
-                    ),
-                  );
-                },
+                width: double.infinity,
+                height: 220,
               ),
             ),
           ),
@@ -499,24 +585,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
               borderRadius: BorderRadius.circular(14),
               child: SizedBox(
                 width: 200,
-                child: Image.network(
+                child: buildPhotoThumbnail(
                   photoUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppTheme.surfaceVariantLight,
-                    child: const Center(
-                      child: Icon(Icons.image_not_supported_rounded, color: AppTheme.textSecondaryLight),
-                    ),
-                  ),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: AppTheme.surfaceVariantLight,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryRose),
-                      ),
-                    );
-                  },
+                  width: 200,
+                  height: 200,
                 ),
               ),
             ),
@@ -1468,13 +1541,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     minScale: 0.8,
                     maxScale: 3.5,
                     child: Center(
-                      child: Image.network(
-                        photos[index],
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Center(
-                          child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
-                        ),
-                      ),
+                      child: buildFullscreenPhoto(photos[index]),
                     ),
                   );
                 },
@@ -1650,7 +1717,9 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
     final picker = ImagePicker();
     final image = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 70,
     );
     if (image == null) return;
 
@@ -1658,14 +1727,12 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
 
     try {
       final bytes = await image.readAsBytes();
-      final filename = 'mem_${DateTime.now().millisecondsSinceEpoch}_${image.name}';
-      final downloadUrl = await ref
-          .read(memoriesRepositoryProvider)
-          .uploadPhoto(widget.coupleId, bytes, filename);
+      // Compress and store as Base64 data URI directly in Firestore (100% free Spark tier)
+      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       if (mounted) {
         setState(() {
-          _photoUrls.add(downloadUrl);
+          _photoUrls.add(base64String);
           _isUploading = false;
         });
       }
@@ -1673,7 +1740,7 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
       if (mounted) {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Photo upload failed: $e')),
+          SnackBar(content: Text('Photo processing failed: $e')),
         );
       }
     }
@@ -1860,9 +1927,11 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                           child: SizedBox(
                             width: 80,
                             height: 80,
-                            child: Image.network(
+                            child: buildPhotoThumbnail(
                               _photoUrls[index],
                               fit: BoxFit.cover,
+                              width: 80,
+                              height: 80,
                             ),
                           ),
                         ),
@@ -1995,7 +2064,9 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
     final picker = ImagePicker();
     final image = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 70,
     );
     if (image == null) return;
 
@@ -2003,14 +2074,12 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
 
     try {
       final bytes = await image.readAsBytes();
-      final filename = 'capsule_${DateTime.now().millisecondsSinceEpoch}_${image.name}';
-      final downloadUrl = await ref
-          .read(memoriesRepositoryProvider)
-          .uploadPhoto(widget.coupleId, bytes, filename);
+      // Compress and store as Base64 data URI directly in Firestore (100% free Spark tier)
+      final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       if (mounted) {
         setState(() {
-          _photoUrls.add(downloadUrl);
+          _photoUrls.add(base64String);
           _isUploading = false;
         });
       }
@@ -2018,7 +2087,7 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
       if (mounted) {
         setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Photo upload failed: $e')),
+          SnackBar(content: Text('Photo processing failed: $e')),
         );
       }
     }
@@ -2224,9 +2293,11 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                           child: SizedBox(
                             width: 80,
                             height: 80,
-                            child: Image.network(
+                            child: buildPhotoThumbnail(
                               _photoUrls[index],
                               fit: BoxFit.cover,
+                              width: 80,
+                              height: 80,
                             ),
                           ),
                         ),

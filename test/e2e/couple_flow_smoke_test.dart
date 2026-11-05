@@ -526,6 +526,19 @@ void main() {
       expect(restoredMemory.location, equals('Kyoto, Japan'));
       expect(restoredMemory.createdBy, equals(partner1Uid));
 
+      // Part A.2: Base64 Compressed Mobile Photo (100% Free Spark Tier)
+      const base64Photo = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...';
+      final base64Memory = MemoryModel(
+        id: 'mem_b64',
+        title: 'Sunset in Rio',
+        date: DateTime(2026, 1, 1),
+        caption: 'Beautiful sunset together',
+        photoUrls: [base64Photo],
+        createdBy: partner1Uid,
+      );
+      final restoredBase64 = MemoryModel.fromMap('mem_b64', base64Memory.toMap());
+      expect(restoredBase64.photoUrls.first.startsWith('data:image/jpeg;base64,'), isTrue);
+
       // Part B: Time Capsule with unlockDate and concealment
       final futureUnlock = now.add(const Duration(days: 365));
       final lockedCapsule = TimeCapsuleModel(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -77,24 +78,30 @@ class MemoriesRepository {
     await _memoriesCollection(coupleId).doc(memoryId).delete();
   }
 
-  /// Uploads photo bytes to Firebase Storage and returns the public download URL.
+  /// Uploads photo bytes to Firebase Storage if available, or seamlessly returns
+  /// a Base64 Data URI on the free Spark tier (zero cloud storage cost).
   Future<String> uploadPhoto(
     String coupleId,
     Uint8List bytes,
     String filename, {
     String mimeType = 'image/jpeg',
   }) async {
-    final photoRef = _photosStorageRef(coupleId, filename);
-    final metadata = SettableMetadata(
-      contentType: mimeType,
-      customMetadata: {
-        'coupleId': coupleId,
-        'uploadedAt': DateTime.now().toIso8601String(),
-      },
-    );
+    try {
+      final photoRef = _photosStorageRef(coupleId, filename);
+      final metadata = SettableMetadata(
+        contentType: mimeType,
+        customMetadata: {
+          'coupleId': coupleId,
+          'uploadedAt': DateTime.now().toIso8601String(),
+        },
+      );
 
-    await photoRef.putData(bytes, metadata);
-    return await photoRef.getDownloadURL();
+      await photoRef.putData(bytes, metadata);
+      return await photoRef.getDownloadURL();
+    } catch (_) {
+      // Free Spark Tier Fallback: encode as Base64 Data URI for direct Firestore storage
+      return 'data:$mimeType;base64,${base64Encode(bytes)}';
+    }
   }
 
   // ==========================================
