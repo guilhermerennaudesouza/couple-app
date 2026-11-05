@@ -451,17 +451,18 @@ class _ExpensesTab extends ConsumerWidget {
   }
 
   void _confirmSettleUp(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.handshake_rounded, color: AppTheme.primaryRose),
-            SizedBox(width: 8),
-            Text('Settle Up Balance?'),
+            const Icon(Icons.handshake_rounded, color: AppTheme.primaryRose),
+            const SizedBox(width: 8),
+            Text(strings.isPortuguese ? 'Quitar Saldo Pendente?' : 'Settle Up Balance?'),
           ],
         ),
         content: Text(
@@ -572,6 +573,7 @@ class _ExpensesTab extends ConsumerWidget {
     WidgetRef ref,
     FinanceEntry entry,
   ) {
+    final strings = AppStrings.of(context);
     final isPaidByMe = entry.paidBy == myUid;
     final payerDisplayName = isPaidByMe ? 'You' : partnerName;
     final dateStr = DateFormat('MMM d, y').format(entry.date);
@@ -716,7 +718,7 @@ class _ExpensesTab extends ConsumerWidget {
             }
           },
           itemBuilder: (ctx) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
@@ -975,6 +977,7 @@ class _SavingsTab extends ConsumerWidget {
     WidgetRef ref,
     SavingsGoalModel goal,
   ) {
+    final strings = AppStrings.of(context);
     final isReached = goal.isTargetReached || goal.isCompleted;
     final progress = goal.progressRatio;
     final pct = goal.progressPercentage;
@@ -1534,13 +1537,15 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ??
+            (context.isDarkMode ? AppTheme.surfaceDark : Colors.white),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -1946,13 +1951,15 @@ class _CreateSavingsGoalModalState
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ??
+            (context.isDarkMode ? AppTheme.surfaceDark : Colors.white),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -2233,13 +2240,15 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ??
+            (context.isDarkMode ? AppTheme.surfaceDark : Colors.white),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
