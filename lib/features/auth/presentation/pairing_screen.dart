@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/theme/theme_provider.dart';
 
 import '../data/pairing_repository.dart';
 import '../domain/couple_model.dart';
@@ -115,7 +116,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
 
     try {
       final repository = ref.read(pairingRepositoryProvider);
-      final couple = await repository.joinCouple(
+      await repository.joinCouple(
         _joinCodeController.text.trim(),
         _getEffectiveUid(),
         _joinNameController.text.trim(),
@@ -187,6 +188,19 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         title: Text(AppStrings.of(context).pairingTitle),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: 'Theme',
+            icon: Icon(
+              context.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+              color: AppTheme.primaryRose,
+              size: 20,
+            ),
+            onPressed: () {
+              final current = ref.read(themeModeProvider);
+              final next = current == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+              ref.read(themeModeProvider.notifier).setThemeMode(next);
+            },
+          ),
           TextButton.icon(
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.primaryRose,
@@ -197,10 +211,10 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             icon: const Icon(Icons.language_rounded, size: 18),
             label: Text(
               ref.watch(localeProvider).languageCode == 'pt' ? '🇧🇷 PT' : '🇺🇸 EN',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -218,17 +232,17 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         child: TabBarView(
           controller: _tabController,
           children: [
-            _buildCreateTab(),
-            _buildJoinTab(),
+            _buildCreateTab(AppStrings.of(context)),
+            _buildJoinTab(AppStrings.of(context)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCreateTab() {
+  Widget _buildCreateTab(AppStrings strings) {
     if (_createdCouple != null) {
-      return _buildWaitingForPartnerView(_createdCouple!);
+      return _buildWaitingForPartnerView(_createdCouple!, strings);
     }
 
     final formattedDate = DateFormat.yMMMMd().format(_selectedAnniversary);
@@ -247,7 +261,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 16),
             Text(
-              'Start Your Shared Space',
+              strings.pairingTitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -257,7 +271,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Create a private space for just the two of you, backed securely on Firebase Spark tier.',
+              strings.pairingSubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -268,9 +282,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             const SizedBox(height: 32),
             TextFormField(
               controller: _createNameController,
-              decoration: const InputDecoration(
-                labelText: 'Your Name',
-                hintText: 'Enter how your partner calls you',
+              decoration: InputDecoration(
+                labelText: strings.yourNameLabel,
+                hintText: strings.yourNameHint,
                 prefixIcon: Icon(Icons.person_outline_rounded),
               ),
               validator: (value) {
@@ -287,7 +301,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: context.surfaceVariant,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: Theme.of(context).dividerColor.withOpacity(0.2),
@@ -305,7 +319,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Anniversary Date',
+                            strings.anniversaryLabel,
                             style: TextStyle(
                               fontSize: 12,
                               color: context.textSecondary,
@@ -345,8 +359,8 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
-                      'Create Our Couple Space',
+                  : Text(
+                      strings.createSpaceBtn,
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
@@ -356,7 +370,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     );
   }
 
-  Widget _buildWaitingForPartnerView(CoupleModel initialCouple) {
+  Widget _buildWaitingForPartnerView(CoupleModel initialCouple, AppStrings strings) {
     final coupleAsync = ref.watch(coupleStreamProvider(initialCouple.id));
 
     return coupleAsync.when(
@@ -572,7 +586,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     );
   }
 
-  Widget _buildJoinTab() {
+  Widget _buildJoinTab(AppStrings strings) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Form(
@@ -587,7 +601,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 16),
             Text(
-              'Join Your Partner',
+              strings.joinSpaceBtn,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -597,7 +611,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter the 6-digit code shown on your partner’s screen to link your devices.',
+              strings.waitingPartnerBanner,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -608,8 +622,8 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             const SizedBox(height: 32),
             TextFormField(
               controller: _joinNameController,
-              decoration: const InputDecoration(
-                labelText: 'Your Name',
+              decoration: InputDecoration(
+                labelText: strings.yourNameLabel,
                 hintText: 'Enter your name',
                 prefixIcon: Icon(Icons.person_outline_rounded),
               ),
@@ -632,8 +646,8 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 letterSpacing: 8,
                 color: AppTheme.primaryRose,
               ),
-              decoration: const InputDecoration(
-                labelText: '6-Digit Invite Code',
+              decoration: InputDecoration(
+                labelText: strings.enterInviteCodeLabel,
                 hintText: '000000',
                 counterText: '',
                 prefixIcon: Icon(Icons.pin_outlined),

@@ -331,6 +331,12 @@ extension ThemeContextExt on BuildContext {
   /// Card surface color adapted to light/dark mode.
   Color get cardColor => Theme.of(this).cardTheme.color ?? (isDarkMode ? AppTheme.surfaceDark : AppTheme.surfaceLight);
 
+  /// Surface color adapted to light/dark mode.
+  Color get surface => isDarkMode ? AppTheme.surfaceDark : AppTheme.surfaceLight;
+
+  /// Surface variant color adapted to light/dark mode.
+  Color get surfaceVariant => isDarkMode ? AppTheme.surfaceVariantDark : AppTheme.surfaceVariantLight;
+
   /// Outline border color adapted to light/dark mode.
   Color get outlineColor => isDarkMode ? AppTheme.outlineDark : AppTheme.outlineLight;
 }

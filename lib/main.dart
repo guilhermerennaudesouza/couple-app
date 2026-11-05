@@ -11,7 +11,6 @@ import 'package:couple_app/core/notifications/local_notification_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/core/theme/theme_provider.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
-import 'package:couple_app/features/auth/domain/couple_model.dart';
 import 'package:couple_app/features/auth/presentation/pairing_screen.dart';
 import 'package:couple_app/features/calendar/presentation/calendar_screen.dart';
 import 'package:couple_app/features/daily_question/presentation/daily_question_screen.dart';
@@ -85,7 +84,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
         if (coupleId == null || coupleId.trim().isEmpty) {
           return PairingScreen(
             onPairedSuccess: () {
-              ref.refresh(currentCoupleIdProvider);
+              ref.invalidate(currentCoupleIdProvider);
             },
           );
         }
@@ -179,7 +178,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => ref.refresh(currentCoupleIdProvider),
+                  onPressed: () => ref.invalidate(currentCoupleIdProvider),
                   child: Text(strings.retry),
                 ),
               ],
@@ -595,7 +594,7 @@ class CoupleHubScreen extends ConsumerWidget {
 
     if (confirmed == true) {
       await ref.read(pairingRepositoryProvider).clearCurrentCoupleId();
-      ref.refresh(currentCoupleIdProvider);
+      ref.invalidate(currentCoupleIdProvider);
     }
   }
 }

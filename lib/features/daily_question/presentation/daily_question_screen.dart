@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../notes/presentation/notes_screen.dart';
@@ -212,7 +213,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         return RefreshIndicator(
           color: AppTheme.primaryRose,
           onRefresh: () async {
-            ref.refresh(todayDailyQuestionProvider(coupleId));
+            ref.invalidate(todayDailyQuestionProvider(coupleId));
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -222,7 +223,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               children: [
                 _buildDateHeader(dq.date),
                 const SizedBox(height: 12),
-                _buildPromptCard(dq.prompt),
+                _buildPromptCard(DailyQuestionRepository.translatePrompt(dq.prompt, languageCode: ref.watch(localeProvider).languageCode)),
                 const SizedBox(height: 20),
                 if (!hasAnswered) ...[
                   // State 1: Prompt displayed, user has not answered
@@ -307,8 +308,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.surfaceLight,
-            AppTheme.surfaceVariantLight.withOpacity(0.7),
+            context.cardColor,
+            context.surfaceVariant.withOpacity(0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1067,7 +1068,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceVariantLight,
+                  color: context.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
@@ -461,7 +460,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
       return _buildSmallChip(
         icon: Icons.person_outline_rounded,
         label: 'Shared',
-        color: Colors.grey.shade100,
+        color: context.surfaceVariant,
         textColor: context.textSecondary,
       );
     }
@@ -486,7 +485,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     Color fg;
 
     if (isDone) {
-      bg = Colors.grey.shade100;
+      bg = context.surfaceVariant;
       fg = context.textSecondary;
     } else if (isOverdue) {
       bg = AppTheme.errorRed.withOpacity(0.12);

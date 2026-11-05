@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cryptography/cryptography.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -51,8 +50,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   bool _isSettingUpPin = false;
   String? _pinErrorMessage;
   bool _hasStoredPin = false;
-  bool _isBiometricSupported = false;
-
+  
   // Vault Feed State
   String _selectedCategory = 'All';
 
@@ -118,13 +116,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           await _secureStorage.read(key: 'vault_cached_key_$coupleId');
       final hasPinFlag =
           await _secureStorage.read(key: 'vault_has_pin_$coupleId');
-      final isSupported = await _localAuth.isDeviceSupported();
+      await _localAuth.isDeviceSupported();
 
       if (mounted) {
         setState(() {
           _hasStoredPin = storedKey != null || hasPinFlag == 'true';
           _isSettingUpPin = !_hasStoredPin;
-          _isBiometricSupported = isSupported;
         });
       }
     } catch (e) {
@@ -544,7 +541,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
               ],
               const SizedBox(height: 28),
               // Numeric Keypad
-              _buildPinKeypad(),
+              _buildPinKeypad(context),
             ],
           ),
         ),
@@ -552,24 +549,24 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     );
   }
 
-  Widget _buildPinKeypad() {
+  Widget _buildPinKeypad(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 280),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: ['1', '2', '3'].map(_buildKeypadButton).toList(),
+            children: ['1', '2', '3'].map((d) => _buildKeypadButton(context, d)).toList(),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: ['4', '5', '6'].map(_buildKeypadButton).toList(),
+            children: ['4', '5', '6'].map((d) => _buildKeypadButton(context, d)).toList(),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: ['7', '8', '9'].map(_buildKeypadButton).toList(),
+            children: ['7', '8', '9'].map((d) => _buildKeypadButton(context, d)).toList(),
           ),
           const SizedBox(height: 12),
           Row(
@@ -590,7 +587,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       )
                     : const SizedBox.shrink(),
               ),
-              _buildKeypadButton('0'),
+              _buildKeypadButton(context, '0'),
               // Backspace
               SizedBox(
                 width: 64,
@@ -611,7 +608,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     );
   }
 
-  Widget _buildKeypadButton(String digit) {
+  Widget _buildKeypadButton(BuildContext context, String digit) {
     return InkWell(
       onTap: () => _onDigitPressed(digit),
       borderRadius: BorderRadius.circular(32),
@@ -620,7 +617,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         height: 64,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppTheme.surfaceVariantLight,
+          color: context.surfaceVariant,
         ),
         alignment: Alignment.center,
         child: Text(
@@ -807,7 +804,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceVariantLight,
+                  color: context.surfaceVariant,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -942,12 +939,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     children: [
                       Chip(
                         label: Text(item.category),
-                        backgroundColor: AppTheme.surfaceVariantLight,
+                        backgroundColor: context.surfaceVariant,
                         visualDensity: VisualDensity.compact,
                       ),
                       Chip(
                         label: Text(item.type.toUpperCase()),
-                        backgroundColor: AppTheme.surfaceVariantLight,
+                        backgroundColor: context.surfaceVariant,
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
@@ -966,7 +963,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceVariantLight,
+                      color: context.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppTheme.outlineLight),
                     ),

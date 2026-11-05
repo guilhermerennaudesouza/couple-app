@@ -1119,7 +1119,7 @@ class _DateIdeasTab extends ConsumerWidget {
               selected: isSelected,
               showCheckmark: false,
               selectedColor: AppTheme.primaryRose.withOpacity(0.18),
-              backgroundColor: AppTheme.surfaceVariantLight,
+              backgroundColor: context.surfaceVariant,
               labelStyle: TextStyle(
                 color: isSelected ? AppTheme.primaryRoseDark : context.textPrimary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -1746,7 +1746,7 @@ class _CreateBallotBottomSheetState
                 labelText: 'Question or Decision Title',
                 hintText: 'e.g. Which movie should we watch?',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,
@@ -1772,7 +1772,7 @@ class _CreateBallotBottomSheetState
                         decoration: InputDecoration(
                           labelText: 'Option ${i + 1}',
                           filled: true,
-                          fillColor: AppTheme.surfaceVariantLight,
+                          fillColor: context.surfaceVariant,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -1940,7 +1940,7 @@ class _AddDateIdeaBottomSheetState
                 labelText: 'Date Title',
                 hintText: 'e.g. Cooking Pasta from Scratch',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,
@@ -1957,7 +1957,7 @@ class _AddDateIdeaBottomSheetState
                 labelText: 'Description (Optional)',
                 hintText: 'Bring wine, turn on jazz music...',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,

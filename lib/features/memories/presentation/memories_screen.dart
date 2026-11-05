@@ -52,7 +52,7 @@ Widget buildPhotoThumbnail(
         width: width,
         height: height,
         errorBuilder: (context, error, stackTrace) => Container(
-          color: AppTheme.surfaceVariantLight,
+          color: context.surfaceVariant,
           width: width,
           height: height,
           child: Center(
@@ -62,7 +62,7 @@ Widget buildPhotoThumbnail(
       );
     } catch (_) {
       return Container(
-        color: AppTheme.surfaceVariantLight,
+        color: AppTheme.surfaceVariantDark,
         width: width,
         height: height,
         child: Center(
@@ -78,7 +78,7 @@ Widget buildPhotoThumbnail(
     width: width,
     height: height,
     errorBuilder: (context, error, stackTrace) => Container(
-      color: AppTheme.surfaceVariantLight,
+      color: context.surfaceVariant,
       width: width,
       height: height,
       child: Center(
@@ -88,7 +88,7 @@ Widget buildPhotoThumbnail(
     loadingBuilder: (context, child, loadingProgress) {
       if (loadingProgress == null) return child;
       return Container(
-        color: AppTheme.surfaceVariantLight,
+        color: context.surfaceVariant,
         width: width,
         height: height,
         child: Center(
@@ -1084,7 +1084,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceVariantLight,
+                  color: context.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

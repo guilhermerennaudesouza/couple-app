@@ -175,7 +175,7 @@ class DailyQuestionRepository {
       return DailyQuestionModel.fromMap(snapshot.id, snapshot.data()!);
     }
 
-    final prompt = getPromptForDate(dateStr);
+    final prompt = getPromptForDate(dateStr, languageCode: 'pt');
     final newQuestion = DailyQuestionModel(
       id: dateStr,
       date: dateStr,

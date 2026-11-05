@@ -1,4 +1,3 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:couple_app/core/crypto/vault_crypto_service.dart';
 import 'package:couple_app/features/vault/domain/vault_item_model.dart';

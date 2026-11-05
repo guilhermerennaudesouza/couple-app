@@ -315,7 +315,6 @@ class _ExpensesTab extends ConsumerWidget {
   ) {
     final isSettled = balance.isSettledUp;
     final iAmOwed = balance.netOwedToUser1 > 0.001;
-    final iOwe = balance.netOwedToUser2 > 0.001;
 
     Color cardBg;
     Color borderColor;
@@ -334,7 +333,7 @@ class _ExpensesTab extends ConsumerWidget {
         size: 32,
       );
     } else if (iAmOwed) {
-      cardBg = const Color(0xFFF1F8E9);
+      cardBg = context.isDarkMode ? const Color(0xFF1B2E1D) : const Color(0xFFF1F8E9);
       borderColor = const Color(0xFFAED581);
       title = 'You are owed R\$ ${balance.netOwedToUser1.toStringAsFixed(2)} 💚';
       subtitle = '$partnerName owes you for shared expenses.';
@@ -344,7 +343,7 @@ class _ExpensesTab extends ConsumerWidget {
         size: 32,
       );
     } else {
-      cardBg = const Color(0xFFFFF3E0);
+      cardBg = context.isDarkMode ? const Color(0xFF332014) : const Color(0xFFFFF3E0);
       borderColor = const Color(0xFFFFCC80);
       title = 'You owe R\$ ${balance.netOwedToUser2.toStringAsFixed(2)} 🧡';
       subtitle = 'You owe $partnerName for shared expenses.';
@@ -1499,7 +1498,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                 labelText: 'Expense Title',
                 hintText: 'e.g. Dinner at Italian Bistro, Groceries, Movie',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                   borderSide: BorderSide.none,
@@ -1519,7 +1518,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                       labelText: 'Amount (R\$)',
                       prefixText: 'R\$ ',
                       filled: true,
-                      fillColor: AppTheme.surfaceVariantLight,
+                      fillColor: context.surfaceVariant,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppTheme.inputBorderRadius),
@@ -1894,7 +1893,7 @@ class _CreateSavingsGoalModalState
                 labelText: 'Goal Title',
                 hintText: 'e.g. Trip to Paris 🗼, Wedding Fund 💍',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                   borderSide: BorderSide.none,
@@ -1914,7 +1913,7 @@ class _CreateSavingsGoalModalState
                       labelText: 'Target Amount (R\$)',
                       prefixText: 'R\$ ',
                       filled: true,
-                      fillColor: AppTheme.surfaceVariantLight,
+                      fillColor: context.surfaceVariant,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppTheme.inputBorderRadius),
@@ -1933,7 +1932,7 @@ class _CreateSavingsGoalModalState
                       prefixText: 'R\$ ',
                       hintText: '0.00',
                       filled: true,
-                      fillColor: AppTheme.surfaceVariantLight,
+                      fillColor: context.surfaceVariant,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppTheme.inputBorderRadius),
@@ -2205,7 +2204,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
                 labelText: 'Deposit Amount (R\$)',
                 prefixText: 'R\$ ',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                   borderSide: BorderSide.none,
@@ -2221,7 +2220,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
                 labelText: 'Cheer note (optional)',
                 hintText: 'e.g. Skipped takeout dinner! 🍕',
                 filled: true,
-                fillColor: AppTheme.surfaceVariantLight,
+                fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                   borderSide: BorderSide.none,

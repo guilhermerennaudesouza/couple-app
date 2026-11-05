@@ -45,8 +45,9 @@ class DecideSessionModel {
   /// or naturally resolved via a match. Returns null if unresolved or split without decision.
   String? get winningOption {
     if (!isResolved) return null;
-    if (_explicitWinningOption != null && _explicitWinningOption!.isNotEmpty) {
-      return _explicitWinningOption;
+    final explicit = _explicitWinningOption;
+    if (explicit != null && explicit.isNotEmpty) {
+      return explicit;
     }
     return isMatch ? votes.values.first : null;
   }
