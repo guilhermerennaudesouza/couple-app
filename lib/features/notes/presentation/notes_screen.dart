@@ -504,6 +504,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final contentController = TextEditingController(text: existingNote?.content ?? '');
     String selectedColor = existingNote?.colorHex ?? NoteModel.presetColors.first;
     bool isPinned = existingNote?.isPinnedToWidget ?? false;
+    final strings = AppStrings.of(context);
 
     showModalBottomSheet(
       context: context,
@@ -549,7 +550,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            existingNote == null ? 'New Sticky Note' : 'Edit Note',
+                            strings.isPortuguese
+                                ? (existingNote == null ? 'Novo Recado' : 'Editar Recado')
+                                : (existingNote == null ? 'New Sticky Note' : 'Edit Note'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -560,7 +563,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             IconButton(
                               icon: const Icon(Icons.delete_outline_rounded,
                                   color: AppTheme.errorRed),
-                              tooltip: 'Delete Note',
+                              tooltip: strings.isPortuguese ? 'Excluir Recado' : 'Delete Note',
                               onPressed: () async {
                                 Navigator.pop(bottomSheetContext);
                                 await _showDeleteConfirmDialog(
@@ -592,9 +595,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF2E221F),
                               ),
-                              decoration: const InputDecoration(
-                                hintText: 'Note Title (e.g. Good morning my love)',
-                                hintStyle: TextStyle(
+                              decoration: InputDecoration(
+                                hintText: strings.isPortuguese
+                                    ? 'Título do recado (ex: Bom dia, meu amor)'
+                                    : 'Note Title (e.g. Good morning my love)',
+                                hintStyle: const TextStyle(
                                   color: Color(0xFF8D7A74),
                                   fontSize: 15,
                                 ),
@@ -613,10 +618,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                 color: Color(0xFF3E312D),
                                 height: 1.4,
                               ),
-                              decoration: const InputDecoration(
-                                hintText:
-                                    'Write a sweet note, memory, romantic surprise, or grocery reminder...',
-                                hintStyle: TextStyle(
+                              decoration: InputDecoration(
+                                hintText: strings.isPortuguese
+                                    ? 'Escreva seu recadinho carinhoso, memória ou surpresa romântica aqui...'
+                                    : 'Write a sweet note, memory, romantic surprise, or grocery reminder...',
+                                hintStyle: const TextStyle(
                                   color: Color(0xFF8D7A74),
                                   fontSize: 13,
                                 ),
@@ -632,7 +638,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                       // Pastel Color Picker
                       Text(
-                        'Sticky Note Color',
+                        strings.isPortuguese ? 'Cor do Recado' : 'Sticky Note Color',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -706,12 +712,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         contentPadding: EdgeInsets.zero,
                         title: Row(
                           children: [
-                            Icon(Icons.push_pin_rounded,
+                            const Icon(Icons.push_pin_rounded,
                                 size: 18, color: AppTheme.primaryRose),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'Pin to Home Screen Widget',
-                              style: TextStyle(
+                              strings.isPortuguese
+                                  ? 'Fixar no Widget da Tela Inicial'
+                                  : 'Pin to Home Screen Widget',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -719,7 +727,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           ],
                         ),
                         subtitle: Text(
-                          'Show this note on your partner\'s Android Glance widget',
+                          strings.isPortuguese
+                              ? 'Exibir este recado no widget da tela inicial do seu parceiro(a)'
+                              : 'Show this note on your partner\'s Android Glance widget',
                           style: TextStyle(
                             fontSize: 12,
                             color: context.textSecondary,
@@ -754,8 +764,20 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           ),
                           label: Text(
                             existingNote == null
-                                ? (isPinned ? 'Save & Pin to Widget' : 'Save Note')
-                                : (isPinned ? 'Update & Pin' : 'Save Changes'),
+                                ? (isPinned
+                                    ? (strings.isPortuguese
+                                        ? 'Salvar & Fixar no Widget'
+                                        : 'Save & Pin to Widget')
+                                    : (strings.isPortuguese
+                                        ? 'Salvar Recado'
+                                        : 'Save Note'))
+                                : (isPinned
+                                    ? (strings.isPortuguese
+                                        ? 'Atualizar & Fixar'
+                                        : 'Update & Pin')
+                                    : (strings.isPortuguese
+                                        ? 'Salvar Alterações'
+                                        : 'Save Changes')),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
