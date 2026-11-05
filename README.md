@@ -1,4 +1,4 @@
-# Krivo Couple App 💕
+# Couple App 💕
 
 A private, unmetered, privacy-first Flutter application crafted exclusively for two partners. Built with modern Flutter (Material 3), Riverpod state management, and backed entirely by Firebase's free **Spark Tier** with offline disk persistence (100MB cache) and zero-knowledge encryption for intimate data.
 
