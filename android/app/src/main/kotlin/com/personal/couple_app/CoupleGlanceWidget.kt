@@ -37,6 +37,30 @@ import androidx.glance.unit.ColorProvider
  */
 class CoupleGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CoupleGlanceWidgetContent()
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        kotlinx.coroutines.runBlocking {
+            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            val ids = if (appWidgetIds.isNotEmpty()) {
+                appWidgetIds
+            } else {
+                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, CoupleGlanceWidget::class.java))
+            }
+            ids.forEach { id ->
+                try {
+                    val glanceId = glanceManager.getGlanceIdBy(id)
+                    glanceAppWidget.update(context, glanceId)
+                } catch (e: Throwable) {
+                    android.util.Log.e("CoupleGlanceWidget", "Error updating widget $id: $e")
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -76,9 +100,17 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("partner_name", null)
             ?: ""
 
+        val isPt = java.util.Locale.getDefault().language == "pt" ||
+            prefs.getString("flutter.language", "") == "pt" ||
+            prefs.getString("language", "") == "pt"
+
         val formattedDays = prefs.getString("flutter.formatted_days", null)
             ?: prefs.getString("formatted_days", null)
-            ?: if (daysTogether > 0) "$daysTogether days" else "Together"
+            ?: if (daysTogether > 0) {
+                if (isPt) "$daysTogether dias" else "$daysTogether days"
+            } else {
+                if (isPt) "Juntos" else "Together"
+            }
 
         val hasData = prefs.contains("flutter.days_together") ||
             prefs.contains("days_together") ||
@@ -93,10 +125,11 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                     CoupleCardContent(
                         daysTogether = daysTogether,
                         partnerName = partnerName,
-                        formattedDays = formattedDays
+                        formattedDays = formattedDays,
+                        isPt = isPt
                     )
                 } else {
-                    EmptyCoupleCard()
+                    EmptyCoupleCard(isPt = isPt)
                 }
             }
         }
@@ -106,7 +139,8 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
     private fun CoupleCardContent(
         daysTogether: Int,
         partnerName: String,
-        formattedDays: String
+        formattedDays: String,
+        isPt: Boolean
     ) {
         Box(
             modifier = GlanceModifier
@@ -134,7 +168,7 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
-                        text = "DAYS TOGETHER",
+                        text = if (isPt) "DIAS JUNTOS" else "DAYS TOGETHER",
                         style = TextStyle(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -157,7 +191,11 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                 )
 
                 Text(
-                    text = if (daysTogether == 1) "day in love" else "days in love",
+                    text = if (isPt) {
+                        if (daysTogether == 1) "dia de amor" else "dias de amor"
+                    } else {
+                        if (daysTogether == 1) "day in love" else "days in love"
+                    },
                     style = TextStyle(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
@@ -175,8 +213,13 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                         .cornerRadius(12.dp)
                         .padding(start = 10.dp, top = 4.dp, end = 10.dp, bottom = 4.dp)
                 ) {
+                    val partnerText = if (partnerName.isNotBlank()) {
+                        if (isPt) "Com $partnerName 💕" else "With $partnerName 💕"
+                    } else {
+                        if (isPt) "Para Sempre Juntos 💕" else "Forever & Always 💕"
+                    }
                     Text(
-                        text = if (partnerName.isNotBlank()) "With $partnerName 💕" else "Forever & Always 💕",
+                        text = partnerText,
                         style = TextStyle(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
@@ -190,7 +233,7 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptyCoupleCard() {
+    private fun EmptyCoupleCard(isPt: Boolean) {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -210,7 +253,7 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(6.dp))
                 Text(
-                    text = "Days Together",
+                    text = if (isPt) "Dias Juntos" else "Days Together",
                     style = TextStyle(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -219,7 +262,11 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = "Set your anniversary in Krivo to start your counter 💕",
+                    text = if (isPt) {
+                        "Defina seu aniversário no app para iniciar o contador 💕"
+                    } else {
+                        "Set your anniversary in Krivo to start your counter 💕"
+                    },
                     style = TextStyle(
                         fontSize = 11.sp,
                         color = ColorProvider(Color(0xFF9E4758))

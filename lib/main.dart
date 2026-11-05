@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -24,11 +25,15 @@ import 'package:couple_app/features/memories/presentation/memories_screen.dart';
 import 'package:couple_app/features/notes/presentation/notes_screen.dart';
 import 'package:couple_app/features/tasks/presentation/tasks_screen.dart';
 import 'package:couple_app/features/vault/presentation/vault_screen.dart';
+import 'package:couple_app/features/widgets/widget_sync_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseConfig.initialize();
   await LocalNotificationService.initialize();
+  await initializeDateFormatting('pt_BR', null);
+  await initializeDateFormatting('en_US', null);
+  await WidgetSyncService.initialize();
 
   runApp(
     const ProviderScope(
@@ -92,6 +97,9 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
             },
           );
         }
+
+        // Keep all Android Glance home screen widgets automatically synchronized
+        ref.watch(widgetSyncProvider(coupleId));
 
         return Scaffold(
           body: IndexedStack(
@@ -697,48 +705,55 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                   ),
                   const Divider(height: 24),
 
-                  // Theme Mode Switcher Row
-                  Row(
+                  // Theme Mode Switcher
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        context.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                        color: AppTheme.primaryRose,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          strings.theme,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: context.textPrimary,
+                      Row(
+                        children: [
+                          Icon(
+                            context.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                            color: AppTheme.primaryRose,
+                            size: 22,
                           ),
-                        ),
-                      ),
-                      SegmentedButton<ThemeMode>(
-                        showSelectedIcon: false,
-                        segments: [
-                          ButtonSegment<ThemeMode>(
-                            value: ThemeMode.light,
-                            icon: const Icon(Icons.light_mode_outlined, size: 16),
-                            label: Text(strings.themeLight),
-                          ),
-                          ButtonSegment<ThemeMode>(
-                            value: ThemeMode.dark,
-                            icon: const Icon(Icons.dark_mode_outlined, size: 16),
-                            label: Text(strings.themeDark),
-                          ),
-                          ButtonSegment<ThemeMode>(
-                            value: ThemeMode.system,
-                            icon: const Icon(Icons.brightness_auto_outlined, size: 16),
-                            label: Text(strings.themeSystem),
+                          const SizedBox(width: 12),
+                          Text(
+                            strings.theme,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: context.textPrimary,
+                            ),
                           ),
                         ],
-                        selected: {activeThemeMode},
-                        onSelectionChanged: (newSelection) {
-                          ref.read(themeModeProvider.notifier).setThemeMode(newSelection.first);
-                        },
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<ThemeMode>(
+                          showSelectedIcon: false,
+                          segments: [
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.light,
+                              icon: const Icon(Icons.light_mode_outlined, size: 16),
+                              label: Text(strings.themeLight),
+                            ),
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.dark,
+                              icon: const Icon(Icons.dark_mode_outlined, size: 16),
+                              label: Text(strings.themeDark),
+                            ),
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.system,
+                              icon: const Icon(Icons.brightness_auto_outlined, size: 16),
+                              label: Text(strings.themeSystem),
+                            ),
+                          ],
+                          selected: {activeThemeMode},
+                          onSelectionChanged: (newSelection) {
+                            ref.read(themeModeProvider.notifier).setThemeMode(newSelection.first);
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -756,6 +771,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               strings.appVersionLabel,
@@ -776,6 +792,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       if (_isCheckingUpdate)
                         const SizedBox(
                           width: 24,
@@ -785,8 +802,10 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                       else
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             visualDensity: VisualDensity.compact,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           icon: const Icon(Icons.refresh_rounded, size: 16),
                           label: Text(

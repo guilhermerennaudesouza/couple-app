@@ -37,6 +37,30 @@ import androidx.glance.unit.ColorProvider
  */
 class TasksGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = TasksGlanceWidgetContent()
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        kotlinx.coroutines.runBlocking {
+            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            val ids = if (appWidgetIds.isNotEmpty()) {
+                appWidgetIds
+            } else {
+                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, TasksGlanceWidget::class.java))
+            }
+            ids.forEach { id ->
+                try {
+                    val glanceId = glanceManager.getGlanceIdBy(id)
+                    glanceAppWidget.update(context, glanceId)
+                } catch (e: Throwable) {
+                    android.util.Log.e("TasksGlanceWidget", "Error updating widget $id: $e")
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -78,6 +102,10 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
             0
         }
 
+        val isPt = java.util.Locale.getDefault().language == "pt" ||
+            prefs.getString("flutter.language", "") == "pt" ||
+            prefs.getString("language", "") == "pt"
+
         val hasTasks = task1Title.isNotBlank() || task2Title.isNotBlank() || task3Title.isNotBlank()
 
         provideContent {
@@ -90,10 +118,11 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
                         task2Done = task2Done,
                         task3Title = task3Title,
                         task3Done = task3Done,
-                        remainingCount = remainingCount
+                        remainingCount = remainingCount,
+                        isPt = isPt
                     )
                 } else {
-                    EmptyTasksCard()
+                    EmptyTasksCard(isPt = isPt)
                 }
             }
         }
@@ -107,7 +136,8 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
         task2Done: Boolean,
         task3Title: String,
         task3Done: Boolean,
-        remainingCount: Int
+        remainingCount: Int,
+        isPt: Boolean
     ) {
         Box(
             modifier = GlanceModifier
@@ -133,7 +163,7 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
-                        text = "COUPLE TASKS",
+                        text = if (isPt) "TAREFAS DO CASAL" else "COUPLE TASKS",
                         style = TextStyle(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -150,7 +180,7 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
                                 .padding(start = 6.dp, top = 2.dp, end = 6.dp, bottom = 2.dp)
                         ) {
                             Text(
-                                text = "+$remainingCount more",
+                                text = if (isPt) "+$remainingCount mais" else "+$remainingCount more",
                                 style = TextStyle(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
@@ -194,7 +224,7 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = "Tap to open Krivo 💕",
+                        text = if (isPt) "Toque para abrir o app 💕" else "Tap to open Krivo 💕",
                         style = TextStyle(
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Normal,
@@ -243,7 +273,7 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptyTasksCard() {
+    private fun EmptyTasksCard(isPt: Boolean) {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -263,7 +293,7 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(6.dp))
                 Text(
-                    text = "All Tasks Completed!",
+                    text = if (isPt) "Todas as tarefas concluídas!" else "All Tasks Completed!",
                     style = TextStyle(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -272,7 +302,11 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = "No pending chores. Relax and enjoy your time together 💕",
+                    text = if (isPt) {
+                        "Nenhum afazer pendente. Aproveitem o momento juntos 💕"
+                    } else {
+                        "No pending chores. Relax and enjoy your time together 💕"
+                    },
                     style = TextStyle(
                         fontSize = 11.sp,
                         color = ColorProvider(Color(0xFF166534))

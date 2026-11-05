@@ -118,9 +118,43 @@ class AppStrings {
 
   // --- Daily Question ---
   String get dailyQuestionTitle => isPortuguese ? 'Pergunta do Dia' : 'Daily Question';
+  String get dailyConnectionTitle => isPortuguese ? 'Conexão Diária' : 'Daily Connection';
   String get dailyQuestionSubtitle => isPortuguese
       ? 'Respondam todos os dias para se conhecerem ainda mais fundo 💕'
       : 'Answer daily to deepen your connection and spark sweet moments 💕';
+  String get tabTodayPrompt => isPortuguese ? 'Pergunta de Hoje' : "Today's Prompt";
+  String get tabPastMemories => isPortuguese ? 'Memórias Anteriores' : 'Past Memories';
+  String get dualBlindRevealBadge => isPortuguese ? 'Revelação Dupla' : 'Dual-Blind Reveal';
+  String get todayQuestionTag => isPortuguese ? 'PERGUNTA DE HOJE' : "TODAY'S QUESTION";
+  String get sealedNotice => isPortuguese
+      ? 'Sua resposta fica oculta até que ambos respondam. Sem espiar!'
+      : 'Your answer stays sealed until both of you reply. No peeking!';
+  String get answerPlaceholder => isPortuguese
+      ? 'Compartilhe seus pensamentos, sentimentos ou memórias com seu amor...'
+      : 'Share your loving thought, memory, or feeling...';
+  String get sendAnswerBtn => isPortuguese ? 'Enviar Minha Resposta' : 'Send My Answer';
+  String get emptyAnswerError => isPortuguese
+      ? 'Por favor, escreva uma resposta antes de enviar!'
+      : 'Please write an answer before sending!';
+  String get answerSealedSuccess => isPortuguese
+      ? 'Sua resposta foi guardada! Aguardando seu parceiro(a)...'
+      : 'Your answer is sealed! Waiting for partner...';
+  String get waitingForPartnerTitle => isPortuguese ? 'Resposta Guardada a Sete Chaves! 🔒' : 'Your Answer is Sealed! 🔒';
+  String waitingForPartnerDesc(String name) => isPortuguese
+      ? 'Aguardando $name responder para revelar ambas as respostas simultaneamente 💕'
+      : 'Waiting for $name to answer to reveal both answers together 💕';
+  String get bothAnsweredTitle => isPortuguese ? 'Respostas Reveladas! 💕' : 'Both Answered! 💕';
+  String get tapToReadAnswers => isPortuguese
+      ? 'Vocês dois responderam à pergunta de hoje!'
+      : 'Both of you answered today\'s question!';
+  String get noPastAnswers => isPortuguese ? 'Nenhuma resposta anterior ainda.' : 'No past answers yet.';
+  String get loveNotesTooltip => isPortuguese ? 'Mural de Recados & Notas' : 'Love Notes & Sticky Wall';
+  String get howItWorksTooltip => isPortuguese ? 'Como Funciona a Revelação Dupla' : 'How Dual Reveal Works';
+  String get howItWorksTitle => isPortuguese ? 'Como Funciona a Revelação Dupla' : 'How Dual Reveal Works';
+  String get howItWorksBody => isPortuguese
+      ? 'Para incentivar respostas 100% sinceras e sem viés, a resposta de cada parceiro fica oculta até que ambos tenham respondido. Assim que os dois enviarem suas respostas, elas serão reveladas juntas!'
+      : 'To encourage completely honest answers, each response remains sealed until both partners have replied. Once both have answered, both responses are unlocked together!';
+  String get understood => isPortuguese ? 'Entendido!' : 'Got it!';
   String get yourAnswer => isPortuguese ? 'Sua Resposta' : 'Your Answer';
   String get partnerAnswer => isPortuguese ? 'Resposta do seu Amor' : 'Partner\'s Answer';
   String get submitAnswer => isPortuguese ? 'Enviar Resposta' : 'Submit Answer';
@@ -130,6 +164,25 @@ class AppStrings {
   String get answersRevealedTitle => isPortuguese ? 'Respostas Reveladas! 🎉' : 'Answers Revealed! 🎉';
   String get historyTab => isPortuguese ? 'Histórico de Perguntas' : 'Past Questions';
   String get nextQuestionCountdown => isPortuguese ? 'Próxima pergunta em:' : 'Next question in:';
+  String get couldNotLoadQuestion => isPortuguese ? 'Não foi possível carregar a pergunta:' : 'Could not load today\'s question:';
+  String get errorLoadingArchive => isPortuguese ? 'Erro ao carregar o histórico:' : 'Error loading archive:';
+  String get searchPastQuestions => isPortuguese ? 'Buscar perguntas anteriores...' : 'Search past questions...';
+  String get noMatchingQuestions => isPortuguese ? 'Nenhuma pergunta encontrada.' : 'No matching questions.';
+  String get unrevealedMemoryBadge => isPortuguese ? 'Não Revelada' : 'Unrevealed';
+  String get mutualMemoryBadge => isPortuguese ? 'Revelada Juntos 💕' : 'Revealed Together 💕';
+  String get answeredDateLabel => isPortuguese ? 'Respondido' : 'Answered';
+  String get writeYourAnswerFirst => isPortuguese ? 'Responda primeiro para ver!' : 'Answer first to see!';
+
+  // --- Tasks ---
+  String get sharedTasksTitle => isPortuguese ? 'Tarefas & Listas' : 'Shared Tasks & Lists';
+  String get tasksTab => isPortuguese ? 'Tarefas & Afazeres' : 'Tasks & Chores';
+  String get listsTab => isPortuguese ? 'Listas Compartilhadas' : 'Shared Lists';
+  String get newTask => isPortuguese ? 'Nova Tarefa' : 'New Task';
+  String get newList => isPortuguese ? 'Nova Lista' : 'New List';
+  String get noSpaceConnected => isPortuguese ? 'Nenhum Espaço Conectado' : 'No Couple Space Connected';
+  String get noSpaceConnectedDesc => isPortuguese
+      ? 'Por favor, conecte-se ao seu parceiro(a) antes de gerenciar tarefas e listas.'
+      : 'Please pair with your partner before managing shared tasks and lists.';
 
   // --- Tasks ---
   String get tasksTitle => isPortuguese ? 'Tarefas & Compromissos' : 'Couple Tasks';

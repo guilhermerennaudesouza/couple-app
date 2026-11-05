@@ -37,6 +37,30 @@ import androidx.glance.unit.ColorProvider
  */
 class DailyPromptGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DailyPromptGlanceWidgetContent()
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        kotlinx.coroutines.runBlocking {
+            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            val ids = if (appWidgetIds.isNotEmpty()) {
+                appWidgetIds
+            } else {
+                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, DailyPromptGlanceWidget::class.java))
+            }
+            ids.forEach { id ->
+                try {
+                    val glanceId = glanceManager.getGlanceIdBy(id)
+                    glanceAppWidget.update(context, glanceId)
+                } catch (e: Throwable) {
+                    android.util.Log.e("DailyPromptGlanceWidget", "Error updating widget $id: $e")
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -63,12 +87,16 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
         val isAnsweredByMe = prefs.getBoolean("flutter.is_answered_by_me", false) ||
             prefs.getBoolean("is_answered_by_me", false)
 
+        val isPt = java.util.Locale.getDefault().language == "pt" ||
+            prefs.getString("flutter.language", "") == "pt" ||
+            prefs.getString("language", "") == "pt"
+
         val promptStatus = prefs.getString("flutter.prompt_status", null)
             ?: prefs.getString("prompt_status", null)
             ?: when {
-                isRevealed -> "Both answered! Tap to read 💕"
-                isAnsweredByMe -> "Waiting for partner... 🔒"
-                else -> "Waiting for your answer ✍️"
+                isRevealed -> if (isPt) "Ambos responderam! 💕" else "Both answered! Tap to read 💕"
+                isAnsweredByMe -> if (isPt) "Aguardando seu amor... 🔒" else "Waiting for partner... 🔒"
+                else -> if (isPt) "Aguardando sua resposta ✍️" else "Waiting for your answer ✍️"
             }
 
         val hasPrompt = promptText.isNotBlank()
@@ -80,10 +108,11 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
                         promptText = promptText,
                         promptStatus = promptStatus,
                         isRevealed = isRevealed,
-                        isAnsweredByMe = isAnsweredByMe
+                        isAnsweredByMe = isAnsweredByMe,
+                        isPt = isPt
                     )
                 } else {
-                    EmptyPromptCard()
+                    EmptyPromptCard(isPt = isPt)
                 }
             }
         }
@@ -94,7 +123,8 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
         promptText: String,
         promptStatus: String,
         isRevealed: Boolean,
-        isAnsweredByMe: Boolean
+        isAnsweredByMe: Boolean,
+        isPt: Boolean
     ) {
         // Dynamic status badge styling
         val badgeBackground = when {
@@ -133,7 +163,7 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
-                        text = "DAILY QUESTION",
+                        text = if (isPt) "PERGUNTA DO DIA" else "DAILY QUESTION",
                         style = TextStyle(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -185,7 +215,7 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptyPromptCard() {
+    private fun EmptyPromptCard(isPt: Boolean) {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -205,7 +235,7 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(6.dp))
                 Text(
-                    text = "Daily Question",
+                    text = if (isPt) "Pergunta do Dia" else "Daily Question",
                     style = TextStyle(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -214,7 +244,11 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = "Open Krivo to discover today's question for couples 💕",
+                    text = if (isPt) {
+                        "Abra o app para responder à pergunta de hoje com seu amor 💕"
+                    } else {
+                        "Open Krivo to discover today's question for couples 💕"
+                    },
                     style = TextStyle(
                         fontSize = 11.sp,
                         color = ColorProvider(Color(0xFF7E22CE))

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/task_model.dart';
@@ -76,17 +77,19 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         ref.watch(currentCoupleIdProvider).valueOrNull ??
         '';
 
+    final strings = AppStrings.of(context);
+
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose, size: 24),
-              SizedBox(width: 8),
+              const Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose, size: 24),
+              const SizedBox(width: 8),
               Text(
-                'Shared Tasks & Lists',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                strings.sharedTasksTitle,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -100,16 +103,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 Icon(
                   Icons.favorite_border_rounded,
                   size: 64,
-                  color: AppTheme.primaryRose.withOpacity(0.5),
+                  color: AppTheme.primaryRose.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No Couple Space Connected',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  strings.noSpaceConnected,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Please pair with your partner before managing shared tasks and lists.',
+                  strings.noSpaceConnectedDesc,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: context.textSecondary),
                 ),
@@ -126,18 +129,18 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     final partnerProfile = couple?.getPartnerProfile(effectiveUid);
     final partnerName = partnerProfile?.displayName.isNotEmpty == true
         ? partnerProfile!.displayName
-        : 'Partner';
+        : (strings.isPortuguese ? 'Seu Amor' : 'Partner');
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose, size: 24),
-            SizedBox(width: 8),
+            const Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose, size: 24),
+            const SizedBox(width: 8),
             Text(
-              'Shared Tasks & Lists',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              strings.sharedTasksTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -148,14 +151,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           unselectedLabelColor: context.textSecondary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.assignment_outlined),
-              text: 'Tasks & Chores',
+              icon: const Icon(Icons.assignment_outlined),
+              text: strings.tasksTab,
             ),
             Tab(
-              icon: Icon(Icons.format_list_bulleted_rounded),
-              text: 'Shared Lists',
+              icon: const Icon(Icons.format_list_bulleted_rounded),
+              text: strings.listsTab,
             ),
           ],
         ),
@@ -172,7 +175,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: Text(
-          _tabController.index == 0 ? 'New Task' : 'New List',
+          _tabController.index == 0 ? strings.newTask : strings.newList,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         onPressed: () {
@@ -247,18 +250,19 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
   }
 
   Widget _buildTaskFilterChips(String partnerName) {
+    final strings = AppStrings.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          _filterChip(TaskFilter.all, 'All Tasks'),
+          _filterChip(TaskFilter.all, strings.isPortuguese ? 'Todas' : 'All Tasks'),
           const SizedBox(width: 8),
-          _filterChip(TaskFilter.mine, 'Mine'),
+          _filterChip(TaskFilter.mine, strings.isPortuguese ? 'Minhas' : 'Mine'),
           const SizedBox(width: 8),
-          _filterChip(TaskFilter.partner, "$partnerName's"),
+          _filterChip(TaskFilter.partner, strings.isPortuguese ? 'De $partnerName' : "$partnerName's"),
           const SizedBox(width: 8),
-          _filterChip(TaskFilter.completed, 'Completed'),
+          _filterChip(TaskFilter.completed, strings.isPortuguese ? 'Concluídas' : 'Completed'),
         ],
       ),
     );

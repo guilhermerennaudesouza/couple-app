@@ -123,6 +123,41 @@ build/app/outputs/flutter-apk/app-release.apk
 
 ---
 
+## 🔄 Publicação de Atualizações & Auto-Update OTA (GitHub Releases)
+
+O aplicativo conta com o serviço [`AppUpdateService`](file:///e:/Couple%20App/lib/core/services/app_update_service.dart), que verifica automaticamente se há novas versões disponíveis no GitHub Releases (`https://api.github.com/repos/guilhermerennaudesouza/couple-app/releases/latest`). Quando uma versão mais nova é publicada, o app exibe uma janela de atualização, baixa o APK em segundo plano e aciona a instalação nativa do Android sem necessidade de reinstalação manual.
+
+### Regra para Publicação de Atualizações:
+Para que o app dos usuários receba e instale a atualização automaticamente, siga sempre estes passos:
+
+1. **Incrementar a versão no `pubspec.yaml`:**
+   ```yaml
+   version: 1.0.1+2 # Onde 1.0.1 é a versão SemVer e +2 é o versionCode
+   ```
+
+2. **Descrever as alterações no `RELEASE_NOTES.md`:**
+   Adicione as novidades e correções no topo do arquivo.
+
+3. **Compilar e Publicar via GitHub CLI ou GitHub Actions:**
+   - **Opção A (Automática via GitHub Actions):**
+     Ao subir o código com uma tag `v*`, o GitHub Actions compila o APK e cria a Release automaticamente:
+     ```bash
+     git add .
+     git commit -m "chore(release): bump version to v1.0.1"
+     git push origin master
+     git tag v1.0.1
+     git push origin v1.0.1
+     ```
+   - **Opção B (Direta via GitHub CLI `gh`):**
+     ```bash
+     flutter build apk --release
+     gh release create v1.0.1 build/app/outputs/flutter-apk/app-release.apk#CoupleApp-Release.apk --title "v1.0.1 — Atualização & Correções" --notes-file RELEASE_NOTES.md
+     ```
+
+> **IMPORTANTE:** O nome do arquivo APK no GitHub Release deve ser sempre `CoupleApp-Release.apk` para garantir compatibilidade com o atualizador automático.
+
+---
+
 ## 🔐 Security & Privacy Architecture
 
 - **Zero Cloud Plaintext**: Vault items are encrypted and decrypted purely in device RAM using AES-256-GCM.

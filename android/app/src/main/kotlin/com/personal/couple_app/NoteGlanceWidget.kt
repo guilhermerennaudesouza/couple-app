@@ -38,6 +38,30 @@ import androidx.glance.unit.ColorProvider
  */
 class NoteGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NoteGlanceWidgetContent()
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        kotlinx.coroutines.runBlocking {
+            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            val ids = if (appWidgetIds.isNotEmpty()) {
+                appWidgetIds
+            } else {
+                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, NoteGlanceWidget::class.java))
+            }
+            ids.forEach { id ->
+                try {
+                    val glanceId = glanceManager.getGlanceIdBy(id)
+                    glanceAppWidget.update(context, glanceId)
+                } catch (e: Throwable) {
+                    android.util.Log.e("NoteGlanceWidget", "Error updating widget $id: $e")
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -70,6 +94,10 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("note_color", "#FFE082")
             ?: "#FFE082"
 
+        val isPt = java.util.Locale.getDefault().language == "pt" ||
+            prefs.getString("flutter.language", "") == "pt" ||
+            prefs.getString("language", "") == "pt"
+
         val hasNote = content.isNotBlank() || title.isNotBlank()
         val cardColor = parseHexColor(colorHex, defaultColor = Color(0xFFFFE082))
 
@@ -83,7 +111,7 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                         cardColor = cardColor
                     )
                 } else {
-                    EmptyNoteCard(cardColor = cardColor)
+                    EmptyNoteCard(cardColor = cardColor, isPt = isPt)
                 }
             }
         }
@@ -174,7 +202,7 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
     }
 
     @Composable
-    private fun EmptyNoteCard(cardColor: Color) {
+    private fun EmptyNoteCard(cardColor: Color, isPt: Boolean) {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -194,7 +222,7 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(6.dp))
                 Text(
-                    text = "No pinned love note",
+                    text = if (isPt) "Nenhum recado fixado" else "No pinned love note",
                     style = TextStyle(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -203,7 +231,11 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = "Pin a note from Krivo to see it here 💕",
+                    text = if (isPt) {
+                        "Fixe uma nota de amor no app para vê-la aqui 💕"
+                    } else {
+                        "Pin a note from Krivo to see it here 💕"
+                    },
                     style = TextStyle(
                         fontSize = 11.sp,
                         color = ColorProvider(Color(0xFF6B5852))

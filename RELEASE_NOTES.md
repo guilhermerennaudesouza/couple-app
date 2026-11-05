@@ -1,4 +1,28 @@
-# Couple App v1.0.0 — Android Release 💑📱
+# Couple App v1.0.1 — Atualização & Correções 💑📱
+
+### ✨ O que há de novo / What's New
+
+- **🛠️ Correção Visual no Card de Preferências:**
+  - Corrigido o bug de quebra vertical de caracteres em "Tema" e "Versão do App".
+  - Seletor de Tema reorganizado em layout limpo de largura total com alternância rápida entre Claro, Escuro e Sistema.
+  - Botão de checagem de atualizações otimizado com padding compacto e dimensões seguras.
+
+- **🇧🇷 Tradução Completa para Português:**
+  - Tela de Conexão Diária totalmente localizada (perguntas, alertas de revelação dupla, botões de envio e histórico de memórias).
+  - Data de hoje exibida em português natural (`Quinta-feira, 5 de novembro`).
+  - Títulos, abas e filtros de Tarefas totalmente em português.
+
+- **📱 Widgets Android Glance 100% Funcionais:**
+  - Corrigido o ciclo de vida dos 4 receivers nativos Kotlin (`GlanceAppWidgetReceiver.onUpdate`) para que os widgets reflitam alterações imediatamente na tela inicial do celular.
+  - Sincronização reativa contínua em segundo plano com Riverpod para dados do casal, tarefas urgentes, status da pergunta diária e mural de notas.
+  - Textos dos widgets e do seletor nativo do Android totalmente traduzidos para Português (Brasil).
+
+- **🔄 Atualizações Automáticas (OTA) via GitHub Releases:**
+  - Sistema de publicação automatizada no GitHub Actions configurado para compilar e anexar o APK a cada nova versão.
+
+---
+
+# Couple App v1.0.0 — Initial Android Release 💑📱
 
 Welcome to the initial release of **Couple App**! Designed specifically for couples with real-time pairing, bilingual support, high-contrast dark mode, and encrypted private features.
 

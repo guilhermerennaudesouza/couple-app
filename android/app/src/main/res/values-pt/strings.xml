@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Krivo</string>
+    <string name="note_glance_widget_name">Mural de Notas de Amor</string>
+    <string name="note_glance_widget_description">Recadinho e nota rápida em tempo real com seu amor</string>
+    <string name="couple_glance_widget_name">Dias Juntos (Contador)</string>
+    <string name="couple_glance_widget_description">Contador de dias de namoro e marco especial do casal</string>
+    <string name="daily_prompt_glance_widget_name">Pergunta do Dia</string>
+    <string name="daily_prompt_glance_widget_description">Pergunta diária do casal e status de resposta mútua</string>
+    <string name="tasks_glance_widget_name">Tarefas do Casal</string>
+    <string name="tasks_glance_widget_description">Lista de tarefas compartilhadas e afazeres pendentes</string>
+</resources>

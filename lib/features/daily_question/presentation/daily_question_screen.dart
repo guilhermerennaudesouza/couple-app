@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
@@ -62,6 +63,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+
     // Resolve coupleId
     final activeCoupleId = widget.coupleId ??
         widget.initialCouple?.id ??
@@ -71,7 +74,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Daily Question'),
+          title: Text(strings.dailyConnectionTitle),
         ),
         body: Center(
           child: Padding(
@@ -82,16 +85,16 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                 Icon(
                   Icons.favorite_border_rounded,
                   size: 64,
-                  color: AppTheme.primaryRose.withOpacity(0.5),
+                  color: AppTheme.primaryRose.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No Couple Space Connected',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  strings.noSpaceConnected,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Please pair with your partner before accessing your daily intimate questions.',
+                  strings.noSpaceConnectedDesc,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: context.textSecondary),
                 ),
@@ -111,13 +114,13 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.favorite_rounded,
               color: AppTheme.primaryRose,
               size: 22,
             ),
             const SizedBox(width: 8),
-            Text('Daily Connection'),
+            Text(strings.dailyConnectionTitle),
           ],
         ),
         bottom: TabBar(
@@ -127,21 +130,21 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           indicatorColor: AppTheme.primaryRose,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.wb_sunny_outlined, size: 20),
-              text: "Today's Prompt",
+              icon: const Icon(Icons.wb_sunny_outlined, size: 20),
+              text: strings.tabTodayPrompt,
             ),
             Tab(
-              icon: Icon(Icons.history_edu_rounded, size: 20),
-              text: 'Past Memories',
+              icon: const Icon(Icons.history_edu_rounded, size: 20),
+              text: strings.tabPastMemories,
             ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.sticky_note_2_rounded, color: AppTheme.primaryRose),
-            tooltip: 'Love Notes & Sticky Wall',
+            tooltip: strings.loveNotesTooltip,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -155,7 +158,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           ),
           IconButton(
             icon: const Icon(Icons.info_outline_rounded),
-            tooltip: 'How Dual Reveal Works',
+            tooltip: strings.howItWorksTooltip,
             onPressed: () => _showHowItWorksDialog(context),
           ),
         ],
@@ -175,6 +178,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String coupleId,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final todayAsync = ref.watch(todayDailyQuestionProvider(coupleId));
 
     return todayAsync.when(
@@ -191,7 +195,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   color: AppTheme.errorRed, size: 48),
               const SizedBox(height: 12),
               Text(
-                'Could not load today\'s question: $err',
+                '${strings.couldNotLoadQuestion} $err',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: context.textSecondary),
               ),
@@ -199,7 +203,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               ElevatedButton(
                 onPressed: () =>
                     ref.refresh(todayDailyQuestionProvider(coupleId)),
-                child: const Text('Try Again'),
+                child: Text(strings.retry),
               ),
             ],
           ),
@@ -245,15 +249,29 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   }
 
   Widget _buildDateHeader(String dateString) {
+    final strings = AppStrings.of(context);
     DateTime dt = DateTime.tryParse(dateString) ?? DateTime.now();
-    final formatted = DateFormat('EEEE, MMMM d').format(dt);
+    final loc = Localizations.localeOf(context).toString();
+    String formatted;
+    try {
+      if (loc.startsWith('pt')) {
+        formatted = DateFormat('EEEE, d \'de\' MMMM', 'pt_BR').format(dt);
+      } else {
+        formatted = DateFormat('EEEE, MMMM d', 'en_US').format(dt);
+      }
+      if (formatted.isNotEmpty) {
+        formatted = formatted[0].toUpperCase() + formatted.substring(1);
+      }
+    } catch (_) {
+      formatted = DateFormat('EEEE, MMMM d').format(dt);
+    }
 
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: AppTheme.secondaryBlush.withOpacity(0.3),
+            color: AppTheme.secondaryBlush.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -280,17 +298,17 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: AppTheme.primaryRose.withOpacity(0.1),
+            color: AppTheme.primaryRose.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.lock_clock_rounded, size: 13, color: AppTheme.primaryRose),
-              SizedBox(width: 5),
+              const Icon(Icons.lock_clock_rounded, size: 13, color: AppTheme.primaryRose),
+              const SizedBox(width: 5),
               Text(
-                'Dual-Blind Reveal',
-                style: TextStyle(
+                strings.dualBlindRevealBadge,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.primaryRose,
@@ -304,6 +322,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   }
 
   Widget _buildPromptCard(String prompt) {
+    final strings = AppStrings.of(context);
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -347,8 +366,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               ),
               const SizedBox(width: 10),
               Text(
-                'TODAY\'S QUESTION',
-                style: TextStyle(
+                strings.todayQuestionTag,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
@@ -381,23 +400,24 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     DailyQuestionModel dq,
     String myUid,
   ) {
+    final strings = AppStrings.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppTheme.pastelPeach.withOpacity(0.6),
+            color: AppTheme.pastelPeach.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.secondaryBlush.withOpacity(0.5)),
+            border: Border.all(color: AppTheme.secondaryBlush.withValues(alpha: 0.5)),
           ),
           child: Row(
             children: [
-              Icon(Icons.shield_outlined, size: 18, color: AppTheme.primaryRoseDark),
-              SizedBox(width: 10),
+              const Icon(Icons.shield_outlined, size: 18, color: AppTheme.primaryRoseDark),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Your answer stays sealed until both of you reply. No peeking!',
+                  strings.sealedNotice,
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
@@ -415,11 +435,11 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           maxLines: 4,
           minLines: 3,
           maxLength: 600,
-          style: TextStyle(fontSize: 15, height: 1.4),
+          style: const TextStyle(fontSize: 15, height: 1.4),
           decoration: InputDecoration(
-            hintText: 'Share your loving thought, memory, or feeling...',
+            hintText: strings.answerPlaceholder,
             hintStyle: TextStyle(
-              color: context.textSecondary.withOpacity(0.7),
+              color: context.textSecondary.withValues(alpha: 0.7),
             ),
             filled: true,
             fillColor: AppTheme.surfaceLight,
@@ -467,9 +487,9 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                           duration: 700.ms,
                         ),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Send My Answer',
-                      style: TextStyle(
+                    Text(
+                      strings.sendAnswerBtn,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.3,
@@ -487,11 +507,12 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String questionId,
     String myUid,
   ) async {
+    final strings = AppStrings.of(context);
     final text = _answerController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please write an answer before sending!'),
+        SnackBar(
+          content: Text(strings.emptyAnswerError),
           backgroundColor: AppTheme.primaryRoseDark,
         ),
       );
@@ -505,8 +526,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
       _answerController.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your answer is sealed! Waiting for partner...'),
+          SnackBar(
+            content: Text(strings.answerSealedSuccess),
             backgroundColor: AppTheme.successGreen,
           ),
         );
@@ -515,7 +536,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit answer: $e'),
+            content: Text('${strings.isPortuguese ? 'Erro ao enviar resposta:' : 'Failed to submit answer:'} $e'),
             backgroundColor: AppTheme.errorRed,
           ),
         );
@@ -536,10 +557,11 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String myUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final partnerProfile = couple?.getPartnerProfile(myUid);
     final partnerName = partnerProfile?.name.isNotEmpty == true
         ? partnerProfile!.name
-        : 'your partner';
+        : (strings.isPortuguese ? 'seu amor' : 'your partner');
 
     final myAnswer = dq.getAnswer(myUid);
 
@@ -552,10 +574,10 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           decoration: BoxDecoration(
             color: AppTheme.surfaceLight,
             borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-            border: Border.all(color: AppTheme.secondaryBlush.withOpacity(0.6)),
+            border: Border.all(color: AppTheme.secondaryBlush.withValues(alpha: 0.6)),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.secondaryBlush.withOpacity(0.12),
+                color: AppTheme.secondaryBlush.withValues(alpha: 0.12),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -566,7 +588,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               Container(
                 width: 72,
                 height: 72,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       AppTheme.secondaryBlush,
@@ -575,7 +597,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.hourglass_top_rounded,
                   color: Colors.white,
                   size: 36,
@@ -589,7 +611,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   ),
               const SizedBox(height: 18),
               Text(
-                'Answer Submitted!',
+                strings.waitingForPartnerTitle,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
@@ -598,7 +621,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Waiting for $partnerName to answer to reveal both...',
+                strings.waitingForPartnerDesc(partnerName),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.5,
@@ -610,24 +633,26 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.pastelLavender.withOpacity(0.4),
+                  color: AppTheme.pastelLavender.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.lock_rounded,
                       size: 14,
                       color: AppTheme.tertiaryMauve,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Both answers unlock automatically',
+                      strings.isPortuguese
+                          ? 'Ambas as respostas são reveladas juntas'
+                          : 'Both answers unlock automatically',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.tertiaryMauve.withOpacity(0.9),
+                        color: AppTheme.tertiaryMauve.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -642,7 +667,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         // My submitted answer preview
         if (myAnswer != null) ...[
           Text(
-            'YOUR SEALED ANSWER',
+            strings.isPortuguese ? 'SUA RESPOSTA PROTEGIDA' : 'YOUR SEALED ANSWER',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -671,7 +696,9 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Answered at ${DateFormat('h:mm a').format(myAnswer.answeredAt)}',
+                  strings.isPortuguese
+                      ? 'Respondido às ${DateFormat('HH:mm').format(myAnswer.answeredAt)}'
+                      : 'Answered at ${DateFormat('h:mm a').format(myAnswer.answeredAt)}',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: context.textSecondary,
@@ -694,13 +721,16 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String myUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final myProfile = couple?.getMyProfile(myUid);
     final partnerProfile = couple?.getPartnerProfile(myUid);
 
-    final myName = myProfile?.name.isNotEmpty == true ? myProfile!.name : 'You';
+    final myName = myProfile?.name.isNotEmpty == true
+        ? myProfile!.name
+        : (strings.isPortuguese ? 'Você' : 'You');
     final partnerName = partnerProfile?.name.isNotEmpty == true
         ? partnerProfile!.name
-        : 'Partner';
+        : (strings.isPortuguese ? 'Seu Amor' : 'Partner');
 
     final myAnswer = dq.getAnswer(myUid);
     final partnerAnswer = dq.getPartnerAnswer(myUid);
@@ -718,7 +748,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryRose.withOpacity(0.3),
+                color: AppTheme.primaryRose.withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -727,7 +757,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20)
+              const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20)
                   .animate(onPlay: (c) => c.repeat(reverse: true))
                   .scale(
                     begin: const Offset(1, 1),
@@ -736,8 +766,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   ),
               const SizedBox(width: 8),
               Text(
-                'Answers Revealed!',
-                style: TextStyle(
+                strings.bothAnsweredTitle,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -779,9 +809,9 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.pastelLavender.withOpacity(0.35),
+            color: AppTheme.pastelLavender.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.tertiaryMauve.withOpacity(0.3)),
+            border: Border.all(color: AppTheme.tertiaryMauve.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -793,10 +823,12 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Talk about your answers tonight! Small conversations build lasting intimacy.',
+                  strings.isPortuguese
+                      ? 'Conversem sobre as respostas de vocês hoje! Pequenas conversas constroem uma intimidade duradoura.'
+                      : 'Talk about your answers tonight! Small conversations build lasting intimacy.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: context.textPrimary.withOpacity(0.85),
+                    color: context.textPrimary.withValues(alpha: 0.85),
                     height: 1.35,
                   ),
                 ),
@@ -815,13 +847,14 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     required String? avatarUrl,
     required DailyQuestionAnswer answer,
   }) {
+    final strings = AppStrings.of(context);
     final bgColor = isMe
-        ? AppTheme.primaryRoseLight.withOpacity(0.12)
-        : AppTheme.pastelLavender.withOpacity(0.35);
+        ? AppTheme.primaryRoseLight.withValues(alpha: 0.12)
+        : AppTheme.pastelLavender.withValues(alpha: 0.35);
 
     final borderColor = isMe
-        ? AppTheme.primaryRose.withOpacity(0.3)
-        : AppTheme.tertiaryMauve.withOpacity(0.3);
+        ? AppTheme.primaryRose.withValues(alpha: 0.3)
+        : AppTheme.tertiaryMauve.withValues(alpha: 0.3);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -836,7 +869,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         border: Border.all(color: borderColor, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -874,8 +907,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'YOU',
-                            style: TextStyle(
+                            strings.isPortuguese ? 'VOCÊ' : 'YOU',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w700,
@@ -887,7 +920,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    DateFormat('h:mm a').format(answer.answeredAt),
+                    DateFormat(strings.isPortuguese ? 'HH:mm' : 'h:mm a').format(answer.answeredAt),
                     style: TextStyle(
                       fontSize: 11,
                       color: context.textSecondary,
@@ -941,14 +974,15 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String coupleId,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final pastAsync = ref.watch(pastDailyQuestionsProvider(coupleId));
 
     return pastAsync.when(
-      loading: () => Center(
+      loading: () => const Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, _) => Center(
-        child: Text('Error loading archive: $err'),
+        child: Text('${strings.errorLoadingArchive} $err'),
       ),
       data: (questions) {
         if (questions.isEmpty) {
@@ -961,16 +995,18 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   Icon(
                     Icons.auto_stories_rounded,
                     size: 64,
-                    color: AppTheme.tertiaryMauve.withOpacity(0.5),
+                    color: AppTheme.tertiaryMauve.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No Past Answers Yet',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    strings.noPastAnswers,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Answer your first daily question together today to begin building your romantic memories collection!',
+                    strings.isPortuguese
+                        ? 'Respondam à primeira pergunta do dia juntos para começar a construir seu acervo de memórias românticas!'
+                        : 'Answer your first daily question together today to begin building your romantic memories collection!',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: context.textSecondary),
                   ),
@@ -1000,14 +1036,24 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String myUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     DateTime dt = DateTime.tryParse(q.date) ?? DateTime.now();
-    final formattedDate = DateFormat('MMMM d, yyyy').format(dt);
+    String formattedDate;
+    try {
+      if (strings.isPortuguese) {
+        formattedDate = DateFormat('d \'de\' MMMM \'de\' yyyy', 'pt_BR').format(dt);
+      } else {
+        formattedDate = DateFormat('MMMM d, yyyy', 'en_US').format(dt);
+      }
+    } catch (_) {
+      formattedDate = DateFormat('MMMM d, yyyy').format(dt);
+    }
     final myProfile = couple?.getMyProfile(myUid);
     final partnerProfile = couple?.getPartnerProfile(myUid);
-    final myName = myProfile?.name.isNotEmpty == true ? myProfile!.name : 'You';
+    final myName = myProfile?.name.isNotEmpty == true ? myProfile!.name : (strings.isPortuguese ? 'Você' : 'You');
     final partnerName = partnerProfile?.name.isNotEmpty == true
         ? partnerProfile!.name
-        : 'Partner';
+        : (strings.isPortuguese ? 'Seu Amor' : 'Partner');
 
     final myAnswer = q.getAnswer(myUid);
     final partnerAnswer = q.getPartnerAnswer(myUid);
@@ -1028,7 +1074,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: q.isRevealed
-                  ? AppTheme.primaryRose.withOpacity(0.12)
+                  ? AppTheme.primaryRose.withValues(alpha: 0.12)
                   : AppTheme.surfaceVariantLight,
               shape: BoxShape.circle,
             ),
@@ -1044,7 +1090,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           ),
           title: Text(
             formattedDate,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: AppTheme.tertiaryMauve,
@@ -1053,7 +1099,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4.0),
             child: Text(
-              q.prompt,
+              DailyQuestionRepository.translatePrompt(q.prompt, languageCode: ref.watch(localeProvider).languageCode),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1074,10 +1120,12 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                 child: Row(
                   children: [
                     Icon(Icons.lock_rounded, size: 16, color: context.textSecondary),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Answers remain locked until both partners submit.',
+                        strings.isPortuguese
+                            ? 'As respostas permanecem bloqueadas até que ambos enviem.'
+                            : 'Answers remain locked until both partners submit.',
                         style: TextStyle(fontSize: 12.5, color: context.textSecondary),
                       ),
                     ),
@@ -1117,8 +1165,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isMe
-            ? AppTheme.primaryRose.withOpacity(0.08)
-            : AppTheme.tertiaryMauve.withOpacity(0.08),
+            ? AppTheme.primaryRose.withValues(alpha: 0.08)
+            : AppTheme.tertiaryMauve.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1143,48 +1191,57 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   }
 
   void _showHowItWorksDialog(BuildContext context) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.auto_awesome_rounded, color: AppTheme.primaryRose),
-            SizedBox(width: 8),
-            Text('Dual-Blind Reveal'),
+            const Icon(Icons.auto_awesome_rounded, color: AppTheme.primaryRose),
+            const SizedBox(width: 8),
+            Text(strings.howItWorksTitle),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '1. Both of you receive the same intimate question every morning.',
-              style: TextStyle(fontSize: 14, height: 1.4),
+              strings.isPortuguese
+                  ? '1. Vocês dois recebem a mesma pergunta especial todas as manhãs.'
+                  : '1. Both of you receive the same intimate question every morning.',
+              style: const TextStyle(fontSize: 14, height: 1.4),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              '2. Neither partner can peek at the other\'s answer until both have answered.',
-              style: TextStyle(fontSize: 14, height: 1.4),
+              strings.isPortuguese
+                  ? '2. Nenhum dos dois consegue espiar a resposta do outro antes de responder.'
+                  : '2. Neither partner can peek at the other\'s answer until both have answered.',
+              style: const TextStyle(fontSize: 14, height: 1.4),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              '3. As soon as the second answer is submitted, both unlock together simultaneously!',
-              style: TextStyle(fontSize: 14, height: 1.4),
+              strings.isPortuguese
+                  ? '3. Assim que a segunda resposta for enviada, as duas são reveladas juntas!'
+                  : '3. As soon as the second answer is submitted, both unlock together simultaneously!',
+              style: const TextStyle(fontSize: 14, height: 1.4),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              '4. Revisit past daily questions anytime in your Past Memories archive.',
-              style: TextStyle(fontSize: 14, height: 1.4),
+              strings.isPortuguese
+                  ? '4. Relembrem perguntas e respostas anteriores a qualquer momento nas Memórias Anteriores.'
+                  : '4. Revisit past daily questions anytime in your Past Memories archive.',
+              style: const TextStyle(fontSize: 14, height: 1.4),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Got it!'),
+            child: Text(strings.understood),
           ),
         ],
       ),

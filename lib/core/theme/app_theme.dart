@@ -149,7 +149,6 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryRose,
           side: const BorderSide(color: primaryRose, width: 1.5),
-          minimumSize: const Size.fromHeight(50),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(buttonBorderRadius),
           ),
@@ -275,6 +274,15 @@ class AppTheme {
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primaryRoseLight,
+          side: const BorderSide(color: primaryRoseLight, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(buttonBorderRadius),
           ),
         ),
       ),

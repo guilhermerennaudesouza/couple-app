@@ -1,9 +1,44 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
+import '../../core/l10n/locale_provider.dart';
+import '../auth/data/pairing_repository.dart';
 import '../auth/domain/couple_model.dart';
+import '../daily_question/data/daily_question_repository.dart';
 import '../daily_question/domain/daily_question_model.dart';
+import '../notes/data/note_repository.dart';
 import '../notes/domain/note_model.dart';
+import '../tasks/data/task_repository.dart';
 import '../tasks/domain/task_model.dart';
+
+/// Riverpod listener provider that automatically keeps Android home widgets synchronized
+/// with Firestore state (couple milestones, today's prompt, top tasks, pinned note).
+final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
+  if (coupleId.isEmpty) return;
+
+  final coupleAsync = ref.watch(coupleStreamProvider(coupleId));
+  final todayAsync = ref.watch(todayDailyQuestionProvider(coupleId));
+  final tasksAsync = ref.watch(tasksStreamProvider(coupleId));
+  final notesAsync = ref.watch(notesStreamProvider(coupleId));
+  final locale = ref.watch(localeProvider);
+
+  final couple = coupleAsync.valueOrNull;
+  final todayQuestion = todayAsync.valueOrNull;
+  final tasks = tasksAsync.valueOrNull ?? const [];
+  final notes = notesAsync.valueOrNull ?? const [];
+  final pinnedNote = notes.where((n) => n.isPinnedToWidget).firstOrNull;
+  final myUid = FirebaseAuth.instance.currentUser?.uid;
+
+  WidgetSyncService.syncAllWidgets(
+    couple: couple,
+    pinnedNote: pinnedNote,
+    todayQuestion: todayQuestion,
+    tasks: tasks,
+    myUid: myUid,
+    isPortuguese: locale.languageCode == 'pt',
+  );
+});
 
 /// Service orchestrating bidirectional synchronization between Krivo's
 /// internal data models and Android Home Screen Widgets via Kotlin Jetpack Glance.
@@ -70,21 +105,23 @@ class WidgetSyncService {
     required DateTime anniversary,
     DateTime? today,
     required String partnerName,
+    bool isPortuguese = false,
   }) {
     final current = today ?? DateTime.now();
     // Normalize to UTC date boundaries (midnight) to prevent timezone and DST drift
     final d1 = DateTime.utc(anniversary.year, anniversary.month, anniversary.day);
     final d2 = DateTime.utc(current.year, current.month, current.day);
     final daysTogether = d2.difference(d1).inDays;
+    final formattedDays = isPortuguese ? '$daysTogether dias' : '$daysTogether days';
 
     return {
       'daysTogether': daysTogether,
       'partnerName': partnerName,
-      'formattedDays': '$daysTogether days',
+      'formattedDays': formattedDays,
       'anniversary': anniversary.toIso8601String(),
       'days_together': daysTogether,
       'partner_name': partnerName,
-      'formatted_days': '$daysTogether days',
+      'formatted_days': formattedDays,
     };
   }
 
@@ -93,12 +130,14 @@ class WidgetSyncService {
     required DateTime anniversary,
     required String partnerName,
     DateTime? today,
+    bool isPortuguese = false,
   }) async {
     try {
       final stats = formatCoupleStats(
         anniversary: anniversary,
         today: today,
         partnerName: partnerName,
+        isPortuguese: isPortuguese,
       );
 
       await HomeWidget.saveWidgetData<int>(
@@ -130,14 +169,25 @@ class WidgetSyncService {
     required bool isAnsweredByMe,
     required bool isRevealed,
     required bool isAnsweredByPartner,
+    bool isPortuguese = false,
   }) {
     final String status;
-    if (isRevealed) {
-      status = 'Both answered! Tap to read 💕';
-    } else if (isAnsweredByMe) {
-      status = 'Waiting for partner... 🔒';
+    if (isPortuguese) {
+      if (isRevealed) {
+        status = 'Ambos responderam! 💕';
+      } else if (isAnsweredByMe) {
+        status = 'Aguardando seu amor... 🔒';
+      } else {
+        status = 'Aguardando sua resposta ✍️';
+      }
     } else {
-      status = 'Waiting for your answer ✍️';
+      if (isRevealed) {
+        status = 'Both answered! Tap to read 💕';
+      } else if (isAnsweredByMe) {
+        status = 'Waiting for partner... 🔒';
+      } else {
+        status = 'Waiting for your answer ✍️';
+      }
     }
 
     return {
@@ -160,6 +210,7 @@ class WidgetSyncService {
     required bool isAnsweredByMe,
     required bool isRevealed,
     required bool isAnsweredByPartner,
+    bool isPortuguese = false,
   }) async {
     try {
       final data = formatDailyPrompt(
@@ -167,6 +218,7 @@ class WidgetSyncService {
         isAnsweredByMe: isAnsweredByMe,
         isRevealed: isRevealed,
         isAnsweredByPartner: isAnsweredByPartner,
+        isPortuguese: isPortuguese,
       );
 
       await HomeWidget.saveWidgetData<String>(
@@ -303,19 +355,21 @@ class WidgetSyncService {
     required DailyQuestionModel? todayQuestion,
     required List<TaskModel> tasks,
     String? myUid,
+    bool isPortuguese = true,
   }) async {
     if (couple != null) {
-      String partnerName = 'Partner';
+      String partnerName = isPortuguese ? 'Seu Amor' : 'Partner';
       if (myUid != null) {
         final name = couple.getPartnerProfile(myUid)?.displayName;
-        partnerName = (name != null && name.trim().isNotEmpty) ? name.trim() : 'Partner';
+        partnerName = (name != null && name.trim().isNotEmpty) ? name.trim() : partnerName;
       } else if (couple.partnerProfiles.isNotEmpty) {
         final name = couple.partnerProfiles.values.first.displayName;
-        partnerName = name.trim().isNotEmpty ? name.trim() : 'Partner';
+        partnerName = name.trim().isNotEmpty ? name.trim() : partnerName;
       }
       await syncCoupleStats(
         anniversary: couple.anniversaryDate,
         partnerName: partnerName,
+        isPortuguese: isPortuguese,
       );
     }
 
@@ -338,9 +392,11 @@ class WidgetSyncService {
         isAnsweredByMe: isAnsweredByMe,
         isRevealed: todayQuestion.isRevealed,
         isAnsweredByPartner: isAnsweredByPartner,
+        isPortuguese: isPortuguese,
       );
     }
 
+    await HomeWidget.saveWidgetData<String>('language', isPortuguese ? 'pt' : 'en');
     await syncTopTasks(tasks: tasks);
   }
 }
