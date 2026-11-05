@@ -1,13 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ota_update/ota_update.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:couple_app/core/firebase/firebase_config.dart';
 import 'package:couple_app/core/l10n/app_strings.dart';
 import 'package:couple_app/core/l10n/locale_provider.dart';
 import 'package:couple_app/core/notifications/local_notification_service.dart';
+import 'package:couple_app/core/services/app_update_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/core/theme/theme_provider.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
@@ -190,8 +194,8 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
   }
 }
 
-/// Samsung One UI inspired Hub screen displaying feature cards, preferences and space info.
-class CoupleHubScreen extends ConsumerWidget {
+/// Samsung One UI inspired Hub screen displaying feature cards, preferences, in-app updates and space info.
+class CoupleHubScreen extends ConsumerStatefulWidget {
   final String coupleId;
 
   const CoupleHubScreen({
@@ -200,7 +204,271 @@ class CoupleHubScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CoupleHubScreen> createState() => _CoupleHubScreenState();
+}
+
+class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
+  String _installedVersion = '1.0.0';
+  bool _isCheckingUpdate = false;
+  static bool _hasAutoCheckedOnLaunch = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _installedVersion = info.version;
+        });
+      }
+    } catch (e) {
+      debugPrint('CoupleHubScreen: failed to load package info: $e');
+    }
+
+    if (!_hasAutoCheckedOnLaunch) {
+      _hasAutoCheckedOnLaunch = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _checkForUpdate(silent: true);
+        }
+      });
+    }
+  }
+
+  Future<void> _checkForUpdate({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _isCheckingUpdate = true);
+    }
+
+    try {
+      final updateService = ref.read(appUpdateServiceProvider);
+      final update = await updateService.checkForUpdate(
+        currentVersionOverride: _installedVersion,
+      );
+
+      if (!mounted) return;
+
+      if (update != null && update.hasUpdate) {
+        _showUpdateDialog(update);
+      } else if (!silent) {
+        final strings = AppStrings.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(strings.updateUpToDate),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('CoupleHubScreen: update check failed: $e');
+      if (!silent && mounted) {
+        final strings = AppStrings.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(strings.updateError),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted && !silent) {
+        setState(() => _isCheckingUpdate = false);
+      }
+    }
+  }
+
+  void _showUpdateDialog(AppUpdateInfo update) {
+    final strings = AppStrings.of(context);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        double? downloadProgress;
+        String? statusText;
+        bool isDownloading = false;
+        String? errorMessage;
+        StreamSubscription<OtaEvent>? otaSub;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+              ),
+              title: Row(
+                children: [
+                  const Icon(
+                    Icons.system_update_rounded,
+                    color: AppTheme.primaryRose,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      strings.updateAvailableTitle,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.updateAvailableBody(update.latestVersion),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (update.releaseNotes != null &&
+                      update.releaseNotes!.trim().isNotEmpty) ...[
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 140),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.surfaceVariant,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          update.releaseNotes!.trim(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (isDownloading) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: downloadProgress,
+                        backgroundColor: context.surfaceVariant,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppTheme.primaryRose,
+                        ),
+                        minHeight: 8,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      statusText ?? strings.updateChecking,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      errorMessage!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.errorRed,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                if (!isDownloading) ...[
+                  TextButton(
+                    onPressed: () {
+                      otaSub?.cancel();
+                      Navigator.of(dialogCtx).pop();
+                    },
+                    child: Text(strings.updateLater),
+                  ),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryRose,
+                    ),
+                    onPressed: () {
+                      setDialogState(() {
+                        isDownloading = true;
+                        errorMessage = null;
+                        statusText = strings.updateDownloading('0');
+                        downloadProgress = 0.0;
+                      });
+
+                      try {
+                        final service = ref.read(appUpdateServiceProvider);
+                        otaSub = service
+                            .startOtaUpdate(update.downloadUrl)
+                            .listen(
+                          (event) {
+                            if (!mounted) return;
+                            setDialogState(() {
+                              if (event.status == OtaStatus.DOWNLOADING) {
+                                final pct =
+                                    double.tryParse(event.value ?? '0') ?? 0;
+                                downloadProgress = pct / 100.0;
+                                statusText =
+                                    strings.updateDownloading(event.value ?? '0');
+                              } else if (event.status == OtaStatus.INSTALLING) {
+                                statusText = strings.isPortuguese
+                                    ? 'Iniciando instalador do sistema...'
+                                    : 'Starting system installer...';
+                                downloadProgress = 1.0;
+                              } else if (event.status ==
+                                  OtaStatus.PERMISSION_NOT_GRANTED_ERROR) {
+                                isDownloading = false;
+                                errorMessage = strings.isPortuguese
+                                    ? 'Permissão necessária para instalar atualizações.'
+                                    : 'Permission required to install updates.';
+                              } else if (event.status ==
+                                  OtaStatus.INTERNAL_ERROR) {
+                                isDownloading = false;
+                                errorMessage = strings.updateError;
+                              }
+                            });
+                          },
+                          onError: (err) {
+                            if (!mounted) return;
+                            setDialogState(() {
+                              isDownloading = false;
+                              errorMessage = strings.updateError;
+                            });
+                          },
+                        );
+                      } catch (e) {
+                        setDialogState(() {
+                          isDownloading = false;
+                          errorMessage = strings.updateError;
+                        });
+                      }
+                    },
+                    child: Text(strings.updateNow),
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final coupleId = widget.coupleId;
     final coupleAsync = ref.watch(coupleStreamProvider(coupleId));
     final couple = coupleAsync.valueOrNull;
     final strings = AppStrings.of(context);
@@ -472,6 +740,61 @@ class CoupleHubScreen extends ConsumerWidget {
                           ref.read(themeModeProvider.notifier).setThemeMode(newSelection.first);
                         },
                       ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+
+                  // App Version & In-App Update Row
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.system_update_rounded,
+                        color: AppTheme.primaryRose,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.appVersionLabel,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'v$_installedVersion',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_isCheckingUpdate)
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                        )
+                      else
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: Text(
+                            strings.checkForUpdates,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: () => _checkForUpdate(silent: false),
+                        ),
                     ],
                   ),
                 ],
