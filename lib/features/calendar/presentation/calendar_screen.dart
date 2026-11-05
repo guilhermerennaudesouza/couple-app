@@ -113,7 +113,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       ),
       body: eventsAsync.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(color: AppTheme.primaryRose),
         ),
         error: (err, stack) => Center(
@@ -421,7 +421,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 label: Text(
                   count > 0 ? '$cat ($count)' : cat,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textPrimaryLight,
+                    color: isSelected ? Colors.white : context.textPrimary,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 13,
                   ),
@@ -624,7 +624,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 ? Colors.white
                                 : isToday
                                     ? AppTheme.primaryRoseDark
-                                    : AppTheme.textPrimaryLight,
+                                    : context.textPrimary,
                             fontWeight: isSelected || isToday
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -748,8 +748,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: isPast
-                                ? AppTheme.textSecondaryLight
-                                : AppTheme.textPrimaryLight,
+                                ? context.textSecondary
+                                : context.textPrimary,
                             decoration:
                                 isPast ? TextDecoration.lineThrough : null,
                           ),
@@ -763,9 +763,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     const SizedBox(height: 4),
                     Text(
                       event.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.textSecondaryLight,
+                        color: context.textSecondary,
                       ),
                     ),
                   ],
@@ -779,14 +779,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.access_time_rounded,
-                              size: 14, color: AppTheme.textSecondaryLight),
+                          Icon(Icons.access_time_rounded,
+                              size: 14, color: context.textSecondary),
                           const SizedBox(width: 4),
                           Text(
                             DateFormat('EEE, MMM d, yyyy').format(event.date),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textSecondaryLight,
+                              color: context.textSecondary,
                             ),
                           ),
                         ],
@@ -799,7 +799,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             color: AppTheme.pastelLavender,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.repeat_rounded,
@@ -820,12 +820,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.notifications_active_outlined,
+                            Icon(Icons.notifications_active_outlined,
                                 size: 14, color: AppTheme.primaryRose),
                             const SizedBox(width: 4),
                             Text(
                               '${event.reminderDaysBefore}d before',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.primaryRose,
                                 fontWeight: FontWeight.w500,
@@ -841,8 +841,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
             // Overflow Actions Menu
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded,
-                  color: AppTheme.textSecondaryLight, size: 20),
+              icon: Icon(Icons.more_vert_rounded,
+                  color: context.textSecondary, size: 20),
               onSelected: (val) {
                 if (val == 'edit') {
                   _showEventEditor(
@@ -911,10 +911,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           color: Colors.black12,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Text(
+        child: Text(
           'Past',
           style: TextStyle(
-            color: AppTheme.textSecondaryLight,
+            color: context.textSecondary,
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
@@ -970,28 +970,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               color: AppTheme.surfaceVariantLight,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.favorite_border_rounded,
               size: 54,
               color: AppTheme.primaryRose,
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'No Upcoming Moments Yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimaryLight,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Plan your next romantic date night, track anniversaries, or schedule a weekend getaway together.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.textSecondaryLight,
+              color: context.textSecondary,
               height: 1.4,
             ),
           ),
@@ -1145,7 +1145,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           labelStyle: TextStyle(
                             color: isSelected
                                 ? Colors.white
-                                : AppTheme.textPrimaryLight,
+                                : context.textPrimary,
                             fontWeight: FontWeight.w500,
                           ),
                           onSelected: (val) {
@@ -1407,8 +1407,8 @@ class _WeekdayLabel extends StatelessWidget {
       child: Text(
         label,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: AppTheme.textSecondaryLight,
+        style: TextStyle(
+          color: context.textSecondary,
           fontWeight: FontWeight.w700,
           fontSize: 12,
         ),

@@ -75,7 +75,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Sticky Notes'),
+          title: Text('Sticky Notes'),
         ),
         body: Center(
           child: Padding(
@@ -89,15 +89,15 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                   color: AppTheme.primaryRose.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'No Couple Space Connected',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Please pair with your partner before sharing sticky notes.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondaryLight),
+                  style: TextStyle(color: context.textSecondary),
                 ),
               ],
             ),
@@ -148,7 +148,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         ),
       ),
       body: notesAsync.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(color: AppTheme.primaryRose),
         ),
         error: (error, _) => Center(
@@ -210,29 +210,29 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 color: AppTheme.pastelPeach.withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.sticky_note_2_rounded,
                 size: 72,
                 color: AppTheme.primaryRose,
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'No Sticky Notes Yet',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Leave sweet surprises, daily compliments, or reminders for your partner. '
               'Pin your favorite note directly to their Android Home Screen widget!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -540,10 +540,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         children: [
                           Text(
                             existingNote == null ? 'New Sticky Note' : 'Edit Note',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimaryLight,
+                              color: context.textPrimary,
                             ),
                           ),
                           if (existingNote != null)
@@ -577,7 +577,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           children: [
                             TextField(
                               controller: titleController,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF2E221F),
@@ -621,12 +621,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       const SizedBox(height: 16),
 
                       // Pastel Color Picker
-                      const Text(
+                      Text(
                         'Sticky Note Color',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondaryLight,
+                          color: context.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -694,7 +694,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         value: isPinned,
                         activeColor: AppTheme.primaryRose,
                         contentPadding: EdgeInsets.zero,
-                        title: const Row(
+                        title: Row(
                           children: [
                             Icon(Icons.push_pin_rounded,
                                 size: 18, color: AppTheme.primaryRose),
@@ -708,11 +708,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             ),
                           ],
                         ),
-                        subtitle: const Text(
+                        subtitle: Text(
                           'Show this note on your partner\'s Android Glance widget',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.textSecondaryLight,
+                            color: context.textSecondary,
                           ),
                         ),
                         onChanged: (val) {
@@ -870,14 +870,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.widgets_rounded, color: AppTheme.primaryRose),
             SizedBox(width: 8),
             Text('Android Glance Widget'),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -894,7 +894,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             Text(
               'Whenever either partner pins a note in Krivo, the widget instantly updates with the new message and matching pastel color! 💕',
               style: TextStyle(
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
                 fontSize: 13,
                 height: 1.35,
               ),

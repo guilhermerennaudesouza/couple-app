@@ -80,7 +80,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Row(
+          title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose, size: 24),
@@ -104,15 +104,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                   color: AppTheme.primaryRose.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'No Couple Space Connected',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Please pair with your partner before managing shared tasks and lists.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondaryLight),
+                  style: TextStyle(color: context.textSecondary),
                 ),
               ],
             ),
@@ -131,7 +131,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose, size: 24),
@@ -146,7 +146,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           controller: _tabController,
           indicatorColor: AppTheme.primaryRose,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           tabs: const [
@@ -204,7 +204,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         _buildTaskFilterChips(partnerName),
         Expanded(
           child: tasksAsync.when(
-            loading: () => const Center(
+            loading: () => Center(
               child: CircularProgressIndicator(color: AppTheme.primaryRose),
             ),
             error: (err, _) => Center(
@@ -277,7 +277,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
       },
       selectedColor: AppTheme.primaryRoseLight.withOpacity(0.3),
       labelStyle: TextStyle(
-        color: isSelected ? AppTheme.primaryRoseDark : AppTheme.textSecondaryLight,
+        color: isSelected ? AppTheme.primaryRoseDark : context.textSecondary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       side: BorderSide(
@@ -350,7 +350,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 : AppTheme.outlineLight,
           ),
         ),
-        color: isDone ? Colors.grey.shade50 : Colors.white,
+        color: isDone ? (context.isDarkMode ? AppTheme.surfaceVariantDark : Colors.grey.shade50) : (context.isDarkMode ? AppTheme.surfaceDark : Colors.white),
         elevation: isDone ? 0 : 0.5,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -389,8 +389,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: isDone
-                            ? AppTheme.textSecondaryLight
-                            : AppTheme.textPrimaryLight,
+                            ? context.textSecondary
+                            : context.textPrimary,
                         decoration:
                             isDone ? TextDecoration.lineThrough : TextDecoration.none,
                       ),
@@ -401,7 +401,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                         task.description,
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppTheme.textSecondaryLight,
+                          color: context.textSecondary,
                           decoration: isDone
                               ? TextDecoration.lineThrough
                               : TextDecoration.none,
@@ -438,8 +438,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
 
               // Delete button
               IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                color: AppTheme.textSecondaryLight.withOpacity(0.6),
+                icon: Icon(Icons.close_rounded, size: 18),
+                color: context.textSecondary.withOpacity(0.6),
                 onPressed: () {
                   ref.read(taskRepositoryProvider).deleteTask(coupleId, task.id);
                 },
@@ -462,7 +462,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         icon: Icons.person_outline_rounded,
         label: 'Shared',
         color: Colors.grey.shade100,
-        textColor: AppTheme.textSecondaryLight,
+        textColor: context.textSecondary,
       );
     }
 
@@ -487,7 +487,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
 
     if (isDone) {
       bg = Colors.grey.shade100;
-      fg = AppTheme.textSecondaryLight;
+      fg = context.textSecondary;
     } else if (isOverdue) {
       bg = AppTheme.errorRed.withOpacity(0.12);
       fg = AppTheme.errorRed;
@@ -545,13 +545,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     final listsAsync = ref.watch(listsStreamProvider(coupleId));
 
     return listsAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, _) => Center(
         child: Text(
           'Could not load checklists: $err',
-          style: const TextStyle(color: AppTheme.errorRed),
+          style: TextStyle(color: AppTheme.errorRed),
         ),
       ),
       data: (lists) {
@@ -560,20 +560,20 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.format_list_bulleted_rounded,
                   size: 64,
                   color: AppTheme.secondaryBlush,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'No checklists yet',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Start with our curated templates or make your own!',
-                  style: TextStyle(color: AppTheme.textSecondaryLight),
+                  style: TextStyle(color: context.textSecondary),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
@@ -644,10 +644,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         ),
         title: Text(
           list.title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimaryLight,
+            color: context.textPrimary,
           ),
         ),
         subtitle: Column(
@@ -679,7 +679,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     fontWeight: FontWeight.w600,
                     color: list.isFullyCompleted
                         ? AppTheme.successGreen
-                        : AppTheme.textSecondaryLight,
+                        : context.textSecondary,
                   ),
                 ),
               ],
@@ -687,7 +687,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           ],
         ),
         trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded, color: AppTheme.textSecondaryLight),
+          icon: Icon(Icons.more_vert_rounded, color: context.textSecondary),
           onSelected: (value) {
             if (value == 'delete') {
               ref.read(taskRepositoryProvider).deleteList(coupleId, list.id);
@@ -711,13 +711,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
 
           // Items List
           if (list.items.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: Text(
                   'No items yet. Type below to add!',
                   style: TextStyle(
-                    color: AppTheme.textSecondaryLight,
+                    color: context.textSecondary,
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
                   ),
@@ -770,15 +770,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       style: TextStyle(
                         fontSize: 14,
                         color: item.isDone
-                            ? AppTheme.textSecondaryLight
-                            : AppTheme.textPrimaryLight,
+                            ? context.textSecondary
+                            : context.textPrimary,
                         decoration:
                             item.isDone ? TextDecoration.lineThrough : TextDecoration.none,
                       ),
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      color: AppTheme.textSecondaryLight.withOpacity(0.5),
+                      icon: Icon(Icons.close_rounded, size: 16),
+                      color: context.textSecondary.withOpacity(0.5),
                       onPressed: () {
                         ref.read(taskRepositoryProvider).removeChecklistItem(
                               coupleId,
@@ -804,7 +804,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       hintText: 'Add an item...',
                       hintStyle: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.textSecondaryLight.withOpacity(0.7),
+                        color: context.textSecondary.withOpacity(0.7),
                       ),
                       isDense: true,
                       contentPadding:
@@ -914,16 +914,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Add Task or Chore',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimaryLight,
+                            color: context.textPrimary,
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded),
+                          icon: Icon(Icons.close_rounded),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
@@ -1126,12 +1126,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Create Shared Checklist',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimaryLight,
+                            color: context.textPrimary,
                           ),
                         ),
                         IconButton(
@@ -1245,19 +1245,19 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
           ],

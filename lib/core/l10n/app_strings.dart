@@ -83,12 +83,12 @@ class AppStrings {
       : 'Color sticky notes, sweet messages & widget pins';
 
   // --- Pairing Screen ---
-  String get pairingTitle => isPortuguese ? 'Nosso Início' : 'Couple Space';
+  String get pairingTitle => isPortuguese ? 'Conectar ao Parceiro(a)' : 'Connect with Partner';
   String get pairingSubtitle => isPortuguese
       ? 'Um espaço privado, seguro e feito sob medida para vocês dois.'
       : 'A private, zero-cost, encrypted shared space for the two of you.';
-  String get tabCreate => isPortuguese ? 'Criar Novo Espaço' : 'Create Space';
-  String get tabJoin => isPortuguese ? 'Entrar com Código' : 'Join Existing';
+  String get tabCreate => isPortuguese ? 'Criar Espaço' : 'Create Space';
+  String get tabJoin => isPortuguese ? 'Entrar com Código' : 'Join Partner';
   String get yourNameLabel => isPortuguese ? 'Seu Nome ou Apelido' : 'Your Name';
   String get yourNameHint => isPortuguese ? 'ex: Guilherme' : 'e.g. Alex';
   String get partnerNameLabel => isPortuguese ? 'Nome do seu Amor' : 'Partner\'s Name';

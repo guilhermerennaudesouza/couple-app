@@ -92,7 +92,7 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Decide & Do Together',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
@@ -100,7 +100,7 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
           controller: _tabController,
           indicatorColor: AppTheme.primaryRose,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           indicatorWeight: 3,
           tabs: const [
             Tab(
@@ -168,15 +168,15 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
               color: AppTheme.primaryRose.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No Couple Connected',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Pair with your partner first to create ballots and plan date ideas together.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondaryLight),
+              style: TextStyle(color: context.textSecondary),
             ),
           ],
         ),
@@ -229,7 +229,7 @@ class _DecideTab extends ConsumerWidget {
     final sessionsAsync = ref.watch(decideSessionsStreamProvider(coupleId));
 
     return sessionsAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -272,7 +272,7 @@ class _DecideTab extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.secondaryBlush.withOpacity(0.5)),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Text('🤫', style: TextStyle(fontSize: 28)),
           SizedBox(width: 12),
@@ -285,7 +285,7 @@ class _DecideTab extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: AppTheme.textPrimaryLight,
+                    color: context.textPrimary,
                   ),
                 ),
                 SizedBox(height: 2),
@@ -293,7 +293,7 @@ class _DecideTab extends ConsumerWidget {
                   'Your vote remains completely secret until both of you choose!',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryLight,
+                    color: context.textSecondary,
                   ),
                 ),
               ],
@@ -317,21 +317,21 @@ class _DecideTab extends ConsumerWidget {
               color: AppTheme.primaryRose.withOpacity(0.4),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'No Ballots Yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Cannot decide what to eat, what movie to watch, or where to go? Create your first secret ballot!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
           ],
@@ -438,9 +438,9 @@ class _BallotCard extends ConsumerWidget {
             // Date & Creator info
             Text(
               'Created ${DateFormat.MMMd().format(session.createdAt)}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -493,7 +493,7 @@ class _BallotCard extends ConsumerWidget {
                           isWinner || isMyPick ? FontWeight.bold : FontWeight.w500,
                       color: isWinner
                           ? AppTheme.primaryRoseDark
-                          : AppTheme.textPrimaryLight,
+                          : context.textPrimary,
                       fontSize: 15,
                     ),
                   ),
@@ -540,7 +540,7 @@ class _BallotCard extends ConsumerWidget {
             // Status message for open ballot
             if (!isResolved) ...[
               const SizedBox(height: 6),
-              _buildOpenBallotFooter(session),
+              _buildOpenBallotFooter(context, session),
             ],
           ],
         ),
@@ -770,7 +770,7 @@ class _BallotCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildOpenBallotFooter(DecideSessionModel session) {
+  Widget _buildOpenBallotFooter(BuildContext context, DecideSessionModel session) {
     final hasVoted = session.hasUserVoted(myUid);
     final partnerHasVoted = session.votes.keys.any((uid) => uid != myUid);
 
@@ -801,9 +801,9 @@ class _BallotCard extends ConsumerWidget {
         Expanded(
           child: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppTheme.textSecondaryLight,
+              color: context.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -933,7 +933,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: const Row(
+      title: Row(
         children: [
           Text('🪙', style: TextStyle(fontSize: 24)),
           SizedBox(width: 8),
@@ -962,27 +962,27 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Text('✨', style: TextStyle(fontSize: 36)),
               ),
             ),
           ),
           const SizedBox(height: 20),
           if (_isFlipping)
-            const Text(
+            Text(
               'Flipping the coin...',
               style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             )
           else if (_selectedWinner != null) ...[
-            const Text(
+            Text(
               'The Coin Has Spoken!',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
             const SizedBox(height: 6),
@@ -1053,7 +1053,7 @@ class _DateIdeasTab extends ConsumerWidget {
     final ideasAsync = ref.watch(dateIdeasStreamProvider(coupleId));
 
     return ideasAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -1085,12 +1085,12 @@ class _DateIdeasTab extends ConsumerWidget {
             ],
 
             // CATEGORY FILTER CHIPS
-            _buildCategoryFilterRow(),
+            _buildCategoryFilterRow(context),
             const SizedBox(height: 16),
 
             // IDEAS LIST
             if (filteredIdeas.isEmpty)
-              _buildEmptyCategoryState()
+              _buildEmptyCategoryState(context)
             else
               ...filteredIdeas.map((idea) {
                 return _DateIdeaCard(
@@ -1104,7 +1104,7 @@ class _DateIdeasTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryFilterRow() {
+  Widget _buildCategoryFilterRow(BuildContext context) {
     final categories = ['All', ...DateIdeaModel.allCategories];
 
     return SingleChildScrollView(
@@ -1121,7 +1121,7 @@ class _DateIdeasTab extends ConsumerWidget {
               selectedColor: AppTheme.primaryRose.withOpacity(0.18),
               backgroundColor: AppTheme.surfaceVariantLight,
               labelStyle: TextStyle(
-                color: isSelected ? AppTheme.primaryRoseDark : AppTheme.textPrimaryLight,
+                color: isSelected ? AppTheme.primaryRoseDark : context.textPrimary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
               ),
@@ -1136,7 +1136,7 @@ class _DateIdeasTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyCategoryState() {
+  Widget _buildEmptyCategoryState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(32),
       alignment: Alignment.center,
@@ -1150,19 +1150,19 @@ class _DateIdeasTab extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             'No date ideas in "$selectedCategory"',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimaryLight,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Tap the button below to add your first date idea for this category!',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.textSecondaryLight,
+              color: context.textSecondary,
             ),
           ),
         ],
@@ -1391,7 +1391,7 @@ class _DateIdeaCard extends ConsumerWidget {
                         ),
                         if (idea.isWeeklyPick) ...[
                           const SizedBox(width: 6),
-                          const Text(
+                          Text(
                             '⭐ Weekly Pick',
                             style: TextStyle(
                               fontSize: 11,
@@ -1412,8 +1412,8 @@ class _DateIdeaCard extends ConsumerWidget {
                             ? TextDecoration.lineThrough
                             : null,
                         color: idea.isCompleted
-                            ? AppTheme.textSecondaryLight
-                            : AppTheme.textPrimaryLight,
+                            ? context.textSecondary
+                            : context.textPrimary,
                       ),
                     ),
                     if (idea.description.isNotEmpty) ...[
@@ -1422,7 +1422,7 @@ class _DateIdeaCard extends ConsumerWidget {
                         idea.description,
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppTheme.textSecondaryLight,
+                          color: context.textSecondary,
                           decoration: idea.isCompleted
                               ? TextDecoration.lineThrough
                               : null,
@@ -1433,7 +1433,7 @@ class _DateIdeaCard extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         'Completed on ${DateFormat.MMMd().format(idea.completedAt!)} ❤️',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.successGreen,
@@ -1455,7 +1455,7 @@ class _DateIdeaCard extends ConsumerWidget {
                           : Icons.star_outline_rounded,
                       color: idea.isWeeklyPick
                           ? AppTheme.goldAccent
-                          : AppTheme.textSecondaryLight,
+                          : context.textSecondary,
                     ),
                     tooltip: idea.isWeeklyPick
                         ? 'Remove from Weekly Pick'
@@ -1698,14 +1698,14 @@ class _CreateBallotBottomSheetState
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Create Decision Ballot 🗳️',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Votes remain secret until both of you make your selection.',
-              style: TextStyle(fontSize: 13, color: AppTheme.textSecondaryLight),
+              style: TextStyle(fontSize: 13, color: context.textSecondary),
             ),
             const SizedBox(height: 16),
 

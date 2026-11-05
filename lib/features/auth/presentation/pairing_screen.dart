@@ -5,6 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
+
 import '../data/pairing_repository.dart';
 import '../domain/couple_model.dart';
 
@@ -160,11 +163,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: ColorScheme.light(
               primary: AppTheme.primaryRose,
               onPrimary: Colors.white,
               surface: Colors.white,
-              onSurface: AppTheme.textPrimaryLight,
+              onSurface: context.textPrimary,
             ),
           ),
           child: child!,
@@ -181,17 +184,33 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Connect with Partner'),
+        title: Text(AppStrings.of(context).pairingTitle),
         centerTitle: true,
+        actions: [
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.primaryRose,
+            ),
+            onPressed: () {
+              ref.read(localeProvider.notifier).toggleLanguage();
+            },
+            icon: const Icon(Icons.language_rounded, size: 18),
+            label: Text(
+              ref.watch(localeProvider).languageCode == 'pt' ? '🇧🇷 PT' : '🇺🇸 EN',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primaryRose,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Create Space', icon: Icon(Icons.favorite_outline_rounded)),
-            Tab(text: 'Join Partner', icon: Icon(Icons.link_rounded)),
+          tabs: [
+            Tab(text: AppStrings.of(context).tabCreate, icon: const Icon(Icons.favorite_outline_rounded)),
+            Tab(text: AppStrings.of(context).tabJoin, icon: const Icon(Icons.link_rounded)),
           ],
         ),
       ),
@@ -227,22 +246,22 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               size: 56,
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Start Your Shared Space',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Create a private space for just the two of you, backed securely on Firebase Spark tier.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -285,11 +304,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Anniversary Date',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textSecondaryLight,
+                              color: context.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -361,16 +380,16 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                   Text(
                     'You are paired with ${other?.name ?? 'your partner'}!',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryLight,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Your private space is ready.',
-                    style: TextStyle(color: AppTheme.textSecondaryLight),
+                    style: TextStyle(color: context.textSecondary),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
@@ -398,22 +417,22 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Share With Your Partner',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryLight,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Ask your partner to enter this 6-digit code or scan the QR code in their app.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.textSecondaryLight,
+                  color: context.textSecondary,
                 ),
               ),
               const SizedBox(height: 28),
@@ -495,7 +514,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                   ),
                   child: CustomPaint(
                     painter: _StylizedQrPainter(code: currentCouple.inviteCode),
-                    child: const Center(
+                    child: Center(
                       child: CircleAvatar(
                         radius: 18,
                         backgroundColor: AppTheme.primaryRose,
@@ -548,7 +567,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
@@ -567,22 +586,22 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               size: 56,
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Join Your Partner',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Enter the 6-digit code shown on your partner’s screen to link your devices.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
                 height: 1.4,
               ),
             ),

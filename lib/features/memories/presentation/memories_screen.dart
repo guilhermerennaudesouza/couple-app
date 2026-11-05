@@ -55,8 +55,8 @@ Widget buildPhotoThumbnail(
           color: AppTheme.surfaceVariantLight,
           width: width,
           height: height,
-          child: const Center(
-            child: Icon(Icons.broken_image_rounded, color: AppTheme.textSecondaryLight),
+          child: Center(
+            child: Icon(Icons.broken_image_rounded, color: AppTheme.textSecondaryDark),
           ),
         ),
       );
@@ -65,8 +65,8 @@ Widget buildPhotoThumbnail(
         color: AppTheme.surfaceVariantLight,
         width: width,
         height: height,
-        child: const Center(
-          child: Icon(Icons.broken_image_rounded, color: AppTheme.textSecondaryLight),
+        child: Center(
+          child: Icon(Icons.broken_image_rounded, color: AppTheme.textSecondaryDark),
         ),
       );
     }
@@ -81,8 +81,8 @@ Widget buildPhotoThumbnail(
       color: AppTheme.surfaceVariantLight,
       width: width,
       height: height,
-      child: const Center(
-        child: Icon(Icons.image_not_supported_rounded, color: AppTheme.textSecondaryLight),
+      child: Center(
+        child: Icon(Icons.image_not_supported_rounded, color: AppTheme.textSecondaryDark),
       ),
     ),
     loadingBuilder: (context, child, loadingProgress) {
@@ -91,7 +91,7 @@ Widget buildPhotoThumbnail(
         color: AppTheme.surfaceVariantLight,
         width: width,
         height: height,
-        child: const Center(
+        child: Center(
           child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryRose),
         ),
       );
@@ -110,12 +110,12 @@ Widget buildFullscreenPhoto(String photoUrl) {
       return Image.memory(
         bytes,
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const Center(
+        errorBuilder: (context, error, stackTrace) => Center(
           child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
         ),
       );
     } catch (_) {
-      return const Center(
+      return Center(
         child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
       );
     }
@@ -124,7 +124,7 @@ Widget buildFullscreenPhoto(String photoUrl) {
   return Image.network(
     photoUrl,
     fit: BoxFit.contain,
-    errorBuilder: (context, error, stackTrace) => const Center(
+    errorBuilder: (context, error, stackTrace) => Center(
       child: Icon(Icons.broken_image_rounded, color: Colors.white, size: 64),
     ),
   );
@@ -186,7 +186,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Memories & Vault'),
+          title: Text('Memories & Vault'),
         ),
         body: Center(
           child: Padding(
@@ -208,7 +208,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 const Text(
                   'Please pair with your partner before accessing shared memories and time capsules.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondaryLight),
+                  style: TextStyle(color: AppTheme.textSecondaryDark),
                 ),
               ],
             ),
@@ -222,13 +222,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Memories & Vault'),
+        title: Text('Memories & Vault'),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppTheme.primaryRose,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
             Tab(
@@ -305,7 +305,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     final memoriesAsync = ref.watch(memoriesStreamProvider(coupleId));
 
     return memoriesAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -314,12 +314,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
+              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
               const SizedBox(height: 12),
               Text(
                 'Failed to load memories: $err',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondaryLight),
+                style: TextStyle(color: AppTheme.textSecondaryDark),
               ),
             ],
           ),
@@ -340,26 +340,26 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                       color: AppTheme.pastelPeach.withOpacity(0.4),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.photo_library_rounded,
                       size: 40,
                       color: AppTheme.primaryRose,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'No Memories Yet',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryLight,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Capture your favorite dates, trips, and milestone moments together.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondaryLight),
+                    style: TextStyle(color: AppTheme.textSecondaryDark),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
@@ -424,11 +424,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.calendar_today_rounded, size: 13, color: AppTheme.primaryRose),
+                      Icon(Icons.calendar_today_rounded, size: 13, color: AppTheme.primaryRose),
                       const SizedBox(width: 5),
                       Text(
                         formattedDate,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.primaryRoseDark,
@@ -457,10 +457,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                               child: Text(
                                 memory.location!,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.textPrimaryLight,
+                                  color: context.textPrimary,
                                 ),
                               ),
                             ),
@@ -473,7 +473,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   const Spacer(),
                 ],
                 IconButton(
-                  icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryLight),
+                  icon: Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryDark),
                   onPressed: () => _confirmDeleteMemory(context, coupleId, memory),
                 ),
               ],
@@ -485,10 +485,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
               memory.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
           ),
@@ -513,10 +513,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 child: Text(
                   memory.caption,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     height: 1.4,
-                    color: AppTheme.textPrimaryLight,
+                    color: context.textPrimary,
                   ),
                 ),
               ),
@@ -530,13 +530,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
             child: Row(
               children: [
-                const Icon(Icons.favorite, size: 14, color: AppTheme.secondaryBlush),
+                Icon(Icons.favorite, size: 14, color: AppTheme.secondaryBlush),
                 const SizedBox(width: 6),
                 Text(
                   'Added by $creatorName',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryLight,
+                    color: AppTheme.textSecondaryDark,
                   ),
                 ),
               ],
@@ -612,7 +612,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     final capsulesAsync = ref.watch(timeCapsulesStreamProvider(coupleId));
 
     return capsulesAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -621,12 +621,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
+              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
               const SizedBox(height: 12),
               Text(
                 'Failed to load time capsules: $err',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondaryLight),
+                style: TextStyle(color: AppTheme.textSecondaryDark),
               ),
             ],
           ),
@@ -647,26 +647,26 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                       color: AppTheme.pastelLavender.withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.lock_clock_rounded,
                       size: 40,
                       color: AppTheme.primaryRose,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'No Time Capsules Sealed',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryLight,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Bury a secret love letter or throwback photos to be opened on a future anniversary or milestone.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondaryLight),
+                    style: TextStyle(color: AppTheme.textSecondaryDark),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
@@ -701,7 +701,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.hourglass_bottom_rounded, size: 28, color: AppTheme.primaryRose),
                   SizedBox(width: 12),
@@ -714,13 +714,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimaryLight,
+                            color: context.textPrimary,
                           ),
                         ),
                         SizedBox(height: 2),
                         Text(
                           'Letters and photos sealed tight until their unlock date arrives 🔒',
-                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryLight),
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
                         ),
                       ],
                     ),
@@ -810,7 +810,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                               ? const Color(0xFFB37400)
                               : (isReadyToOpen
                                   ? AppTheme.primaryRoseDark
-                                  : AppTheme.textPrimaryLight),
+                                  : context.textPrimary),
                         ),
                       ),
                     ],
@@ -818,7 +818,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryLight),
+                  icon: Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryDark),
                   onPressed: () => _confirmDeleteCapsule(context, coupleId, capsule),
                 ),
               ],
@@ -828,10 +828,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             // Title
             Text(
               capsule.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -839,14 +839,14 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             // Date & countdown
             Row(
               children: [
-                const Icon(Icons.schedule_rounded, size: 14, color: AppTheme.textSecondaryLight),
+                Icon(Icons.schedule_rounded, size: 14, color: AppTheme.textSecondaryDark),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     isOpened
                         ? 'Opened ${DateFormat.yMMMMd().format(capsule.openedAt ?? capsule.unlockDate)}'
                         : 'Unlock date: $formattedUnlockDate',
-                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondaryLight),
+                    style: TextStyle(fontSize: 13, color: AppTheme.textSecondaryDark),
                   ),
                 ),
               ],
@@ -862,7 +862,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 child: Text(
                   '⏳ Unlocks in ${_formatDuration(capsule.timeRemaining())}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.primaryRose,
@@ -886,14 +886,14 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.lock_rounded, size: 36, color: AppTheme.primaryRoseLight),
+                    Icon(Icons.lock_rounded, size: 36, color: AppTheme.primaryRoseLight),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Secret words locked in the vault',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryLight,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -902,7 +902,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                           ? 'Includes message & ${capsule.photoUrls.length} throwback photos'
                           : 'Sealed by $creatorName',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondaryLight),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
                     ),
                   ],
                 ),
@@ -921,8 +921,8 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                       ),
                     );
                   },
-                  icon: const Icon(Icons.lock_rounded, size: 16),
-                  label: const Text('Locked Until Scheduled Date'),
+                  icon: Icon(Icons.lock_rounded, size: 16),
+                  label: Text('Locked Until Scheduled Date'),
                 ),
               ),
             ] else if (!isOpened && isReadyToOpen) ...[
@@ -935,7 +935,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: AppTheme.primaryRose.withOpacity(0.3)),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
                     Icon(Icons.cake_rounded, size: 40, color: AppTheme.primaryRose),
                     SizedBox(height: 8),
@@ -951,7 +951,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     Text(
                       'Tap below to break the seal and reveal the secret letter!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryLight),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
                     ),
                   ],
                 ),
@@ -967,8 +967,8 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     ),
                   ),
                   onPressed: () => _openCapsule(context, coupleId, capsule),
-                  icon: const Icon(Icons.lock_open_rounded),
-                  label: const Text('Break Seal & Open Capsule 🎉'),
+                  icon: Icon(Icons.lock_open_rounded),
+                  label: Text('Break Seal & Open Capsule 🎉'),
                 ),
               ),
             ] else ...[
@@ -990,10 +990,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                         const SizedBox(width: 4),
                         Text(
                           'Written by $creatorName',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textSecondaryLight,
+                            color: AppTheme.textSecondaryDark,
                           ),
                         ),
                       ],
@@ -1001,10 +1001,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     const SizedBox(height: 6),
                     Text(
                       capsule.message,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         height: 1.45,
-                        color: AppTheme.textPrimaryLight,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
@@ -1019,11 +1019,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.favorite, size: 13, color: AppTheme.secondaryBlush),
+                Icon(Icons.favorite, size: 13, color: AppTheme.secondaryBlush),
                 const SizedBox(width: 5),
                 Text(
                   'Created by $creatorName',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondaryLight),
+                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryDark),
                 ),
               ],
             ),
@@ -1124,7 +1124,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     final wishlistAsync = ref.watch(wishlistStreamProvider(coupleId));
 
     return wishlistAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -1133,12 +1133,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
+              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
               const SizedBox(height: 12),
               Text(
                 'Failed to load wishlist: $err',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondaryLight),
+                style: TextStyle(color: AppTheme.textSecondaryDark),
               ),
             ],
           ),
@@ -1180,19 +1180,19 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.shopping_bag_outlined, size: 16, color: AppTheme.primaryRose),
+                      Icon(Icons.shopping_bag_outlined, size: 16, color: AppTheme.primaryRose),
                       const SizedBox(width: 8),
                       Text(
                         '$purchasedCount of $totalCount fulfilled',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondaryLight,
+                          color: AppTheme.textSecondaryDark,
                         ),
                       ),
                       const Spacer(),
                       if (purchasedCount > 0 && purchasedCount == totalCount)
-                        const Text(
+                        Text(
                           'All fulfilled! 🎉',
                           style: TextStyle(
                             fontSize: 12,
@@ -1221,7 +1221,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                                 color: AppTheme.pastelPeach.withOpacity(0.5),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.card_giftcard_rounded,
                                 size: 40,
                                 color: AppTheme.primaryRose,
@@ -1232,17 +1232,17 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                               _selectedWishlistCategory == 'All'
                                   ? 'Wishlist is Empty'
                                   : 'No $_selectedWishlistCategory Wishes',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimaryLight,
+                                color: context.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Add dream gifts, vacation ideas, or things you want to buy together.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppTheme.textSecondaryLight),
+                              style: TextStyle(color: AppTheme.textSecondaryDark),
                             ),
                             const SizedBox(height: 24),
                             FilledButton.icon(
@@ -1284,7 +1284,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
         selected: isSelected,
         selectedColor: AppTheme.primaryRose,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : AppTheme.textPrimaryLight,
+          color: isSelected ? Colors.white : context.textPrimary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           fontSize: 12,
         ),
@@ -1358,8 +1358,8 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                           fontWeight: FontWeight.bold,
                           decoration: wish.isPurchased ? TextDecoration.lineThrough : null,
                           color: wish.isPurchased
-                              ? AppTheme.textSecondaryLight
-                              : AppTheme.textPrimaryLight,
+                              ? context.textSecondary
+                              : context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1406,7 +1406,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
 
                 // Delete Menu
                 IconButton(
-                  icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryLight),
+                  icon: Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryDark),
                   onPressed: () => _confirmDeleteWish(context, coupleId, wish),
                 ),
               ],
@@ -1418,9 +1418,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 padding: const EdgeInsets.only(left: 48),
                 child: Text(
                   wish.description!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppTheme.textSecondaryLight,
+                    color: AppTheme.textSecondaryDark,
                   ),
                 ),
               ),
@@ -1449,7 +1449,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                           color: AppTheme.primaryRose.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.link_rounded, size: 14, color: AppTheme.primaryRose),
@@ -1471,7 +1471,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     wish.isPurchased ? 'Purchased 🎉' : 'Added by $creatorName',
                     style: TextStyle(
                       fontSize: 11,
-                      color: wish.isPurchased ? AppTheme.successGreen : AppTheme.textSecondaryLight,
+                      color: wish.isPurchased ? AppTheme.successGreen : context.textSecondary,
                       fontWeight: wish.isPurchased ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
@@ -2534,7 +2534,7 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
                   selected: isSelected,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textPrimaryLight,
+                    color: isSelected ? Colors.white : context.textPrimary,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   onSelected: (val) {

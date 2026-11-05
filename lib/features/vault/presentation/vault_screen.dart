@@ -350,13 +350,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Private Vault & Cheatsheet'),
+        title: Text('Private Vault & Cheatsheet'),
         actions: [
           if (_tabController.index == 0 && _unlockedKey != null)
             TextButton.icon(
               onPressed: _lockVault,
-              icon: const Icon(Icons.lock_rounded, size: 18),
-              label: const Text('Lock Now'),
+              icon: Icon(Icons.lock_rounded, size: 18),
+              label: Text('Lock Now'),
               style: TextButton.styleFrom(
                 foregroundColor: AppTheme.primaryRose,
               ),
@@ -365,7 +365,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           indicatorColor: AppTheme.primaryRose,
           indicatorWeight: 3,
           tabs: [
@@ -385,7 +385,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         ),
       ),
       body: activeCoupleId.isEmpty
-          ? const Center(
+          ? Center(
               child: Text('Please pair or select a couple space first.'),
             )
           : TabBarView(
@@ -477,7 +477,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   color: AppTheme.primaryRose.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.shield_rounded,
                   color: AppTheme.primaryRose,
                   size: 40,
@@ -486,10 +486,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
               const SizedBox(height: 16),
               Text(
                 titleText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryLight,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -498,9 +498,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 child: Text(
                   subtitleText,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.textSecondaryLight,
+                    color: context.textSecondary,
                   ),
                 ),
               ),
@@ -581,7 +581,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 height: 64,
                 child: (!_isSettingUpPin && _hasStoredPin)
                     ? IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.fingerprint_rounded,
                           size: 32,
                           color: AppTheme.primaryRose,
@@ -596,10 +596,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 width: 64,
                 height: 64,
                 child: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.backspace_outlined,
                     size: 24,
-                    color: AppTheme.textSecondaryLight,
+                    color: context.textSecondary,
                   ),
                   onPressed: _onBackspacePressed,
                 ),
@@ -625,10 +625,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         alignment: Alignment.center,
         child: Text(
           digit,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimaryLight,
+            color: context.textPrimary,
           ),
         ),
       ),
@@ -643,7 +643,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     final vaultItemsAsync = ref.watch(vaultItemsStreamProvider(coupleId));
 
     return vaultItemsAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -681,7 +681,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       labelStyle: TextStyle(
                         color: isSelected
                             ? AppTheme.primaryRose
-                            : AppTheme.textPrimaryLight,
+                            : context.textPrimary,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -711,21 +711,21 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                               color: AppTheme.primaryRose.withOpacity(0.4),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'No encrypted items yet',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimaryLight,
+                                color: context.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Tap the button below to store passwords, romantic notes, document codes, or personal secrets with AES-256 encryption.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppTheme.textSecondaryLight,
+                                color: context.textSecondary,
                               ),
                             ),
                           ],
@@ -791,10 +791,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         ),
         title: Text(
           item.title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimaryLight,
+            color: context.textPrimary,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -812,27 +812,27 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 ),
                 child: Text(
                   item.category,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondaryLight,
+                    color: context.textSecondary,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 formattedDate,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppTheme.textSecondaryLight,
+                  color: context.textSecondary,
                 ),
               ),
             ],
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.chevron_right_rounded,
-          color: AppTheme.textSecondaryLight,
+          color: context.textSecondary,
         ),
         onTap: () => _showVaultItemDetailsSheet(coupleId, item),
       ),
@@ -885,10 +885,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       Expanded(
                         child: Text(
                           item.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimaryLight,
+                            color: context.textPrimary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -953,12 +953,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Secret Content (Encrypted AES-256)',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondaryLight,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -971,7 +971,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       border: Border.all(color: AppTheme.outlineLight),
                     ),
                     child: hasDecryptionError
-                        ? const Text(
+                        ? Text(
                             'Decryption failed. Key mismatch or tampered data.',
                             style: TextStyle(color: AppTheme.errorRed),
                           )
@@ -982,7 +982,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                             style: TextStyle(
                               fontSize: 16,
                               fontFamily: isRevealed ? null : 'Courier',
-                              color: AppTheme.textPrimaryLight,
+                              color: context.textPrimary,
                               letterSpacing: isRevealed ? null : 2,
                             ),
                           ),
@@ -1067,12 +1067,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'New Encrypted Secret 🔐',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryLight,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1280,7 +1280,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         // Cheatsheet Card Grid
         Expanded(
           child: cheatsheetAsync.when(
-            loading: () => const Center(
+            loading: () => Center(
               child: CircularProgressIndicator(color: AppTheme.primaryRose),
             ),
             error: (err, stack) => Center(
@@ -1309,7 +1309,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppTheme.secondaryBlush),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.visibility_rounded,
@@ -1322,7 +1322,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 'This is what your partner sees when planning surprises and gifts for you 💕',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: AppTheme.textPrimaryLight,
+                                  color: context.textPrimary,
                                 ),
                               ),
                             ),
@@ -1424,14 +1424,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
             children: [
               Text(
                 emoji,
-                style: const TextStyle(fontSize: 24),
+                style: TextStyle(fontSize: 24),
               ),
               Icon(
                 hasValue ? Icons.check_circle_rounded : Icons.info_outline_rounded,
                 size: 16,
                 color: hasValue
                     ? AppTheme.successGreen
-                    : AppTheme.textSecondaryLight.withOpacity(0.5),
+                    : context.textSecondary.withOpacity(0.5),
               ),
             ],
           ),
@@ -1441,10 +1441,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondaryLight,
+                  color: context.textSecondary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1457,8 +1457,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   fontWeight: hasValue ? FontWeight.bold : FontWeight.normal,
                   fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
                   color: hasValue
-                      ? AppTheme.textPrimaryLight
-                      : AppTheme.textSecondaryLight,
+                      ? context.textPrimary
+                      : context.textSecondary,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -1521,10 +1521,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       isMyCheatsheet
                           ? 'Edit My Cheatsheet 💕'
                           : 'Edit Partner Cheatsheet 💕',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryLight,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),

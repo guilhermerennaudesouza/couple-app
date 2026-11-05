@@ -70,7 +70,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Daily Question'),
+          title: Text('Daily Question'),
         ),
         body: Center(
           child: Padding(
@@ -84,15 +84,15 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   color: AppTheme.primaryRose.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'No Couple Space Connected',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Please pair with your partner before accessing your daily intimate questions.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondaryLight),
+                  style: TextStyle(color: context.textSecondary),
                 ),
               ],
             ),
@@ -110,19 +110,19 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.favorite_rounded,
               color: AppTheme.primaryRose,
               size: 22,
             ),
             const SizedBox(width: 8),
-            const Text('Daily Connection'),
+            Text('Daily Connection'),
           ],
         ),
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           indicatorColor: AppTheme.primaryRose,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
@@ -177,7 +177,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     final todayAsync = ref.watch(todayDailyQuestionProvider(coupleId));
 
     return todayAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, stack) => Center(
@@ -186,13 +186,13 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded,
+              Icon(Icons.error_outline_rounded,
                   color: AppTheme.errorRed, size: 48),
               const SizedBox(height: 12),
               Text(
                 'Could not load today\'s question: $err',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondaryLight),
+                style: TextStyle(color: context.textSecondary),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -338,14 +338,14 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   color: AppTheme.primaryRose.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.format_quote_rounded,
                   color: AppTheme.primaryRose,
                   size: 22,
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'TODAY\'S QUESTION',
                 style: TextStyle(
                   fontSize: 12,
@@ -359,11 +359,11 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           const SizedBox(height: 14),
           Text(
             prompt,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               height: 1.35,
-              color: AppTheme.textPrimaryLight,
+              color: context.textPrimary,
             ),
           ),
         ],
@@ -390,7 +390,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppTheme.secondaryBlush.withOpacity(0.5)),
           ),
-          child: const Row(
+          child: Row(
             children: [
               Icon(Icons.shield_outlined, size: 18, color: AppTheme.primaryRoseDark),
               SizedBox(width: 10),
@@ -400,7 +400,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimaryLight,
+                    color: context.textPrimary,
                   ),
                 ),
               ),
@@ -414,11 +414,11 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           maxLines: 4,
           minLines: 3,
           maxLength: 600,
-          style: const TextStyle(fontSize: 15, height: 1.4),
+          style: TextStyle(fontSize: 15, height: 1.4),
           decoration: InputDecoration(
             hintText: 'Share your loving thought, memory, or feeling...',
             hintStyle: TextStyle(
-              color: AppTheme.textSecondaryLight.withOpacity(0.7),
+              color: context.textSecondary.withOpacity(0.7),
             ),
             filled: true,
             fillColor: AppTheme.surfaceLight,
@@ -574,7 +574,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.hourglass_top_rounded,
                   color: Colors.white,
                   size: 36,
@@ -587,22 +587,22 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                     duration: 1200.ms,
                   ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Answer Submitted!',
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryLight,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Waiting for $partnerName to answer to reveal both...',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
                   height: 1.4,
-                  color: AppTheme.textSecondaryLight,
+                  color: context.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -615,7 +615,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.lock_rounded,
                       size: 14,
                       color: AppTheme.tertiaryMauve,
@@ -640,13 +640,13 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
 
         // My submitted answer preview
         if (myAnswer != null) ...[
-          const Text(
+          Text(
             'YOUR SEALED ANSWER',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.0,
-              color: AppTheme.textSecondaryLight,
+              color: context.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -662,18 +662,18 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               children: [
                 Text(
                   myAnswer.text,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.4,
-                    color: AppTheme.textPrimaryLight,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Answered at ${DateFormat('h:mm a').format(myAnswer.answeredAt)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
-                    color: AppTheme.textSecondaryLight,
+                    color: context.textSecondary,
                   ),
                 ),
               ],
@@ -726,7 +726,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20)
+              Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20)
                   .animate(onPlay: (c) => c.repeat(reverse: true))
                   .scale(
                     begin: const Offset(1, 1),
@@ -734,7 +734,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                     duration: 600.ms,
                   ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Answers Revealed!',
                 style: TextStyle(
                   color: Colors.white,
@@ -795,7 +795,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   'Talk about your answers tonight! Small conversations build lasting intimacy.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppTheme.textPrimaryLight.withOpacity(0.85),
+                    color: context.textPrimary.withOpacity(0.85),
                     height: 1.35,
                   ),
                 ),
@@ -872,7 +872,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                             color: AppTheme.primaryRose,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
+                          child: Text(
                             'YOU',
                             style: TextStyle(
                               color: Colors.white,
@@ -887,9 +887,9 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   const SizedBox(height: 2),
                   Text(
                     DateFormat('h:mm a').format(answer.answeredAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.textSecondaryLight,
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
@@ -899,10 +899,10 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           const SizedBox(height: 12),
           Text(
             answer.text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               height: 1.4,
-              color: AppTheme.textPrimaryLight,
+              color: context.textPrimary,
             ),
           ),
         ],
@@ -943,7 +943,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     final pastAsync = ref.watch(pastDailyQuestionsProvider(coupleId));
 
     return pastAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: AppTheme.primaryRose),
       ),
       error: (err, _) => Center(
@@ -963,15 +963,15 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                     color: AppTheme.tertiaryMauve.withOpacity(0.5),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'No Past Answers Yet',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Answer your first daily question together today to begin building your romantic memories collection!',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondaryLight),
+                    style: TextStyle(color: context.textSecondary),
                   ),
                 ],
               ),
@@ -1037,13 +1037,13 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   : Icons.lock_clock_rounded,
               color: q.isRevealed
                   ? AppTheme.primaryRose
-                  : AppTheme.textSecondaryLight,
+                  : context.textSecondary,
               size: 20,
             ),
           ),
           title: Text(
             formattedDate,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: AppTheme.tertiaryMauve,
@@ -1055,10 +1055,10 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               q.prompt,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
           ),
@@ -1070,14 +1070,14 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   color: AppTheme.surfaceVariantLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.lock_rounded, size: 16, color: AppTheme.textSecondaryLight),
+                    Icon(Icons.lock_rounded, size: 16, color: context.textSecondary),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Answers remain locked until both partners submit.',
-                        style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondaryLight),
+                        style: TextStyle(fontSize: 12.5, color: context.textSecondary),
                       ),
                     ),
                   ],
@@ -1134,7 +1134,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           const SizedBox(height: 4),
           Text(
             text,
-            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimaryLight),
+            style: TextStyle(fontSize: 14, color: context.textPrimary),
           ),
         ],
       ),
