@@ -44,6 +44,15 @@ void main() {
 
       expect(pt.unpairBtn, contains('Desconectar'));
       expect(en.unpairBtn, contains('Unpair'));
+
+      expect(pt.updateAvailableTitle, contains('Atualização'));
+      expect(en.updateAvailableTitle, contains('Update'));
+      expect(pt.checkForUpdates, 'Verificar Atualizações');
+      expect(en.checkForUpdates, 'Check for Updates');
+      expect(pt.updateNow, 'Atualizar Agora');
+      expect(en.updateNow, 'Update Now');
+      expect(pt.appVersionLabel, 'Versão do App');
+      expect(en.appVersionLabel, 'App Version');
     });
 
     testWidgets('AppStrings.of resolves correctly from context', (tester) async {

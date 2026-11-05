@@ -45,6 +45,20 @@ class AppStrings {
   String get edit => isPortuguese ? 'Editar' : 'Edit';
   String get copied => isPortuguese ? 'Copiado para a área de transferência!' : 'Copied to clipboard!';
 
+  // --- In-App Updates ---
+  String get updateAvailableTitle => isPortuguese ? 'Nova Atualização Disponível! 🚀' : 'New Update Available! 🚀';
+  String updateAvailableBody(String version) => isPortuguese
+      ? 'Uma nova versão ($version) está disponível. Deseja atualizar agora?'
+      : 'A new version ($version) is available. Would you like to update now?';
+  String get updateNow => isPortuguese ? 'Atualizar Agora' : 'Update Now';
+  String get updateLater => isPortuguese ? 'Lembrar Depois' : 'Later';
+  String get updateChecking => isPortuguese ? 'Verificando atualizações...' : 'Checking for updates...';
+  String get updateUpToDate => isPortuguese ? 'Você já está na versão mais recente! ✨' : 'You are on the latest version! ✨';
+  String updateDownloading(String progress) => isPortuguese ? 'Baixando atualização: $progress%' : 'Downloading update: $progress%';
+  String get updateError => isPortuguese ? 'Não foi possível baixar a atualização. Tente novamente mais tarde.' : 'Could not download update. Please try again later.';
+  String get checkForUpdates => isPortuguese ? 'Verificar Atualizações' : 'Check for Updates';
+  String get appVersionLabel => isPortuguese ? 'Versão do App' : 'App Version';
+
   // --- Couple Hub Screen ---
   String get spaceHeroTag => isPortuguese ? 'NOSSO ESPAÇO KRIVO' : 'KRIVO COUPLE HUB';
   String get privateSpace => isPortuguese ? 'Nosso Espaço Privado' : 'Our Private Space';
