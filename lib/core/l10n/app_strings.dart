@@ -27,6 +27,7 @@ class AppStrings {
   String get navCalendar => isPortuguese ? 'Calendário' : 'Calendar';
   String get navDecide => isPortuguese ? 'Decidir' : 'Decide';
   String get navHub => isPortuguese ? 'Espaço' : 'Hub';
+  String get hubTitle => isPortuguese ? 'Nosso Espaço' : 'Couple Hub';
 
   // --- Settings & Preferences ---
   String get settings => isPortuguese ? 'Preferências' : 'Preferences';

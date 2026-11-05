@@ -819,6 +819,7 @@ void main() {
             coupleStreamProvider(testCoupleId).overrideWith((ref) => Stream.value(couple)),
           ],
           child: const MaterialApp(
+            locale: Locale('en', 'US'),
             home: CoupleHubScreen(coupleId: testCoupleId),
           ),
         ),
