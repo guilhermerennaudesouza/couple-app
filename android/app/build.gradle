@@ -25,6 +25,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 if (flutterRoot != null) {
     apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+    flutter {
+        source '../..'
+    }
 }
 apply plugin: 'com.google.gms.google-services'
 
@@ -84,9 +87,6 @@ android {
     }
 }
 
-flutter {
-    source '../..'
-}
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"

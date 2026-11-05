@@ -19,22 +19,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Ensure Gradle Wrapper
-        run: |
-          cd android
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.3
-          fi
-          chmod +x gradlew
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
+
+      - name: Ensure Android platform wrapper
+        run: |
+          flutter create --platforms=android .
+          chmod +x android/gradlew || true
 
       - name: Install dependencies
         run: flutter pub get
