@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 ///
 /// Implements a romantic, modern Material 3 aesthetic tailored for two partners,
 /// featuring warm pastel tones (rose, blush, peach, mauve), soft rounded corners,
-/// and calm typography.
+/// and calm typography with high-contrast Dark Mode support (WCAG AAA compliant).
 class AppTheme {
   // --- Romantic & Modern Color Palette ---
   static const Color primaryRose = Color(0xFFE25266);
@@ -23,13 +23,13 @@ class AppTheme {
   static const Color textSecondaryLight = Color(0xFF75656D);
   static const Color outlineLight = Color(0xFFE5D5DA);
 
-  // Dark Theme Palette
+  // Dark Theme Palette - High Contrast for AMOLED / OLED
   static const Color backgroundDark = Color(0xFF140F12);
   static const Color surfaceDark = Color(0xFF1E171B);
   static const Color surfaceVariantDark = Color(0xFF2A2026);
-  static const Color textPrimaryDark = Color(0xFFF7EFF2);
-  static const Color textSecondaryDark = Color(0xFFAFA3A9);
-  static const Color outlineDark = Color(0xFF45363F);
+  static const Color textPrimaryDark = Color(0xFFFBF4F6); // Crisp bright off-white
+  static const Color textSecondaryDark = Color(0xFFE5DEE1); // High contrast silver/rose-tinted off-white (WCAG AAA)
+  static const Color outlineDark = Color(0xFF5A4853);
 
   // Status & Accents
   static const Color errorRed = Color(0xFFD32F2F);
@@ -41,6 +41,16 @@ class AppTheme {
   static const double buttonBorderRadius = 16.0;
   static const double inputBorderRadius = 14.0;
   static const double dialogBorderRadius = 24.0;
+
+  /// Returns high-contrast primary text color for the current theme context.
+  static Color textPrimaryOf(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? textPrimaryDark : textPrimaryLight;
+  }
+
+  /// Returns high-contrast secondary text color for the current theme context.
+  static Color textSecondaryOf(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? textSecondaryDark : textSecondaryLight;
+  }
 
   /// Default application theme (Light theme).
   static ThemeData get themeData => lightTheme;
@@ -63,14 +73,27 @@ class AppTheme {
       tertiaryContainer: pastelLavender,
       surface: surfaceLight,
       onSurface: textPrimaryLight,
+      onSurfaceVariant: textSecondaryLight,
       error: errorRed,
       onError: Colors.white,
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: backgroundLight,
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: textPrimaryLight),
+        bodyMedium: TextStyle(color: textSecondaryLight),
+        bodySmall: TextStyle(color: textSecondaryLight),
+        titleLarge: TextStyle(color: textPrimaryLight, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: textPrimaryLight, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: textSecondaryLight),
+        labelLarge: TextStyle(color: textPrimaryLight),
+        labelMedium: TextStyle(color: textSecondaryLight),
+        labelSmall: TextStyle(color: textSecondaryLight),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: backgroundLight,
         foregroundColor: textPrimaryLight,
@@ -184,7 +207,7 @@ class AppTheme {
     );
   }
 
-  /// Romantic Material 3 dark theme.
+  /// Romantic Material 3 dark theme with high contrast text for Samsung AMOLED displays.
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primaryRose,
@@ -196,14 +219,27 @@ class AppTheme {
       tertiary: tertiaryMauve,
       surface: surfaceDark,
       onSurface: textPrimaryDark,
+      onSurfaceVariant: textSecondaryDark,
       error: errorRed,
       onError: Colors.white,
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: backgroundDark,
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: textPrimaryDark),
+        bodyMedium: TextStyle(color: textSecondaryDark),
+        bodySmall: TextStyle(color: textSecondaryDark),
+        titleLarge: TextStyle(color: textPrimaryDark, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: textPrimaryDark, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: textSecondaryDark),
+        labelLarge: TextStyle(color: textPrimaryDark),
+        labelMedium: TextStyle(color: textSecondaryDark),
+        labelSmall: TextStyle(color: textSecondaryDark),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: backgroundDark,
         foregroundColor: textPrimaryDark,
@@ -258,6 +294,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(inputBorderRadius),
           borderSide: const BorderSide(color: primaryRoseLight, width: 2),
         ),
+        hintStyle: const TextStyle(color: textSecondaryDark, fontSize: 14),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: surfaceDark,
@@ -278,4 +315,22 @@ class AppTheme {
       ),
     );
   }
+}
+
+/// Convenience extension on [BuildContext] for theme-aware dynamic color resolution.
+extension ThemeContextExt on BuildContext {
+  /// Whether the active theme is in dark mode.
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+
+  /// Primary high-contrast text color adapted to light/dark mode.
+  Color get textPrimary => isDarkMode ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight;
+
+  /// Secondary high-contrast text color adapted to light/dark mode.
+  Color get textSecondary => isDarkMode ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
+
+  /// Card surface color adapted to light/dark mode.
+  Color get cardColor => Theme.of(this).cardTheme.color ?? (isDarkMode ? AppTheme.surfaceDark : AppTheme.surfaceLight);
+
+  /// Outline border color adapted to light/dark mode.
+  Color get outlineColor => isDarkMode ? AppTheme.outlineDark : AppTheme.outlineLight;
 }
