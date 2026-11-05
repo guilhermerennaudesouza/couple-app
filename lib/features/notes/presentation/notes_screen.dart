@@ -165,11 +165,15 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 const Icon(Icons.error_outline_rounded,
                     size: 48, color: AppTheme.errorRed),
                 const SizedBox(height: 12),
-                Text('Failed to load sticky notes: $error'),
+                Text(
+                  strings.isPortuguese
+                      ? 'Falha ao carregar recados: $error'
+                      : 'Failed to load sticky notes: $error',
+                ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () => ref.invalidate(notesStreamProvider(activeCoupleId)),
-                  child: const Text('Retry'),
+                  child: Text(strings.retry),
                 ),
               ],
             ),
@@ -763,8 +767,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                             if (title.isEmpty && content.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter a note title or content.'),
+                                SnackBar(
+                                  content: Text(
+                                    strings.isPortuguese
+                                        ? 'Por favor, digite um título ou recado.'
+                                        : 'Please enter a note title or content.',
+                                  ),
                                 ),
                               );
                               return;
@@ -772,7 +780,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                             final note = NoteModel(
                               id: existingNote?.id ?? '',
-                              title: title.isNotEmpty ? title : 'Love Note',
+                              title: title.isNotEmpty
+                                  ? title
+                                  : (strings.isPortuguese ? 'Recadinho' : 'Love Note'),
                               content: content,
                               colorHex: selectedColor,
                               isPinnedToWidget: isPinned,
@@ -796,8 +806,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(isPinned
-                                      ? 'Note saved & pinned to widget! 💕'
-                                      : 'Note saved!'),
+                                      ? (strings.isPortuguese
+                                          ? 'Recado salvo e fixado no widget! 💕'
+                                          : 'Note saved & pinned to widget! 💕')
+                                      : (strings.isPortuguese ? 'Recado salvo!' : 'Note saved!')),
                                   duration: const Duration(seconds: 2),
                                 ),
                               );
@@ -824,27 +836,31 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     String coupleId,
     NoteModel note,
   ) async {
+    final strings = AppStrings.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed),
-            SizedBox(width: 8),
-            Text('Delete Sticky Note?'),
+            const Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed),
+            const SizedBox(width: 8),
+            Text(strings.isPortuguese ? 'Excluir Recado?' : 'Delete Sticky Note?'),
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "${note.title.isNotEmpty ? note.title : 'this note'}"? '
-          '${note.isPinnedToWidget ? 'It will also be cleared from your home screen widget.' : ''}',
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja excluir "${note.title.isNotEmpty ? note.title : 'este recado'}"?'
+                  '${note.isPinnedToWidget ? ' Ele também será removido do seu widget.' : ''}'
+              : 'Are you sure you want to delete "${note.title.isNotEmpty ? note.title : 'this note'}"?'
+                  '${note.isPinnedToWidget ? ' It will also be cleared from your home screen widget.' : ''}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -852,7 +868,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -863,7 +879,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       await repo.deleteNote(coupleId, note.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sticky note deleted')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Recado excluído com sucesso'
+                  : 'Sticky note deleted',
+            ),
+          ),
         );
       }
     }

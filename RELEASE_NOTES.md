@@ -1,3 +1,17 @@
+# Couple App v1.0.3 — Localização Completa & Correção no Verificador de Atualizações 💑📱
+
+### ✨ O que há de novo / What's New
+
+- **🇧🇷 100% dos Textos Restantes em Português:**
+  - **Pareamento & Conexão:** Tela de pareamento, botões "Entrar no Nosso Espaço", "Copiar Código", avisos de espera e mensagens de validação traduzidos.
+  - **Finanças Compartilhadas:** Modais de quitação geral de contas, confirmação de exclusão de despesas/metas e validações de formulário traduzidos.
+  - **Memórias & Baú:** Alertas de validação de URL, avisos de carregamento de fotos e títulos de desejos e cápsulas em português.
+  - **Recadinhos & Notas de Amor:** Diálogo de confirmação de exclusão de recado e avisos de salvamento traduzidos.
+- **🔄 Verificador de Atualizações Mais Preciso:**
+  - Tratamento de erro detalhado na verificação de versão para evitar falso positivo de "aplicativo atualizado" quando houver falha de rede ou acesso.
+
+---
+
 # Couple App v1.0.2 — Localização 100% Português & Contraste Modo Escuro 💑📱
 
 ### ✨ O que há de novo / What's New

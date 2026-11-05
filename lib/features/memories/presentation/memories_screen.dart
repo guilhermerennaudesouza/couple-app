@@ -1895,16 +1895,28 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
         _urlInputController.clear();
       });
     } else {
+      final strings = AppStrings.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid URL')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese ? 'Por favor, insira uma URL válida' : 'Please enter a valid URL',
+          ),
+        ),
       );
     }
   }
 
   Future<void> _saveMemory() async {
+    final strings = AppStrings.of(context);
     if (_isUploading) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please wait for photo upload to finish')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, aguarde o envio da foto terminar'
+                : 'Please wait for photo upload to finish',
+          ),
+        ),
       );
       return;
     }
@@ -1912,7 +1924,13 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a title for this memory')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite um título para esta memória'
+                : 'Please enter a title for this memory',
+          ),
+        ),
       );
       return;
     }
@@ -2254,16 +2272,28 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
         _urlInputController.clear();
       });
     } else {
+      final strings = AppStrings.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid URL')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese ? 'Por favor, insira uma URL válida' : 'Please enter a valid URL',
+          ),
+        ),
       );
     }
   }
 
   Future<void> _sealCapsule() async {
+    final strings = AppStrings.of(context);
     if (_isUploading) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please wait for photo upload to finish')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, aguarde o envio da foto terminar'
+                : 'Please wait for photo upload to finish',
+          ),
+        ),
       );
       return;
     }
@@ -2273,21 +2303,39 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please give this capsule a title')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, dê um título a esta cápsula'
+                : 'Please give this capsule a title',
+          ),
+        ),
       );
       return;
     }
 
     if (message.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please write a secret letter or message to seal')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, escreva uma carta ou mensagem secreta para lacrar'
+                : 'Please write a secret letter or message to seal',
+          ),
+        ),
       );
       return;
     }
 
     if (_unlockDate.isBefore(DateTime.now())) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock date must be in the future!')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'A data de abertura deve ser no futuro!'
+                : 'Unlock date must be in the future!',
+          ),
+        ),
       );
       return;
     }
@@ -2593,10 +2641,17 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
   }
 
   Future<void> _saveWish() async {
+    final strings = AppStrings.of(context);
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a wish title')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite o título do desejo'
+                : 'Please enter a wish title',
+          ),
+        ),
       );
       return;
     }

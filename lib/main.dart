@@ -267,7 +267,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
         final strings = AppStrings.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(strings.updateUpToDate),
+            content: Text(update == null ? strings.updateError : strings.updateUpToDate),
             duration: const Duration(seconds: 3),
           ),
         );

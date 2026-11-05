@@ -99,10 +99,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       }
     } catch (e) {
       if (mounted) {
+        final strings = AppStrings.of(context);
         setState(() => _isCreating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating couple space: $e'),
+            content: Text(strings.isPortuguese ? 'Erro ao criar espaço: $e' : 'Error creating couple space: $e'),
             backgroundColor: AppTheme.primaryRose,
           ),
         );
@@ -123,10 +124,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       );
 
       if (mounted) {
+        final strings = AppStrings.of(context);
         setState(() => _isJoining = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully connected with your partner! 🎉'),
+          SnackBar(
+            content: Text(strings.isPortuguese ? 'Conectado(a) com seu parceiro(a) com sucesso! 🎉' : 'Successfully connected with your partner! 🎉'),
             backgroundColor: AppTheme.successGreen,
           ),
         );
@@ -144,10 +146,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       }
     } catch (e) {
       if (mounted) {
+        final strings = AppStrings.of(context);
         setState(() => _isJoining = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to join couple space: $e'),
+            content: Text(strings.isPortuguese ? 'Falha ao entrar no espaço: $e' : 'Failed to join couple space: $e'),
             backgroundColor: AppTheme.primaryRose,
           ),
         );
@@ -289,7 +292,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your name';
+                  return strings.isPortuguese ? 'Por favor, digite seu nome' : 'Please enter your name';
                 }
                 return null;
               },
@@ -392,7 +395,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                   ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
                   const SizedBox(height: 20),
                   Text(
-                    'You are paired with ${other?.name ?? 'your partner'}!',
+                    strings.isPortuguese
+                        ? 'Você está conectado(a) com ${other?.name ?? "seu amor"}!'
+                        : 'You are paired with ${other?.name ?? "your partner"}!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
@@ -402,7 +407,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Your private space is ready.',
+                    strings.isPortuguese
+                        ? 'Seu espaço a dois está pronto.'
+                        : 'Your private space is ready.',
                     style: TextStyle(color: context.textSecondary),
                   ),
                   const SizedBox(height: 32),
@@ -417,7 +424,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text('Enter Our Space'),
+                    child: Text(strings.isPortuguese ? 'Entrar no Nosso Espaço' : 'Enter Our Space'),
                   ),
                 ],
               ),
@@ -432,7 +439,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
             children: [
               const SizedBox(height: 16),
               Text(
-                'Share With Your Partner',
+                strings.isPortuguese ? 'Compartilhe com seu amor' : 'Share With Your Partner',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 22,
@@ -442,7 +449,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Ask your partner to enter this 6-digit code or scan the QR code in their app.',
+                strings.isPortuguese
+                    ? 'Peça ao seu parceiro(a) para digitar este código de 6 dígitos no app dele(a).'
+                    : 'Ask your partner to enter this 6-digit code or scan the QR code in their app.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -463,9 +472,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'PAIRING CODE',
-                      style: TextStyle(
+                    Text(
+                      strings.isPortuguese ? 'CÓDIGO DE PAREAMENTO' : 'PAIRING CODE',
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5,
@@ -489,14 +498,14 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                           ClipboardData(text: currentCouple.inviteCode),
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pairing code copied to clipboard!'),
-                            duration: Duration(seconds: 2),
+                          SnackBar(
+                            content: Text(strings.copied),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       },
                       icon: const Icon(Icons.copy_rounded, size: 18),
-                      label: const Text('Copy Code'),
+                      label: Text(strings.isPortuguese ? 'Copiar Código' : 'Copy Code'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.primaryRose,
                         side: const BorderSide(color: AppTheme.primaryRose),
@@ -562,9 +571,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'Waiting for your partner to join...',
-                      style: TextStyle(
+                    Text(
+                      strings.isPortuguese
+                          ? 'Aguardando seu parceiro(a) entrar...'
+                          : 'Waiting for your partner to join...',
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppTheme.tertiaryMauve,
@@ -581,7 +592,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
           ),
         );
       },
-      loading: () => Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
@@ -624,12 +635,12 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               controller: _joinNameController,
               decoration: InputDecoration(
                 labelText: strings.yourNameLabel,
-                hintText: 'Enter your name',
-                prefixIcon: Icon(Icons.person_outline_rounded),
+                hintText: strings.yourNameHint,
+                prefixIcon: const Icon(Icons.person_outline_rounded),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your name';
+                  return strings.isPortuguese ? 'Por favor, digite seu nome' : 'Please enter your name';
                 }
                 return null;
               },
@@ -650,7 +661,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 labelText: strings.enterInviteCodeLabel,
                 hintText: '000000',
                 counterText: '',
-                prefixIcon: Icon(Icons.pin_outlined),
+                prefixIcon: const Icon(Icons.pin_outlined),
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -658,7 +669,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               ],
               validator: (value) {
                 if (value == null || value.trim().length != 6) {
-                  return 'Enter the full 6-digit code';
+                  return strings.isPortuguese ? 'Digite o código de 6 dígitos completo' : 'Enter the full 6-digit code';
                 }
                 return null;
               },
@@ -681,9 +692,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
-                      'Join Partner Space',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  : Text(
+                      strings.joinSpaceBtn,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
           ],

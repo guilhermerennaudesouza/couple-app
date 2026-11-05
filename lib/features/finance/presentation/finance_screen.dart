@@ -465,12 +465,14 @@ class _ExpensesTab extends ConsumerWidget {
           ],
         ),
         content: Text(
-          'Mark all pending shared expenses as settled? This will reset the net balance between you and $partnerName to R\$ 0,00.',
+          strings.isPortuguese
+              ? 'Marcar todas as despesas pendentes como quitadas? Isso zerará o saldo entre você e $partnerName.'
+              : 'Mark all pending shared expenses as settled? This will reset the net balance between you and $partnerName to R\$ 0,00.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -481,8 +483,12 @@ class _ExpensesTab extends ConsumerWidget {
                     .settleAllBalances(coupleId, settledByUid: myUid);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All balances settled up! Clean slate 🎉'),
+                    SnackBar(
+                      content: Text(
+                        strings.isPortuguese
+                            ? 'Todas as contas foram quitadas com sucesso! 🎉'
+                            : 'All balances settled up! Clean slate 🎉',
+                      ),
                       backgroundColor: AppTheme.successGreen,
                     ),
                   );
@@ -490,7 +496,13 @@ class _ExpensesTab extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to settle balances: $e')),
+                    SnackBar(
+                      content: Text(
+                        strings.isPortuguese
+                            ? 'Falha ao quitar contas: $e'
+                            : 'Failed to settle balances: $e',
+                      ),
+                    ),
                   );
                 }
               }
@@ -498,7 +510,7 @@ class _ExpensesTab extends ConsumerWidget {
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.primaryRose,
             ),
-            child: const Text('Settle Up'),
+            child: Text(strings.settleUpBtn),
           ),
         ],
       ),
@@ -708,9 +720,9 @@ class _ExpensesTab extends ConsumerWidget {
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 20),
-                  SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: AppTheme.errorRed)),
+                  const Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 20),
+                  const SizedBox(width: 8),
+                  Text(strings.delete, style: const TextStyle(color: AppTheme.errorRed)),
                 ],
               ),
             ),
@@ -725,15 +737,20 @@ class _ExpensesTab extends ConsumerWidget {
     WidgetRef ref,
     FinanceEntry entry,
   ) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Expense?'),
-        content: Text('Are you sure you want to remove "${entry.title}"?'),
+        title: Text(strings.isPortuguese ? 'Excluir Despesa?' : 'Delete Expense?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja remover "${entry.title}"?'
+              : 'Are you sure you want to remove "${entry.title}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -745,13 +762,19 @@ class _ExpensesTab extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete expense: $e')),
+                    SnackBar(
+                      content: Text(
+                        strings.isPortuguese
+                            ? 'Falha ao excluir despesa: $e'
+                            : 'Failed to delete expense: $e',
+                      ),
+                    ),
                   );
                 }
               }
             },
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -1050,15 +1073,17 @@ class _SavingsTab extends ConsumerWidget {
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline_rounded,
+                          const Icon(Icons.delete_outline_rounded,
                               color: AppTheme.errorRed, size: 20),
-                          SizedBox(width: 8),
-                          Text('Delete Goal',
-                              style: TextStyle(color: AppTheme.errorRed)),
+                          const SizedBox(width: 8),
+                          Text(
+                            strings.isPortuguese ? 'Excluir Meta' : 'Delete Goal',
+                            style: const TextStyle(color: AppTheme.errorRed),
+                          ),
                         ],
                       ),
                     ),
@@ -1286,17 +1311,20 @@ class _SavingsTab extends ConsumerWidget {
     WidgetRef ref,
     SavingsGoalModel goal,
   ) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Savings Goal?'),
+        title: Text(strings.isPortuguese ? 'Excluir Meta de Economia?' : 'Delete Savings Goal?'),
         content: Text(
-          'Are you sure you want to delete "${goal.title}"? Current progress (R\$ ${goal.currentAmount.toStringAsFixed(2)}) will be removed.',
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja excluir "${goal.title}"? O progresso atual (R\$ ${goal.currentAmount.toStringAsFixed(2)}) será perdido.'
+              : 'Are you sure you want to delete "${goal.title}"? Current progress (R\$ ${goal.currentAmount.toStringAsFixed(2)}) will be removed.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -1308,13 +1336,19 @@ class _SavingsTab extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete savings goal: $e')),
+                    SnackBar(
+                      content: Text(
+                        strings.isPortuguese
+                            ? 'Falha ao excluir meta: $e'
+                            : 'Failed to delete savings goal: $e',
+                      ),
+                    ),
                   );
                 }
               }
             },
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -1435,16 +1469,29 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
     final title = _titleController.text.trim();
     final amount = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
 
+    final strings = AppStrings.of(context);
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter an expense title')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite o título da despesa'
+                : 'Please enter an expense title',
+          ),
+        ),
       );
       return;
     }
 
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount greater than R\$ 0')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite um valor válido maior que R\$ 0'
+                : 'Please enter a valid amount greater than R\$ 0',
+          ),
+        ),
       );
       return;
     }
@@ -1614,16 +1661,20 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
             const SizedBox(height: 16),
 
             // Who Paid
-            const Text(
-              'Who Paid?',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            Text(
+              strings.isPortuguese ? 'Quem pagou?' : 'Who Paid?',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: [
                 ButtonSegment(
                   value: widget.myUid,
-                  label: Text('You (${widget.myName})'),
+                  label: Text(
+                    strings.isPortuguese
+                        ? 'Você (${widget.myName})'
+                        : 'You (${widget.myName})',
+                  ),
                   icon: const Icon(Icons.person_rounded),
                 ),
                 ButtonSegment(
@@ -1809,16 +1860,29 @@ class _CreateSavingsGoalModalState
     final initialDeposit =
         double.tryParse(_initialDepositController.text.replaceAll(',', '.')) ?? 0.0;
 
+    final strings = AppStrings.of(context);
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a goal title')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite o título da meta'
+                : 'Please enter a goal title',
+          ),
+        ),
       );
       return;
     }
 
     if (target <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a target amount greater than R\$ 0')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite um valor alvo maior que R\$ 0'
+                : 'Please enter a target amount greater than R\$ 0',
+          ),
+        ),
       );
       return;
     }
@@ -2107,10 +2171,17 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
   }
 
   Future<void> _submitContribution() async {
+    final strings = AppStrings.of(context);
     final amount = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid deposit amount')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite um valor de depósito válido'
+                : 'Please enter a valid deposit amount',
+          ),
+        ),
       );
       return;
     }
