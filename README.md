@@ -75,13 +75,9 @@ This app is engineered to operate 100% within Firebase's free **Spark Tier** wit
    ```
    *(Or copy the contents of `firestore.rules` directly into the Firestore Rules tab in the console).*
 
-### Step 4: Enable Firebase Storage
-1. Navigate to **Storage** > **Get started**.
-2. Deploy the storage security rules:
-   ```bash
-   firebase deploy --only storage:rules
-   ```
-   *(Or copy the contents of `storage.rules` directly into the Storage Rules tab in the console).*
+### Step 4: Storage & Photos (100% Free Spark Tier via Firestore)
+- **No Cloud Storage bucket needed:** The app automatically compresses mobile camera photos to high-definition mobile resolution (1024px, 70% quality, ~80–120 KB) and stores them directly in Cloud Firestore as Base64 strings. This allows you to upload thousands of photos completely free forever on the Spark plan without linking a credit card.
+- *(Optional)* If you ever upgrade to the pay-as-you-go Blaze plan to store raw uncompressed images in Google Cloud Storage, you can navigate to **Storage** > **Get started** and deploy `storage.rules`.
 
 ### Step 5: Register Android App & Add `google-services.json`
 1. In Project Settings, click **Add app** and select **Android**.
