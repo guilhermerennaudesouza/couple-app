@@ -25,16 +25,17 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Ensure Android platform wrapper
+      - name: Ensure Gradle Wrapper
         run: |
-          flutter create --platforms=android .
-          chmod +x android/gradlew || true
+          cd android
+          gradle wrapper --gradle-version 8.12
+          chmod +x gradlew
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Release APK
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
 
       - name: Upload Galaxy S22/S24 Release APK
         uses: actions/upload-artifact@v4
