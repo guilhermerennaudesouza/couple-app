@@ -11,6 +11,11 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
+        <!-- Flutter v2 Embedding Declaration -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
         <!-- Main Flutter Activity (Launcher) -->
         <activity
             android:name=".MainActivity"
