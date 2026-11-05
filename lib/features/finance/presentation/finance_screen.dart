@@ -101,7 +101,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
           controller: _tabController,
           indicatorColor: AppTheme.primaryRose,
           labelColor: AppTheme.primaryRose,
-          unselectedLabelColor: AppTheme.textSecondaryLight,
+          unselectedLabelColor: context.textSecondary,
           indicatorWeight: 3,
           tabs: const [
             Tab(
@@ -188,10 +188,10 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Pair with your partner first to track expenses and save together!',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondaryLight),
+              style: TextStyle(color: context.textSecondary),
             ),
           ],
         ),
@@ -295,7 +295,7 @@ class _ExpensesTab extends ConsumerWidget {
               _buildCategoryChips(),
               const SizedBox(height: 12),
               if (filteredEntries.isEmpty)
-                _buildEmptyExpensesState()
+                _buildEmptyExpensesState(context)
               else
                 ...filteredEntries.map(
                   (entry) => _buildExpenseCard(context, ref, entry),
@@ -336,7 +336,7 @@ class _ExpensesTab extends ConsumerWidget {
     } else if (iAmOwed) {
       cardBg = const Color(0xFFF1F8E9);
       borderColor = const Color(0xFFAED581);
-      title = 'You are owed \$${balance.netOwedToUser1.toStringAsFixed(2)} 💚';
+      title = 'You are owed R\$ ${balance.netOwedToUser1.toStringAsFixed(2)} 💚';
       subtitle = '$partnerName owes you for shared expenses.';
       statusIcon = const Icon(
         Icons.arrow_downward_rounded,
@@ -346,7 +346,7 @@ class _ExpensesTab extends ConsumerWidget {
     } else {
       cardBg = const Color(0xFFFFF3E0);
       borderColor = const Color(0xFFFFCC80);
-      title = 'You owe \$${balance.netOwedToUser2.toStringAsFixed(2)} 🧡';
+      title = 'You owe R\$ ${balance.netOwedToUser2.toStringAsFixed(2)} 🧡';
       subtitle = 'You owe $partnerName for shared expenses.';
       statusIcon = const Icon(
         Icons.arrow_upward_rounded,
@@ -377,18 +377,18 @@ class _ExpensesTab extends ConsumerWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryLight,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppTheme.textSecondaryLight,
+                          color: context.textSecondary,
                         ),
                       ),
                     ],
@@ -404,18 +404,18 @@ class _ExpensesTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Unsettled Total: \$${balance.totalSpent.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      'Unsettled Total: R\$ ${balance.totalSpent.toStringAsFixed(2)}',
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondaryLight,
+                        color: context.textSecondary,
                       ),
                     ),
                     Text(
                       '${balance.unsettledCount} open item(s)',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.textSecondaryLight,
+                        color: context.textSecondary,
                       ),
                     ),
                   ],
@@ -460,7 +460,7 @@ class _ExpensesTab extends ConsumerWidget {
           ],
         ),
         content: Text(
-          'Mark all pending shared expenses as settled? This will reset the net balance between you and $partnerName to \$0.00.',
+          'Mark all pending shared expenses as settled? This will reset the net balance between you and $partnerName to R\$ 0,00.',
         ),
         actions: [
           TextButton(
@@ -517,7 +517,7 @@ class _ExpensesTab extends ConsumerWidget {
             labelStyle: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.white : AppTheme.textPrimaryLight,
+              color: isSelected ? Colors.white : context.textPrimary,
             ),
             selectedColor: AppTheme.primaryRose,
             backgroundColor: AppTheme.surfaceVariantLight,
@@ -592,19 +592,19 @@ class _ExpensesTab extends ConsumerWidget {
                   fontSize: 15,
                   decoration: entry.isSettled ? TextDecoration.lineThrough : null,
                   color: entry.isSettled
-                      ? AppTheme.textSecondaryLight
-                      : AppTheme.textPrimaryLight,
+                      ? context.textSecondary
+                      : context.textPrimary,
                 ),
               ),
             ),
             Text(
-              '\$${entry.amount.toStringAsFixed(2)}',
+              'R\$ ${entry.amount.toStringAsFixed(2)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: entry.isSettled
-                    ? AppTheme.textSecondaryLight
-                    : AppTheme.textPrimaryLight,
+                    ? context.textSecondary
+                    : context.textPrimary,
               ),
             ),
           ],
@@ -620,9 +620,9 @@ class _ExpensesTab extends ConsumerWidget {
                     '$dateStr • Paid by $payerDisplayName',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.textSecondaryLight,
+                      color: context.textSecondary,
                     ),
                   ),
                 ),
@@ -646,8 +646,8 @@ class _ExpensesTab extends ConsumerWidget {
                 else
                   Text(
                     isPaidByMe
-                        ? '+$partnerName owes \$${partnerShare.toStringAsFixed(2)}'
-                        : 'You owe \$${myShare.toStringAsFixed(2)}',
+                        ? '+$partnerName owes R\$ ${partnerShare.toStringAsFixed(2)}'
+                        : 'You owe R\$ ${myShare.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -667,10 +667,10 @@ class _ExpensesTab extends ConsumerWidget {
               ),
               child: Text(
                 'Split: $splitBadgeText',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textSecondaryLight,
+                  color: context.textSecondary,
                 ),
               ),
             ),
@@ -738,7 +738,7 @@ class _ExpensesTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyExpensesState() {
+  Widget _buildEmptyExpensesState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
@@ -750,21 +750,21 @@ class _ExpensesTab extends ConsumerWidget {
               color: AppTheme.primaryRose.withOpacity(0.35),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No expenses recorded',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Tap "+ Add Expense" to log dinners, groceries, or vacations together!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
           ],
@@ -838,7 +838,7 @@ class _SavingsTab extends ConsumerWidget {
               _buildTotalSavingsHeroCard(totalSaved, goals.length),
               const SizedBox(height: 16),
               if (goals.isEmpty)
-                _buildEmptySavingsState()
+                _buildEmptySavingsState(context)
               else
                 ...goals.map((goal) => _buildSavingsGoalCard(context, ref, goal)),
               const SizedBox(height: 80),
@@ -899,7 +899,7 @@ class _SavingsTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '\$${totalSaved.toStringAsFixed(2)}',
+                  'R\$ ${totalSaved.toStringAsFixed(2)}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 26,
@@ -978,17 +978,17 @@ class _SavingsTab extends ConsumerWidget {
                     children: [
                       Text(
                         goal.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryLight,
+                          color: context.textPrimary,
                         ),
                       ),
                       Text(
                         goal.category,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textSecondaryLight,
+                          color: context.textSecondary,
                         ),
                       ),
                     ],
@@ -1062,11 +1062,11 @@ class _SavingsTab extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '\$${goal.currentAmount.toStringAsFixed(2)} of \$${goal.targetAmount.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  'R\$ ${goal.currentAmount.toStringAsFixed(2)} of R\$ ${goal.targetAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimaryLight,
+                    color: context.textPrimary,
                   ),
                 ),
                 Container(
@@ -1094,14 +1094,14 @@ class _SavingsTab extends ConsumerWidget {
                   child: Text(
                     isReached
                         ? 'Target completely fulfilled! 🥳'
-                        : '\$${goal.remainingAmount.toStringAsFixed(2)} remaining',
+                        : 'R\$ ${goal.remainingAmount.toStringAsFixed(2)} remaining',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
                       color: isReached
                           ? AppTheme.successGreen
-                          : AppTheme.textSecondaryLight,
+                          : context.textSecondary,
                       fontWeight: isReached ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
@@ -1110,9 +1110,9 @@ class _SavingsTab extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Text(
                     countdownText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.textSecondaryLight,
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
@@ -1233,7 +1233,7 @@ class _SavingsTab extends ConsumerWidget {
                         ),
                       ),
                       title: Text(
-                        '+\$${contrib.amount.toStringAsFixed(2)}',
+                        '+R\$ ${contrib.amount.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.successGreen,
@@ -1266,7 +1266,7 @@ class _SavingsTab extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Savings Goal?'),
         content: Text(
-          'Are you sure you want to delete "${goal.title}"? Current progress (\$${goal.currentAmount.toStringAsFixed(2)}) will be removed.',
+          'Are you sure you want to delete "${goal.title}"? Current progress (R\$ ${goal.currentAmount.toStringAsFixed(2)}) will be removed.',
         ),
         actions: [
           TextButton(
@@ -1296,7 +1296,7 @@ class _SavingsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptySavingsState() {
+  Widget _buildEmptySavingsState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
@@ -1308,21 +1308,21 @@ class _SavingsTab extends ConsumerWidget {
               color: AppTheme.primaryRose.withOpacity(0.35),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No savings goals yet',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Start a joint piggy bank for your next vacation, wedding, or home dream!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
           ],
@@ -1415,7 +1415,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
 
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount greater than \$0')),
+        const SnackBar(content: Text('Please enter a valid amount greater than R\$ 0')),
       );
       return;
     }
@@ -1482,12 +1482,12 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Log Shared Expense',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -1516,8 +1516,8 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Amount (\$)',
-                      prefixText: '\$ ',
+                      labelText: 'Amount (R\$)',
+                      prefixText: 'R\$ ',
                       filled: true,
                       fillColor: AppTheme.surfaceVariantLight,
                       border: OutlineInputBorder(
@@ -1573,7 +1573,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
                     fontSize: 12,
-                    color: isSelected ? Colors.white : AppTheme.textPrimaryLight,
+                    color: isSelected ? Colors.white : context.textPrimary,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   onSelected: (val) {
@@ -1626,7 +1626,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                   labelStyle: TextStyle(
                     color: _splitRatio == SplitRatio.half
                         ? Colors.white
-                        : AppTheme.textPrimaryLight,
+                        : context.textPrimary,
                     fontWeight: _splitRatio == SplitRatio.half
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -1644,7 +1644,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                   labelStyle: TextStyle(
                     color: _splitRatio == SplitRatio.paidByOther
                         ? Colors.white
-                        : AppTheme.textPrimaryLight,
+                        : context.textPrimary,
                     fontWeight: _splitRatio == SplitRatio.paidByOther
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -1660,7 +1660,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                   labelStyle: TextStyle(
                     color: _splitRatio == SplitRatio.custom
                         ? Colors.white
-                        : AppTheme.textPrimaryLight,
+                        : context.textPrimary,
                     fontWeight: _splitRatio == SplitRatio.custom
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -1683,7 +1683,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                   ),
                   Text(
                     'Partner covers: ${(100 - _customPayerPercent).round()}%',
-                    style: const TextStyle(color: AppTheme.textSecondaryLight),
+                    style: TextStyle(color: context.textSecondary),
                   ),
                 ],
               ),
@@ -1789,7 +1789,7 @@ class _CreateSavingsGoalModalState
 
     if (target <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a target amount greater than \$0')),
+        const SnackBar(content: Text('Please enter a target amount greater than R\$ 0')),
       );
       return;
     }
@@ -1877,12 +1877,12 @@ class _CreateSavingsGoalModalState
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'New Joint Savings Goal',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimaryLight,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -1911,8 +1911,8 @@ class _CreateSavingsGoalModalState
                     controller: _targetController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Target Amount (\$)',
-                      prefixText: '\$ ',
+                      labelText: 'Target Amount (R\$)',
+                      prefixText: 'R\$ ',
                       filled: true,
                       fillColor: AppTheme.surfaceVariantLight,
                       border: OutlineInputBorder(
@@ -1929,8 +1929,8 @@ class _CreateSavingsGoalModalState
                     controller: _initialDepositController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Starting (\$)',
-                      prefixText: '\$ ',
+                      labelText: 'Starting (R\$)',
+                      prefixText: 'R\$ ',
                       hintText: '0.00',
                       filled: true,
                       fillColor: AppTheme.surfaceVariantLight,
@@ -1991,7 +1991,7 @@ class _CreateSavingsGoalModalState
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
                     fontSize: 12,
-                    color: isSelected ? Colors.white : AppTheme.textPrimaryLight,
+                    color: isSelected ? Colors.white : context.textPrimary,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   onSelected: (val) {
@@ -2114,7 +2114,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
             content: Text(
               willReachTarget
                   ? '🎉 GOAL REACHED! You hit the target for "${widget.goal.title}"! 🍾'
-                  : 'Added \$${amount.toStringAsFixed(2)} to "${widget.goal.title}"! 🐷',
+                  : 'Added R\$ ${amount.toStringAsFixed(2)} to "${widget.goal.title}"! 🐷',
             ),
             backgroundColor: AppTheme.successGreen,
             duration: const Duration(seconds: 4),
@@ -2164,10 +2164,10 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
                 Expanded(
                   child: Text(
                     'Deposit to "${widget.goal.title}"',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryLight,
+                      color: context.textPrimary,
                     ),
                   ),
                 ),
@@ -2175,10 +2175,10 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Remaining needed: \$${widget.goal.remainingAmount.toStringAsFixed(2)}',
-              style: const TextStyle(
+              'Remaining needed: R\$ ${widget.goal.remainingAmount.toStringAsFixed(2)}',
+              style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textSecondaryLight,
+                color: context.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -2188,7 +2188,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
               spacing: 8,
               children: [10.0, 25.0, 50.0, 100.0].map((amt) {
                 return ActionChip(
-                  label: Text('+\$${amt.toInt()}'),
+                  label: Text('+R\$ ${amt.toInt()}'),
                   backgroundColor: AppTheme.surfaceVariantLight,
                   onPressed: () => _setAmount(amt),
                 );
@@ -2202,8 +2202,8 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
               decoration: InputDecoration(
-                labelText: 'Deposit Amount (\$)',
-                prefixText: '\$ ',
+                labelText: 'Deposit Amount (R\$)',
+                prefixText: 'R\$ ',
                 filled: true,
                 fillColor: AppTheme.surfaceVariantLight,
                 border: OutlineInputBorder(
