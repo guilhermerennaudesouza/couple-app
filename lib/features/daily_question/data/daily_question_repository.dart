@@ -67,6 +67,60 @@ class DailyQuestionRepository {
     'What makes you feel safest and most at home when we are together?',
   ];
 
+  /// Curated Portuguese question bank for couples (pt-BR).
+  static const List<String> defaultQuestionBankPt = [
+    'Qual foi a sua lembrança favorita que vivemos juntos esta semana?',
+    'Qual é a viagem dos seus sonhos que você quer fazer comigo?',
+    'O que passou pela sua cabeça na primeira vez que nos vimos?',
+    'Qual é um detalhe simples que eu faço que sempre te faz sorrir?',
+    'Se pudéssemos passar um fim de semana inteiro fazendo qualquer coisa sem obrigações, o que faríamos?',
+    'Qual é a sua música favorita que sempre faz você lembrar da gente?',
+    'Qual é a qualidade em mim que você mais admira?',
+    'Qual foi o momento mais engraçado e divertido que já compartilhamos?',
+    'Qual refeição que comemos juntos você nunca vai esquecer?',
+    'Se o nosso relacionamento fosse um gênero de filme, qual seria?',
+    'Qual é uma meta importante que você quer que a gente conquiste juntos no próximo ano?',
+    'Qual é o seu jeito favorito de relaxar juntos após um dia cansativo?',
+    'Qual mania ou hábito meu você acha mais fofo?',
+    'Qual foi o gesto mais doce ou carinhoso que já fiz por você?',
+    'Se você pudesse reviver um dia do nosso passado para sempre, qual seria?',
+    'O que é algo novo que você adoraria que a gente aprendesse ou experimentasse juntos?',
+    'Qual é a sua foto favorita nossa e o que estava acontecendo naquele momento?',
+    'De que forma eu te ajudei a crescer como pessoa desde que começamos a namorar?',
+    'O que fez você ter uma crise de risos incontrolável recentemente?',
+    'Qual é o seu ritual favorito da manhã ou da noite que fazemos juntos?',
+    'Se você ganhasse um dia livre de surpresa comigo amanhã, para onde iríamos?',
+    'O que você mais valoriza na forma como conversamos e resolvemos nossas diferenças?',
+    'Qual é um sonho ou paixão secreta que você não compartilha há algum tempo?',
+    'Em qual momento você se sentiu mais acolhido(a) e profundamente amado(a) por mim?',
+    'Qual é o seu traço físico ou expressão minha que você mais ama?',
+    'Se escrevêssemos um livro sobre a nossa história de amor, qual seria o título?',
+    'Qual foi a surpresa mais marcante que já fizemos um para o outro?',
+    'Qual elogio que eu te fiz ficou gravado no seu coração?',
+    'Qual é a sua comida de conforto favorita quando está triste e como posso te animar?',
+    'Qual piada interna nossa sempre faz você cair na risada?',
+    'Qual é o valor ou princípio que compartilhamos que você mais preza?',
+    'Se pudesse escolher agora o lugar para comemorarmos nosso próximo aniversário, onde seria?',
+    'Qual foi o exato momento em que você percebeu que estava apaixonado(a) por mim?',
+    'Qual é a sua tradição de datas especiais ou festas que já criamos ou sonha em criar?',
+    'O que no nosso futuro juntos mais faz o seu coração acelerar de felicidade?',
+    'Qual pequeno gesto de carinho você mais ama receber?',
+    'O que é algo engraçado ou peculiar que só nós dois sabemos um sobre o outro?',
+    'Com qual roupa ou estilo você mais gosta de me ver?',
+    'Se tivéssemos um drink ou bebida oficial do nosso casal, qual sabor teria?',
+    'Qual lugar na nossa cidade tem um significado muito especial para nós?',
+    'O que eu fiz recentemente que te encheu de orgulho?',
+    'Qual filme, série ou livro você adoraria maratonar comigo debaixo do cobertor?',
+    'Qual promessa você faz para o nosso futuro juntos?',
+    'Qual foi o melhor conselho que já te deram sobre o amor?',
+    'Como você descreveria a nossa conexão em três palavras?',
+    'Qual é a melhor parte de acordar um ao lado do outro?',
+    'Se pudéssemos construir nossa casa dos sonhos, qual cômodo ou detalhe seria indispensável?',
+    'Pelo que você se sente profundamente grato(a) na nossa vida hoje?',
+    'Qual lembrança doce do início do nosso namoro você ainda adora relembrar?',
+    'O que faz você se sentir mais seguro(a) e em casa quando estamos juntos?',
+  ];
+
   /// Formats a [DateTime] into standard `YYYY-MM-DD` date key.
   static String formatDate(DateTime dt) {
     final y = dt.year.toString().padLeft(4, '0');
@@ -79,10 +133,29 @@ class DailyQuestionRepository {
   static String get todayDateString => formatDate(DateTime.now());
 
   /// Deterministically picks a prompt from the question bank for a given date.
-  static String getPromptForDate(String dateString) {
+  /// If [languageCode] is 'pt', returns the Brazilian Portuguese prompt.
+  static String getPromptForDate(String dateString, {String? languageCode}) {
     final hash = dateString.codeUnits.fold<int>(0, (prev, elem) => prev + elem);
-    final index = hash.abs() % defaultQuestionBank.length;
-    return defaultQuestionBank[index];
+    final bank = languageCode == 'pt' ? defaultQuestionBankPt : defaultQuestionBank;
+    final index = hash.abs() % bank.length;
+    return bank[index];
+  }
+
+  /// Translates a prompt between English and Portuguese if it matches a known bank question.
+  static String translatePrompt(String prompt, {String languageCode = 'pt'}) {
+    if (languageCode == 'pt') {
+      final enIdx = defaultQuestionBank.indexOf(prompt);
+      if (enIdx != -1 && enIdx < defaultQuestionBankPt.length) {
+        return defaultQuestionBankPt[enIdx];
+      }
+      return prompt;
+    } else {
+      final ptIdx = defaultQuestionBankPt.indexOf(prompt);
+      if (ptIdx != -1 && ptIdx < defaultQuestionBank.length) {
+        return defaultQuestionBank[ptIdx];
+      }
+      return prompt;
+    }
   }
 
   /// Ensures today's question exists in Firestore for [coupleId], creating it if absent.

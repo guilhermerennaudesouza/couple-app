@@ -21,14 +21,64 @@ class DateIdeasRepository {
         .collection('date_ideas');
   }
 
+  /// Bilingual dictionary of curated date ideas for seamless localization.
+  static const Map<String, Map<String, String>> _curatedTranslations = {
+    'Candlelight Home Dinner & No Phones': {
+      'titlePt': 'Jantar à Luz de Velas em Casa & Sem Celulares',
+      'descPt': 'Desliguem todas as telas, cozinhem um prato especial juntos e jantem à luz de velas.',
+    },
+    'Sunset Beach Walk & Ice Cream': {
+      'titlePt': 'Caminhada ao Pôr do Sol & Sorvete',
+      'descPt': 'Aproveitem a hora de ouro na beira da água seguidos por um sorvete delicioso.',
+    },
+    'Try a New Cuisine Neither Has Eaten': {
+      'titlePt': 'Provar uma Culinária Nova Juntos',
+      'descPt': 'Escolham um restaurante de culinária que nenhum dos dois provou antes e façam pedidos aventureiros.',
+    },
+    'Late Night Stargazing with Hot Chocolate': {
+      'titlePt': 'Observar as Estrelas com Chocolate Quente',
+      'descPt': 'Levem uma manta macia, uma garrafa térmica com chocolate quente cremoso e contemplem as estrelas.',
+    },
+    'Cook Pizza from Scratch Together': {
+      'titlePt': 'Fazer Pizza Caseira Juntos do Zero',
+      'descPt': 'Abram a massa juntos, testem combinações divertidas de sabores e assem quentinha no forno.',
+    },
+    'Bookstore Date: Pick a Book for Each Other': {
+      'titlePt': 'Encontro na Livraria: Escolher um Livro para o Outro',
+      'descPt': 'Passeiem pelos corredores da livraria por 30 minutos e troquem escolhas secretas com um café.',
+    },
+  };
+
+  /// Translates a curated idea title between languages.
+  static String translateIdeaTitle(String title, {String languageCode = 'pt'}) {
+    if (languageCode == 'pt') {
+      return _curatedTranslations[title]?['titlePt'] ?? title;
+    }
+    for (final entry in _curatedTranslations.entries) {
+      if (entry.value['titlePt'] == title) {
+        return entry.key;
+      }
+    }
+    return title;
+  }
+
   /// Curated default date ideas inspired by Krivo couple cards.
-  static List<DateIdeaModel> defaultCuratedIdeas({required String createdBy}) {
+  static List<DateIdeaModel> defaultCuratedIdeas({
+    required String createdBy,
+    String languageCode = 'pt',
+  }) {
     final now = DateTime.now();
+    final isPt = languageCode == 'pt';
+
     return [
       DateIdeaModel(
         id: 'curated_1',
-        title: 'Candlelight Home Dinner & No Phones',
-        description: 'Turn off all screens, cook a favorite meal together, and dine by candlelight.',
+        title: isPt
+            ? 'Jantar à Luz de Velas em Casa & Sem Celulares'
+            : 'Candlelight Home Dinner & No Phones',
+        description: isPt
+            ? 'Desliguem todas as telas, cozinhem um prato especial juntos e jantem à luz de velas.'
+            : 'Turn off all screens, cook a favorite meal together, and dine by candlelight.',
         category: DateIdeaModel.categoryCozy,
         isWeeklyPick: true,
         createdBy: createdBy,
@@ -36,40 +86,60 @@ class DateIdeasRepository {
       ),
       DateIdeaModel(
         id: 'curated_2',
-        title: 'Sunset Beach Walk & Ice Cream',
-        description: 'Catch the golden hour by the water followed by your favorite scoops.',
+        title: isPt
+            ? 'Caminhada ao Pôr do Sol & Sorvete'
+            : 'Sunset Beach Walk & Ice Cream',
+        description: isPt
+            ? 'Aproveitem a hora de ouro na beira da água seguidos por um sorvete delicioso.'
+            : 'Catch the golden hour by the water followed by your favorite scoops.',
         category: DateIdeaModel.categoryOutdoor,
         createdBy: createdBy,
         createdAt: now.subtract(const Duration(minutes: 5)),
       ),
       DateIdeaModel(
         id: 'curated_3',
-        title: 'Try a New Cuisine Neither Has Eaten',
-        description: 'Pick an exotic cultural cuisine neither of you has tried before and order adventurous dishes.',
+        title: isPt
+            ? 'Provar uma Culinária Nova Juntos'
+            : 'Try a New Cuisine Neither Has Eaten',
+        description: isPt
+            ? 'Escolham um restaurante de culinária que nenhum dos dois provou antes e façam pedidos aventureiros.'
+            : 'Pick an exotic cultural cuisine neither of you has tried before and order adventurous dishes.',
         category: DateIdeaModel.categoryFoodie,
         createdBy: createdBy,
         createdAt: now.subtract(const Duration(minutes: 4)),
       ),
       DateIdeaModel(
         id: 'curated_4',
-        title: 'Late Night Stargazing with Hot Chocolate',
-        description: 'Pack a warm blanket, a thermos of rich cocoa, and find an open dark spot under the stars.',
+        title: isPt
+            ? 'Observar as Estrelas com Chocolate Quente'
+            : 'Late Night Stargazing with Hot Chocolate',
+        description: isPt
+            ? 'Levem uma manta macia, uma garrafa térmica com chocolate quente cremoso e contemplem as estrelas.'
+            : 'Pack a warm blanket, a thermos of rich cocoa, and find an open dark spot under the stars.',
         category: DateIdeaModel.categoryRomance,
         createdBy: createdBy,
         createdAt: now.subtract(const Duration(minutes: 3)),
       ),
       DateIdeaModel(
         id: 'curated_5',
-        title: 'Cook Pizza from Scratch Together',
-        description: 'Roll the dough, experiment with funny topping combinations, and bake fresh.',
+        title: isPt
+            ? 'Fazer Pizza Caseira Juntos do Zero'
+            : 'Cook Pizza from Scratch Together',
+        description: isPt
+            ? 'Abram a massa juntos, testem combinações divertidas de sabores e assem quentinha no forno.'
+            : 'Roll the dough, experiment with funny topping combinations, and bake fresh.',
         category: DateIdeaModel.categoryFoodie,
         createdBy: createdBy,
         createdAt: now.subtract(const Duration(minutes: 2)),
       ),
       DateIdeaModel(
         id: 'curated_6',
-        title: 'Bookstore Date: Pick a Book for Each Other',
-        description: 'Browse local bookstore aisles for 30 minutes and swap secret choices over coffee.',
+        title: isPt
+            ? 'Encontro na Livraria: Escolher um Livro para o Outro'
+            : 'Bookstore Date: Pick a Book for Each Other',
+        description: isPt
+            ? 'Passeiem pelos corredores da livraria por 30 minutos e troquem escolhas secretas com um café.'
+            : 'Browse local bookstore aisles for 30 minutes and swap secret choices over coffee.',
         category: DateIdeaModel.categoryCozy,
         createdBy: createdBy,
         createdAt: now.subtract(const Duration(minutes: 1)),
