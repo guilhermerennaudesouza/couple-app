@@ -255,7 +255,7 @@ void main() {
     });
 
     test('DateIdeasRepository defaultCuratedIdeas generates 6 curated date cards', () {
-      final ideas = DateIdeasRepository.defaultCuratedIdeas('uid_creator');
+      final ideas = DateIdeasRepository.defaultCuratedIdeas(createdBy: 'uid_creator');
       expect(ideas.length, equals(6));
       expect(ideas.any((i) => i.category == DateIdeaModel.categoryCozy), isTrue);
       expect(ideas.any((i) => i.category == DateIdeaModel.categoryRomance), isTrue);

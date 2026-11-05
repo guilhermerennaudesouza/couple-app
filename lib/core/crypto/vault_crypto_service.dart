@@ -86,7 +86,7 @@ class VaultCryptoService {
   VaultCryptoService({
     Cipher? cipher,
     Pbkdf2? pbkdf2,
-  })  : _cipher = cipher ?? AesGcm.with256Bits(),
+  })  : _cipher = cipher ?? AesGcm.with256bits(),
         _pbkdf2 = pbkdf2 ??
             Pbkdf2(
               macAlgorithm: Hmac.sha256(),

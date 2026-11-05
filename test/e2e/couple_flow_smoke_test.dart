@@ -35,6 +35,14 @@ void main() {
     widgetCalls.clear();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
+      const MethodChannel('home_widget'),
+      (MethodCall methodCall) async {
+        widgetCalls.add(methodCall);
+        return true;
+      },
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
       const MethodChannel('es.antonborri.home_widget'),
       (MethodCall methodCall) async {
         widgetCalls.add(methodCall);
@@ -51,6 +59,11 @@ void main() {
   });
 
   tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('home_widget'),
+      null,
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('es.antonborri.home_widget'),
@@ -771,6 +784,7 @@ void main() {
       // Step A: When currentCoupleIdProvider is null, CoupleApp displays PairingScreen
       await tester.pumpWidget(
         ProviderScope(
+          key: const ValueKey('step_a_scope'),
           overrides: [
             currentCoupleIdProvider.overrideWith((ref) => Future.value(null)),
           ],
@@ -800,6 +814,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          key: const ValueKey('step_b_scope'),
           overrides: [
             coupleStreamProvider(testCoupleId).overrideWith((ref) => Stream.value(couple)),
           ],
@@ -820,7 +835,8 @@ void main() {
       expect(find.text('Private Encrypted Vault'), findsOneWidget);
       expect(find.text('Love Notes & Sticky Wall'), findsOneWidget);
 
-      // Verify space details & settings card
+      // Verify space details & settings card (scroll down if offscreen)
+      await tester.scrollUntilVisible(find.text('SPACE DETAILS & SETTINGS'), 300);
       expect(find.text('SPACE DETAILS & SETTINGS'), findsOneWidget);
       expect(find.text('Space ID'), findsOneWidget);
       expect(find.text(testCoupleId), findsOneWidget);

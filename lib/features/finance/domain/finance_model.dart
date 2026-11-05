@@ -68,7 +68,7 @@ class FinanceEntry {
   /// - For [SplitRatio.custom]: payer is responsible for [customSplitPercentage]%,
   ///   and partner is responsible for (100 - [customSplitPercentage])%.
   double shareFor(String uid, {required String partnerUid}) {
-    if (uid != paidBy && uid != partnerUid) return 0.0;
+    if (paidBy != uid && paidBy != partnerUid) return 0.0;
     final payerPercent = switch (splitRatio) {
       SplitRatio.half => 50.0,
       SplitRatio.paidByOther => 0.0,

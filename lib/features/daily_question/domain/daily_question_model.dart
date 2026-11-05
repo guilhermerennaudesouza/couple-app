@@ -192,7 +192,7 @@ class DailyQuestionModel {
       id.hashCode ^
       date.hashCode ^
       prompt.hashCode ^
-      answers.hashCode ^
+      answers.entries.fold(0, (prev, e) => prev ^ e.key.hashCode ^ e.value.hashCode) ^
       isRevealed.hashCode;
 
   @override

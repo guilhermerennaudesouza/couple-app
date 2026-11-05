@@ -84,7 +84,7 @@ class AppTheme {
           letterSpacing: -0.3,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceLight,
         elevation: 0.5,
         shadowColor: primaryRose.withOpacity(0.08),
@@ -163,7 +163,7 @@ class AppTheme {
         ),
         hintStyle: const TextStyle(color: textSecondaryLight, fontSize: 14),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surfaceLight,
         elevation: 3,
         shape: RoundedRectangleBorder(
@@ -217,7 +217,7 @@ class AppTheme {
           letterSpacing: -0.3,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -259,7 +259,7 @@ class AppTheme {
           borderSide: const BorderSide(color: primaryRoseLight, width: 2),
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surfaceDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(dialogBorderRadius),

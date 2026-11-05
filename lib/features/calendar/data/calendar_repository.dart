@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/domain/couple_model.dart';
-import '../../core/notifications/local_notification_service.dart';
+import 'package:couple_app/core/notifications/local_notification_service.dart';
 import '../domain/calendar_event_model.dart';
 
 /// Repository managing shared calendar events, date nights, anniversaries, and reminders.

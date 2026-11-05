@@ -39,3 +39,6 @@
 -keep class kotlinx.coroutines.** { *; }
 -dontwarn kotlin.**
 -dontwarn kotlinx.coroutines.**
+
+# Google Play Core / Deferred Components (unused in standalone release APK)
+-dontwarn com.google.android.play.core.**

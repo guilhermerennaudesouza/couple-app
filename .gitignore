@@ -1,6 +1,14 @@
-﻿*.apk
+*.apk
 *.xapk
 scratch/
 .superpowers/sdd/
 build/
 .dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/app/src/main/java/
+flutter_windows_*.zip
