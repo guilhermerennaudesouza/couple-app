@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # Firebase SDKs (Free Spark Tier)
   firebase_core: ^3.6.0
@@ -32,7 +34,7 @@ dependencies:
   cryptography: ^2.7.0
 
   # Utilities & Animations
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.5.1
   flutter_animate: ^4.5.0
   image_picker: ^1.1.2
