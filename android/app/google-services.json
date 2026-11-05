@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "358368262538",
+    "project_id": "couple-app-503641",
+    "storage_bucket": "couple-app-503641.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:358368262538:android:9e3e308e44fac5206af073",
+        "android_client_info": {
+          "package_name": "com.personal.couple_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAe96KBE_w2McXYZhevny3mQSXMg1UAtEo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
