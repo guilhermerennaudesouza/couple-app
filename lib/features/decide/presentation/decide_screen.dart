@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../date_ideas/data/date_ideas_repository.dart';
@@ -89,12 +90,13 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
     final couple = coupleAsync.valueOrNull ?? widget.initialCouple;
 
     final myUid = _getEffectiveUid();
+    final strings = AppStrings.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Decide & Do Together',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          strings.decideTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -102,14 +104,14 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
           labelColor: AppTheme.primaryRose,
           unselectedLabelColor: context.textSecondary,
           indicatorWeight: 3,
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.how_to_vote_rounded),
-              text: 'Decide Together',
+              icon: const Icon(Icons.how_to_vote_rounded),
+              text: strings.tabDecideTogether,
             ),
             Tab(
-              icon: Icon(Icons.favorite_rounded),
-              text: 'Date Ideas',
+              icon: const Icon(Icons.favorite_rounded),
+              text: strings.tabDateIdeas,
             ),
           ],
         ),
@@ -143,19 +145,20 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
                   backgroundColor: AppTheme.primaryRose,
                   foregroundColor: Colors.white,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('New Ballot'),
+                  label: Text(strings.newBallotBtn),
                 )
               : FloatingActionButton.extended(
                   onPressed: () => _showAddDateIdeaSheet(context, effectiveCoupleId, myUid),
                   backgroundColor: AppTheme.primaryRose,
                   foregroundColor: Colors.white,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add Date Idea'),
+                  label: Text(strings.isPortuguese ? 'Nova Ideia' : 'Add Date Idea'),
                 ),
     );
   }
 
   Widget _buildNoCoupleState() {
+    final strings = AppStrings.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -169,12 +172,14 @@ class _DecideScreenState extends ConsumerState<DecideScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No Couple Connected',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              strings.isPortuguese ? 'Nenhum Casal Conectado' : 'No Couple Connected',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Pair with your partner first to create ballots and plan date ideas together.',
+              strings.isPortuguese
+                  ? 'Conecte-se com seu amor para criar votações e planejar encontros juntos.'
+                  : 'Pair with your partner first to create ballots and plan date ideas together.',
               textAlign: TextAlign.center,
               style: TextStyle(color: context.textSecondary),
             ),
@@ -264,33 +269,42 @@ class _DecideTab extends ConsumerWidget {
   }
 
   Widget _buildIntroBanner(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.pastelPeach.withOpacity(0.4),
+        color: context.isDarkMode
+            ? AppTheme.primaryRose.withOpacity(0.15)
+            : AppTheme.pastelPeach.withOpacity(0.4),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.secondaryBlush.withOpacity(0.5)),
+        border: Border.all(
+          color: context.isDarkMode
+              ? AppTheme.primaryRose.withOpacity(0.4)
+              : AppTheme.secondaryBlush.withOpacity(0.5),
+        ),
       ),
       child: Row(
         children: [
-          Text('🤫', style: TextStyle(fontSize: 28)),
-          SizedBox(width: 12),
+          const Text('🤫', style: TextStyle(fontSize: 28)),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Secret Partner Voting',
+                  strings.isPortuguese ? 'Votação Secreta do Casal' : 'Secret Partner Voting',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: context.textPrimary,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Your vote remains completely secret until both of you choose!',
+                  strings.isPortuguese
+                      ? 'Seu voto permanece em sigilo até que ambos tenham votado!'
+                      : 'Your vote remains completely secret until both of you choose!',
                   style: TextStyle(
                     fontSize: 12,
                     color: context.textSecondary,
@@ -305,6 +319,7 @@ class _DecideTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -318,7 +333,7 @@ class _DecideTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No Ballots Yet',
+              strings.noBallotsYet,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -327,7 +342,7 @@ class _DecideTab extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Cannot decide what to eat, what movie to watch, or where to go? Create your first secret ballot!',
+              strings.noBallotsDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -356,6 +371,7 @@ class _BallotCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     final hasVoted = session.hasUserVoted(myUid);
     final myVote = session.getUserVote(myUid);
     final isResolved = session.isResolved;
@@ -372,7 +388,7 @@ class _BallotCard extends ConsumerWidget {
               ? AppTheme.primaryRose.withOpacity(0.5)
               : isSplit
                   ? AppTheme.goldAccent.withOpacity(0.5)
-                  : AppTheme.outlineLight,
+                  : context.outlineColor,
           width: isMatch || isSplit ? 1.5 : 1,
         ),
       ),
@@ -394,7 +410,7 @@ class _BallotCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                _buildStatusPill(session),
+                _buildStatusPill(context, session),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 20),
                   onSelected: (val) {
@@ -408,24 +424,24 @@ class _BallotCard extends ConsumerWidget {
                   },
                   itemBuilder: (ctx) => [
                     if (isResolved)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'revote',
                         child: Row(
                           children: [
-                            Icon(Icons.refresh_rounded, size: 18),
-                            SizedBox(width: 8),
-                            Text('Re-vote'),
+                            const Icon(Icons.refresh_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            Text(strings.isPortuguese ? 'Votar Novamente' : 'Re-vote'),
                           ],
                         ),
                       ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline_rounded,
+                          const Icon(Icons.delete_outline_rounded,
                               size: 18, color: AppTheme.errorRed),
-                          SizedBox(width: 8),
-                          Text('Delete', style: TextStyle(color: AppTheme.errorRed)),
+                          const SizedBox(width: 8),
+                          Text(strings.delete, style: const TextStyle(color: AppTheme.errorRed)),
                         ],
                       ),
                     ),
@@ -437,7 +453,9 @@ class _BallotCard extends ConsumerWidget {
 
             // Date & Creator info
             Text(
-              'Created ${DateFormat.MMMd().format(session.createdAt)}',
+              strings.isPortuguese
+                  ? 'Criado em ${DateFormat.MMMd('pt_BR').format(session.createdAt)}'
+                  : 'Created ${DateFormat.MMMd().format(session.createdAt)}',
               style: TextStyle(
                 fontSize: 12,
                 color: context.textSecondary,
@@ -478,7 +496,7 @@ class _BallotCard extends ConsumerWidget {
                             ? AppTheme.primaryRose.withOpacity(0.6)
                             : isPartnerPick
                                 ? AppTheme.tertiaryMauve.withOpacity(0.5)
-                                : AppTheme.outlineLight.withOpacity(0.6),
+                                : context.outlineColor.withOpacity(0.6),
                     width: isWinner || isMyPick ? 1.5 : 1,
                   ),
                 ),
@@ -498,6 +516,7 @@ class _BallotCard extends ConsumerWidget {
                     ),
                   ),
                   subtitle: _buildOptionSubtitle(
+                    context,
                     isMyPick: isMyPick,
                     isPartnerPick: isPartnerPick,
                     isWinner: isWinner,
@@ -527,7 +546,7 @@ class _BallotCard extends ConsumerWidget {
                                       option,
                                     );
                               },
-                              child: const Text('Vote'),
+                              child: Text(strings.isPortuguese ? 'Votar' : 'Vote'),
                             )
                           : (isMyPick
                               ? const Icon(Icons.check_circle_rounded,
@@ -548,15 +567,17 @@ class _BallotCard extends ConsumerWidget {
     );
   }
 
-  Widget? _buildOptionSubtitle({
+  Widget? _buildOptionSubtitle(
+    BuildContext context, {
     required bool isMyPick,
     required bool isPartnerPick,
     required bool isWinner,
   }) {
+    final strings = AppStrings.of(context);
     final List<String> badges = [];
-    if (isWinner) badges.add('Winning Pick 🏆');
-    if (isMyPick) badges.add('Your pick');
-    if (isPartnerPick) badges.add("Partner's pick");
+    if (isWinner) badges.add(strings.isPortuguese ? 'Opção Vencedora 🏆' : 'Winning Pick 🏆');
+    if (isMyPick) badges.add(strings.isPortuguese ? 'Seu voto' : 'Your pick');
+    if (isPartnerPick) badges.add(strings.isPortuguese ? 'Voto do amor' : "Partner's pick");
 
     if (badges.isEmpty) return null;
     return Text(
@@ -569,7 +590,8 @@ class _BallotCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusPill(DecideSessionModel session) {
+  Widget _buildStatusPill(BuildContext context, DecideSessionModel session) {
+    final strings = AppStrings.of(context);
     if (session.isMatch) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -577,9 +599,9 @@ class _BallotCard extends ConsumerWidget {
           color: AppTheme.primaryRose.withOpacity(0.12),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text(
-          'Match! 🎉',
-          style: TextStyle(
+        child: Text(
+          strings.isPortuguese ? 'Combinação! 🎉' : 'Match! 🎉',
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: AppTheme.primaryRose,
@@ -594,9 +616,9 @@ class _BallotCard extends ConsumerWidget {
           color: AppTheme.goldAccent.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text(
-          'Split Vote ⚖️',
-          style: TextStyle(
+        child: Text(
+          strings.isPortuguese ? 'Empate ⚖️' : 'Split Vote ⚖️',
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: Color(0xFFB57C00),
@@ -610,9 +632,9 @@ class _BallotCard extends ConsumerWidget {
         color: AppTheme.secondaryBlush.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Text(
-        'Open 🗳️',
-        style: TextStyle(
+      child: Text(
+        strings.isPortuguese ? 'Aberta 🗳️' : 'Open 🗳️',
+        style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppTheme.primaryRoseDark,
@@ -622,6 +644,7 @@ class _BallotCard extends ConsumerWidget {
   }
 
   Widget _buildMatchBanner(BuildContext context, DecideSessionModel session) {
+    final strings = AppStrings.of(context);
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -649,16 +672,18 @@ class _BallotCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "It's a Match! ❤️",
-                  style: TextStyle(
+                Text(
+                  strings.isPortuguese ? 'Deu Match! ❤️' : "It's a Match! ❤️",
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
                 ),
                 Text(
-                  'Both picked: "${session.winningOption}"',
+                  strings.isPortuguese
+                      ? 'Ambos escolheram: "${session.winningOption}"'
+                      : 'Both picked: "${session.winningOption}"',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
@@ -678,14 +703,18 @@ class _BallotCard extends ConsumerWidget {
     WidgetRef ref,
     DecideSessionModel session,
   ) {
+    final strings = AppStrings.of(context);
     final hasWinner = session.winningOption != null;
+
+    final bannerBg = context.isDarkMode ? const Color(0xFF332A15) : const Color(0xFFFFF8E7);
+    final textColor = context.isDarkMode ? AppTheme.goldAccent : const Color(0xFF8A5A00);
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E7),
+        color: bannerBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.goldAccent.withOpacity(0.8)),
       ),
@@ -700,21 +729,25 @@ class _BallotCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Split Decision!',
+                    Text(
+                      strings.isPortuguese ? 'Votação Empatada!' : 'Split Decision!',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Color(0xFF8A5A00),
+                        color: textColor,
                       ),
                     ),
                     Text(
                       hasWinner
-                          ? 'Coin toss decided: "${session.winningOption}" 🏆'
-                          : 'You and your partner picked different options.',
-                      style: const TextStyle(
+                          ? (strings.isPortuguese
+                              ? 'Cara ou coroa decidiu: "${session.winningOption}" 🏆'
+                              : 'Coin toss decided: "${session.winningOption}" 🏆')
+                          : (strings.isPortuguese
+                              ? 'Vocês escolheram opções diferentes.'
+                              : 'You and your partner picked different options.'),
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF8A5A00),
+                        color: textColor,
                       ),
                     ),
                   ],
@@ -737,8 +770,10 @@ class _BallotCard extends ConsumerWidget {
                       ),
                     ),
                     icon: const Icon(Icons.monetization_on_rounded, size: 16),
-                    label: const Text('Flip Coin 🪙',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: Text(
+                      strings.isPortuguese ? 'Tirar Moeda 🪙' : 'Flip Coin 🪙',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                     onPressed: () => _openCoinTossDialog(context, ref, session),
                   ),
                 ),
@@ -746,15 +781,17 @@ class _BallotCard extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF8A5A00),
-                      side: const BorderSide(color: Color(0xFF8A5A00)),
+                      foregroundColor: textColor,
+                      side: BorderSide(color: textColor),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: const Text('Re-vote 🔄',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: Text(
+                      strings.isPortuguese ? 'Votar Novamente 🔄' : 'Re-vote 🔄',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                     onPressed: () {
                       ref
                           .read(decideRepositoryProvider)
@@ -771,6 +808,7 @@ class _BallotCard extends ConsumerWidget {
   }
 
   Widget _buildOpenBallotFooter(BuildContext context, DecideSessionModel session) {
+    final strings = AppStrings.of(context);
     final hasVoted = session.hasUserVoted(myUid);
     final partnerHasVoted = session.votes.keys.any((uid) => uid != myUid);
 
@@ -780,16 +818,22 @@ class _BallotCard extends ConsumerWidget {
 
     if (!hasVoted) {
       if (partnerHasVoted) {
-        message = 'Partner has already voted! Cast your vote to see the result 🤫';
+        message = strings.isPortuguese
+            ? 'Seu parceiro já votou! Dê o seu voto para revelar o resultado 🤫'
+            : 'Partner has already voted! Cast your vote to see the result 🤫';
         icon = Icons.lock_clock_rounded;
         iconColor = AppTheme.goldAccent;
       } else {
-        message = 'Neither of you has voted yet. Cast your pick! 🗳️';
+        message = strings.isPortuguese
+            ? 'Nenhum de vocês votou ainda. Dê o seu voto! 🗳️'
+            : 'Neither of you has voted yet. Cast your pick! 🗳️';
         icon = Icons.how_to_vote_rounded;
         iconColor = AppTheme.primaryRose;
       }
     } else {
-      message = 'You voted! Waiting for your partner to vote 🔒 (secret)';
+      message = strings.isPortuguese
+          ? 'Você já votou! Aguardando o voto do seu parceiro 🔒 (sigilo)'
+          : 'You voted! Waiting for your partner to vote 🔒 (secret)';
       icon = Icons.hourglass_top_rounded;
       iconColor = AppTheme.primaryRose;
     }
@@ -836,15 +880,20 @@ class _BallotCard extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Ballot?'),
-        content: const Text('This ballot and all cast votes will be permanently deleted.'),
+        title: Text(strings.isPortuguese ? 'Excluir Votação?' : 'Delete Ballot?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Esta votação e todos os votos registrados serão excluídos permanentemente.'
+              : 'This ballot and all cast votes will be permanently deleted.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -855,7 +904,7 @@ class _BallotCard extends ConsumerWidget {
               Navigator.of(ctx).pop();
               ref.read(decideRepositoryProvider).deleteSession(coupleId, session.id);
             },
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -931,13 +980,18 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Row(
         children: [
-          Text('🪙', style: TextStyle(fontSize: 24)),
-          SizedBox(width: 8),
-          Text('Coin Toss Tie-Breaker'),
+          const Text('🪙', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              strings.isPortuguese ? 'Desempate Cara ou Coroa' : 'Coin Toss Tie-Breaker',
+            ),
+          ),
         ],
       ),
       content: Column(
@@ -962,7 +1016,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
                   ),
                 ],
               ),
-              child: Center(
+              child: const Center(
                 child: Text('✨', style: TextStyle(fontSize: 36)),
               ),
             ),
@@ -970,7 +1024,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
           const SizedBox(height: 20),
           if (_isFlipping)
             Text(
-              'Flipping the coin...',
+              strings.isPortuguese ? 'Girando a moeda...' : 'Flipping the coin...',
               style: TextStyle(
                 fontStyle: FontStyle.italic,
                 color: context.textSecondary,
@@ -978,7 +1032,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
             )
           else if (_selectedWinner != null) ...[
             Text(
-              'The Coin Has Spoken!',
+              strings.isPortuguese ? 'A Moeda Escolheu!' : 'The Coin Has Spoken!',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -1009,7 +1063,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
       actions: [
         TextButton(
           onPressed: _isFlipping ? null : _flipCoin,
-          child: const Text('Flip Again 🪙'),
+          child: Text(strings.isPortuguese ? 'Girar de Novo 🪙' : 'Flip Again 🪙'),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -1022,7 +1076,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
                   widget.onAcceptWinner(_selectedWinner!);
                   Navigator.of(context).pop();
                 },
-          child: const Text('Accept & Resolve'),
+          child: Text(strings.isPortuguese ? 'Confirmar Escolha' : 'Accept & Resolve'),
         ),
       ],
     );
@@ -1104,7 +1158,30 @@ class _DateIdeasTab extends ConsumerWidget {
     );
   }
 
+  static String getCategoryLabel(String category, AppStrings strings) {
+    if (!strings.isPortuguese) return category;
+    switch (category) {
+      case 'All':
+        return 'Todos';
+      case DateIdeaModel.categoryCozy:
+        return 'Aconchegante';
+      case DateIdeaModel.categoryOutdoor:
+        return 'Ao Ar Livre';
+      case DateIdeaModel.categoryFoodie:
+        return 'Gastronômico';
+      case DateIdeaModel.categoryRomance:
+        return 'Romântico';
+      case DateIdeaModel.categoryAdventurous:
+        return 'Aventura';
+      case DateIdeaModel.categoryBudget:
+        return 'Econômico';
+      default:
+        return category;
+    }
+  }
+
   Widget _buildCategoryFilterRow(BuildContext context) {
+    final strings = AppStrings.of(context);
     final categories = ['All', ...DateIdeaModel.allCategories];
 
     return SingleChildScrollView(
@@ -1115,7 +1192,7 @@ class _DateIdeasTab extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(cat),
+              label: Text(getCategoryLabel(cat, strings)),
               selected: isSelected,
               showCheckmark: false,
               selectedColor: AppTheme.primaryRose.withOpacity(0.18),
@@ -1126,7 +1203,7 @@ class _DateIdeasTab extends ConsumerWidget {
                 fontSize: 13,
               ),
               side: BorderSide(
-                color: isSelected ? AppTheme.primaryRose : AppTheme.outlineLight,
+                color: isSelected ? AppTheme.primaryRose : context.outlineColor,
               ),
               onSelected: (_) => onCategorySelected(cat),
             ),
@@ -1137,6 +1214,9 @@ class _DateIdeasTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyCategoryState(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final displayCategory = getCategoryLabel(selectedCategory, strings);
+
     return Container(
       padding: const EdgeInsets.all(32),
       alignment: Alignment.center,
@@ -1149,7 +1229,9 @@ class _DateIdeasTab extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'No date ideas in "$selectedCategory"',
+            strings.isPortuguese
+                ? 'Nenhuma ideia em "$displayCategory"'
+                : 'No date ideas in "$selectedCategory"',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1158,7 +1240,9 @@ class _DateIdeasTab extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Tap the button below to add your first date idea for this category!',
+            strings.isPortuguese
+                ? 'Toque no botão abaixo para adicionar a primeira ideia para esta categoria!'
+                : 'Tap the button below to add your first date idea for this category!',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -1182,6 +1266,7 @@ class _WeeklyPickBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1210,14 +1295,14 @@ class _WeeklyPickBanner extends ConsumerWidget {
                   color: Colors.white.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star_rounded, color: AppTheme.goldAccent, size: 16),
-                    SizedBox(width: 4),
+                    const Icon(Icons.star_rounded, color: AppTheme.goldAccent, size: 16),
+                    const SizedBox(width: 4),
                     Text(
-                      'FEATURED WEEKLY PICK',
-                      style: TextStyle(
+                      strings.isPortuguese ? 'DESTAQUE DA SEMANA' : 'FEATURED WEEKLY PICK',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1228,7 +1313,7 @@ class _WeeklyPickBanner extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
-              _buildCategoryPill(idea.category, isWhiteBg: true),
+              _buildCategoryPill(idea.category, strings, isWhiteBg: true),
             ],
           ),
           const SizedBox(height: 12),
@@ -1271,7 +1356,9 @@ class _WeeklyPickBanner extends ConsumerWidget {
                   size: 18,
                 ),
                 label: Text(
-                  idea.isCompleted ? 'Completed! ❤️' : 'Mark Completed',
+                  idea.isCompleted
+                      ? (strings.isPortuguese ? 'Concluído! ❤️' : 'Completed! ❤️')
+                      : (strings.isPortuguese ? 'Marcar como Feito' : 'Mark Completed'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 onPressed: () {
@@ -1287,7 +1374,7 @@ class _WeeklyPickBanner extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryPill(String category, {bool isWhiteBg = false}) {
+  Widget _buildCategoryPill(String category, AppStrings strings, {bool isWhiteBg = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -1295,7 +1382,7 @@ class _WeeklyPickBanner extends ConsumerWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        category,
+        _DateIdeasTab.getCategoryLabel(category, strings),
         style: const TextStyle(
           color: Colors.white,
           fontSize: 11,
@@ -1317,6 +1404,7 @@ class _DateIdeaCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     final catColor = _getCategoryColor(idea.category);
     final catIcon = _getCategoryIcon(idea.category);
 
@@ -1328,7 +1416,7 @@ class _DateIdeaCard extends ConsumerWidget {
         side: BorderSide(
           color: idea.isWeeklyPick
               ? AppTheme.primaryRose.withOpacity(0.6)
-              : AppTheme.outlineLight,
+              : context.outlineColor,
           width: idea.isWeeklyPick ? 1.5 : 1,
         ),
       ),
@@ -1379,7 +1467,7 @@ class _DateIdeaCard extends ConsumerWidget {
                               Icon(catIcon, size: 12, color: catColor),
                               const SizedBox(width: 4),
                               Text(
-                                idea.category,
+                                _DateIdeasTab.getCategoryLabel(idea.category, strings),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -1392,8 +1480,8 @@ class _DateIdeaCard extends ConsumerWidget {
                         if (idea.isWeeklyPick) ...[
                           const SizedBox(width: 6),
                           Text(
-                            '⭐ Weekly Pick',
-                            style: TextStyle(
+                            strings.isPortuguese ? '⭐ Destaque da Semana' : '⭐ Weekly Pick',
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.primaryRoseDark,
@@ -1424,16 +1512,18 @@ class _DateIdeaCard extends ConsumerWidget {
                           fontSize: 13,
                           color: context.textSecondary,
                           decoration: idea.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
+                            ? TextDecoration.lineThrough
+                            : null,
                         ),
                       ),
                     ],
                     if (idea.isCompleted && idea.completedAt != null) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Completed on ${DateFormat.MMMd().format(idea.completedAt!)} ❤️',
-                        style: TextStyle(
+                        strings.isPortuguese
+                            ? 'Concluído em ${DateFormat.MMMd('pt_BR').format(idea.completedAt!)} ❤️'
+                            : 'Completed on ${DateFormat.MMMd().format(idea.completedAt!)} ❤️',
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.successGreen,
@@ -1458,8 +1548,8 @@ class _DateIdeaCard extends ConsumerWidget {
                           : context.textSecondary,
                     ),
                     tooltip: idea.isWeeklyPick
-                        ? 'Remove from Weekly Pick'
-                        : 'Set as Weekly Pick',
+                        ? (strings.isPortuguese ? 'Remover dos Destaques' : 'Remove from Weekly Pick')
+                        : (strings.isPortuguese ? 'Definir como Destaque da Semana' : 'Set as Weekly Pick'),
                     onPressed: () {
                       if (idea.isWeeklyPick) {
                         ref
@@ -1479,16 +1569,16 @@ class _DateIdeaCard extends ConsumerWidget {
                         _confirmDeleteIdea(context, ref);
                       }
                     },
-                    itemBuilder: (ctx) => const [
+                    itemBuilder: (ctx) => [
                       PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline_rounded,
+                            const Icon(Icons.delete_outline_rounded,
                                 size: 18, color: AppTheme.errorRed),
-                            SizedBox(width: 8),
-                            Text('Delete',
-                                style: TextStyle(color: AppTheme.errorRed)),
+                            const SizedBox(width: 8),
+                            Text(strings.delete,
+                                style: const TextStyle(color: AppTheme.errorRed)),
                           ],
                         ),
                       ),
@@ -1504,15 +1594,20 @@ class _DateIdeaCard extends ConsumerWidget {
   }
 
   void _confirmDeleteIdea(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Date Idea?'),
-        content: Text('Are you sure you want to delete "${idea.title}"?'),
+        title: Text(strings.isPortuguese ? 'Excluir Ideia de Encontro?' : 'Delete Date Idea?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja excluir "${idea.title}"?'
+              : 'Are you sure you want to delete "${idea.title}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1523,7 +1618,7 @@ class _DateIdeaCard extends ConsumerWidget {
               Navigator.of(ctx).pop();
               ref.read(dateIdeasRepositoryProvider).deleteIdea(coupleId, idea.id);
             },
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -1633,10 +1728,17 @@ class _CreateBallotBottomSheetState
   }
 
   Future<void> _submit() async {
+    final strings = AppStrings.of(context);
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a ballot question or title')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, digite a pergunta ou título da votação'
+                : 'Please enter a ballot question or title',
+          ),
+        ),
       );
       return;
     }
@@ -1648,7 +1750,13 @@ class _CreateBallotBottomSheetState
 
     if (options.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide at least 2 valid options')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Por favor, informe pelo menos 2 opções válidas'
+                : 'Please provide at least 2 valid options',
+          ),
+        ),
       );
       return;
     }
@@ -1666,7 +1774,11 @@ class _CreateBallotBottomSheetState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create ballot: $e')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese ? 'Erro ao criar votação: $e' : 'Failed to create ballot: $e',
+            ),
+          ),
         );
       }
     }
@@ -1674,13 +1786,14 @@ class _CreateBallotBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -1692,49 +1805,69 @@ class _CreateBallotBottomSheetState
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: context.outlineColor.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Create Decision Ballot 🗳️',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              strings.isPortuguese ? 'Criar Votação 🗳️' : 'Create Decision Ballot 🗳️',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             Text(
-              'Votes remain secret until both of you make your selection.',
+              strings.isPortuguese
+                  ? 'Os votos permanecem em sigilo até que ambos escolham.'
+                  : 'Votes remain secret until both of you make your selection.',
               style: TextStyle(fontSize: 13, color: context.textSecondary),
             ),
             const SizedBox(height: 16),
 
             // Templates
-            const Text(
-              'Quick Templates:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            Text(
+              strings.isPortuguese ? 'Modelos Rápidos:' : 'Quick Templates:',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: [
-                  _buildTemplateChip(
-                    'Dinner Tonight? 🍕',
-                    'Dinner Tonight?',
-                    ['Sushi 🍣', 'Pizza 🍕', 'Burgers 🍔'],
-                  ),
-                  _buildTemplateChip(
-                    'Movie Genre 🍿',
-                    'What Movie Tonight?',
-                    ['Comedy 😂', 'Horror 👻', 'Romance 💕'],
-                  ),
-                  _buildTemplateChip(
-                    'Weekend Plan 🌲',
-                    'Weekend Adventure?',
-                    ['Stay In Cozy 🛋️', 'Beach Day 🏖️', 'Explore City 🏙️'],
-                  ),
-                ],
+                children: strings.isPortuguese
+                    ? [
+                        _buildTemplateChip(
+                          'Jantar Hoje? 🍕',
+                          'O que jantar hoje?',
+                          ['Sushi 🍣', 'Pizza 🍕', 'Hambúrguer 🍔'],
+                        ),
+                        _buildTemplateChip(
+                          'Filme da Noite 🍿',
+                          'Qual filme assistir hoje?',
+                          ['Comédia 😂', 'Terror 👻', 'Romance 💕'],
+                        ),
+                        _buildTemplateChip(
+                          'Fim de Semana 🌲',
+                          'Plano para o fim de semana?',
+                          ['Ficar em Casa 🛋️', 'Praia 🏖️', 'Passeio na Cidade 🏙️'],
+                        ),
+                      ]
+                    : [
+                        _buildTemplateChip(
+                          'Dinner Tonight? 🍕',
+                          'Dinner Tonight?',
+                          ['Sushi 🍣', 'Pizza 🍕', 'Burgers 🍔'],
+                        ),
+                        _buildTemplateChip(
+                          'Movie Genre 🍿',
+                          'What Movie Tonight?',
+                          ['Comedy 😂', 'Horror 👻', 'Romance 💕'],
+                        ),
+                        _buildTemplateChip(
+                          'Weekend Plan 🌲',
+                          'Weekend Adventure?',
+                          ['Stay In Cozy 🛋️', 'Beach Day 🏖️', 'Explore City 🏙️'],
+                        ),
+                      ],
               ),
             ),
             const SizedBox(height: 16),
@@ -1743,8 +1876,12 @@ class _CreateBallotBottomSheetState
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Question or Decision Title',
-                hintText: 'e.g. Which movie should we watch?',
+                labelText: strings.isPortuguese
+                    ? 'Pergunta ou Título da Decisão'
+                    : 'Question or Decision Title',
+                hintText: strings.isPortuguese
+                    ? 'ex: Qual filme devemos assistir?'
+                    : 'e.g. Which movie should we watch?',
                 filled: true,
                 fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
@@ -1756,9 +1893,9 @@ class _CreateBallotBottomSheetState
             const SizedBox(height: 16),
 
             // Options
-            const Text(
-              'Options (At least 2):',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            Text(
+              strings.isPortuguese ? 'Opções (no mínimo 2):' : 'Options (At least 2):',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             ...List.generate(_optionControllers.length, (i) {
@@ -1770,7 +1907,7 @@ class _CreateBallotBottomSheetState
                       child: TextField(
                         controller: _optionControllers[i],
                         decoration: InputDecoration(
-                          labelText: 'Option ${i + 1}',
+                          labelText: strings.isPortuguese ? 'Opção ${i + 1}' : 'Option ${i + 1}',
                           filled: true,
                           fillColor: context.surfaceVariant,
                           border: OutlineInputBorder(
@@ -1794,8 +1931,10 @@ class _CreateBallotBottomSheetState
             TextButton.icon(
               onPressed: _addOption,
               icon: const Icon(Icons.add_rounded, color: AppTheme.primaryRose),
-              label: const Text('Add Another Option',
-                  style: TextStyle(color: AppTheme.primaryRose)),
+              label: Text(
+                strings.isPortuguese ? 'Adicionar Outra Opção' : 'Add Another Option',
+                style: const TextStyle(color: AppTheme.primaryRose),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -1812,8 +1951,10 @@ class _CreateBallotBottomSheetState
                   ),
                 ),
                 onPressed: _submit,
-                child: const Text('Create Ballot',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  strings.isPortuguese ? 'Criar Votação' : 'Create Ballot',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -1872,10 +2013,15 @@ class _AddDateIdeaBottomSheetState
   }
 
   Future<void> _submit() async {
+    final strings = AppStrings.of(context);
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter an idea title')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese ? 'Por favor, digite o título da ideia' : 'Please enter an idea title',
+          ),
+        ),
       );
       return;
     }
@@ -1895,7 +2041,11 @@ class _AddDateIdeaBottomSheetState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add date idea: $e')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese ? 'Erro ao adicionar ideia: $e' : 'Failed to add date idea: $e',
+            ),
+          ),
         );
       }
     }
@@ -1903,13 +2053,14 @@ class _AddDateIdeaBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -1921,15 +2072,17 @@ class _AddDateIdeaBottomSheetState
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: context.outlineColor.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Add Date Idea to Bucket List 💡',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              strings.isPortuguese
+                  ? 'Adicionar Ideia de Encontro 💡'
+                  : 'Add Date Idea to Bucket List 💡',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -1937,8 +2090,10 @@ class _AddDateIdeaBottomSheetState
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Date Title',
-                hintText: 'e.g. Cooking Pasta from Scratch',
+                labelText: strings.isPortuguese ? 'Título do Encontro' : 'Date Title',
+                hintText: strings.isPortuguese
+                    ? 'ex: Fazer massa artesanal juntos'
+                    : 'e.g. Cooking Pasta from Scratch',
                 filled: true,
                 fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
@@ -1954,8 +2109,10 @@ class _AddDateIdeaBottomSheetState
               controller: _descController,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: 'Description (Optional)',
-                hintText: 'Bring wine, turn on jazz music...',
+                labelText: strings.isPortuguese ? 'Descrição (Opcional)' : 'Description (Optional)',
+                hintText: strings.isPortuguese
+                    ? 'Comprar um bom vinho, colocar jazz...'
+                    : 'Bring wine, turn on jazz music...',
                 filled: true,
                 fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
@@ -1967,9 +2124,9 @@ class _AddDateIdeaBottomSheetState
             const SizedBox(height: 16),
 
             // Category
-            const Text(
-              'Category:',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            Text(
+              strings.isPortuguese ? 'Categoria:' : 'Category:',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -1978,7 +2135,7 @@ class _AddDateIdeaBottomSheetState
               children: DateIdeaModel.allCategories.map((cat) {
                 final isSelected = _selectedCategory == cat;
                 return ChoiceChip(
-                  label: Text(cat),
+                  label: Text(_DateIdeasTab.getCategoryLabel(cat, strings)),
                   selected: isSelected,
                   selectedColor: AppTheme.primaryRose.withOpacity(0.2),
                   onSelected: (val) {
@@ -1992,8 +2149,14 @@ class _AddDateIdeaBottomSheetState
             // Weekly pick toggle
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Set as This Week\'s Pick ⭐'),
-              subtitle: const Text('Feature this idea prominently at the top'),
+              title: Text(
+                strings.isPortuguese ? 'Definir como Destaque da Semana ⭐' : 'Set as This Week\'s Pick ⭐',
+              ),
+              subtitle: Text(
+                strings.isPortuguese
+                    ? 'Exibir esta ideia em destaque no topo'
+                    : 'Feature this idea prominently at the top',
+              ),
               activeColor: AppTheme.primaryRose,
               value: _isWeeklyPick,
               onChanged: (val) => setState(() => _isWeeklyPick = val),
@@ -2013,13 +2176,15 @@ class _AddDateIdeaBottomSheetState
                   ),
                 ),
                 onPressed: _submit,
-                child: const Text('Save Date Idea',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  strings.isPortuguese ? 'Salvar Ideia de Encontro' : 'Save Date Idea',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
         ),
       ),
     );
-  }
+}
 }

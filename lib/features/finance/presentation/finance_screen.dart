@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
 import '../data/finance_repository.dart';
@@ -90,12 +91,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     final partnerUid = couple?.getOtherUid(myUid) ?? 'partner_uid';
     final myName = _getUserDisplayName(couple, myUid, isMe: true);
     final partnerName = _getUserDisplayName(couple, partnerUid, isMe: false);
+    final strings = AppStrings.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Shared Finance & Savings',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          strings.financeTitleBar,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -103,14 +105,14 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
           labelColor: AppTheme.primaryRose,
           unselectedLabelColor: context.textSecondary,
           indicatorWeight: 3,
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.receipt_long_rounded),
-              text: 'Shared Expenses',
+              icon: const Icon(Icons.receipt_long_rounded),
+              text: strings.tabSharedExpenses,
             ),
             Tab(
-              icon: Icon(Icons.savings_rounded),
-              text: 'Savings Piggy Bank',
+              icon: const Icon(Icons.savings_rounded),
+              text: strings.tabSavingsPiggyBank,
             ),
           ],
         ),
@@ -154,7 +156,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
                   backgroundColor: AppTheme.primaryRose,
                   foregroundColor: Colors.white,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add Expense'),
+                  label: Text(strings.addExpenseBtn),
                 )
               : FloatingActionButton.extended(
                   onPressed: () => _showCreateSavingsGoalSheet(
@@ -165,12 +167,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
                   backgroundColor: AppTheme.primaryRose,
                   foregroundColor: Colors.white,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('New Goal'),
+                  label: Text(strings.newGoal),
                 ),
     );
   }
 
   Widget _buildNoCoupleState() {
+    final isPt = AppStrings.of(context).isPortuguese;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -183,13 +186,15 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
               color: AppTheme.primaryRose.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No Couple Space Connected',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              isPt ? 'Nenhum Espaço Conectado' : 'No Couple Space Connected',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Pair with your partner first to track expenses and save together!',
+              isPt
+                  ? 'Conecte-se com seu parceiro(a) primeiro para acompanhar gastos e economizar juntos!'
+                  : 'Pair with your partner first to track expenses and save together!',
               textAlign: TextAlign.center,
               style: TextStyle(color: context.textSecondary),
             ),
@@ -292,7 +297,7 @@ class _ExpensesTab extends ConsumerWidget {
             children: [
               _buildNetBalanceHeroCard(context, ref, balance),
               const SizedBox(height: 16),
-              _buildCategoryChips(),
+              _buildCategoryChips(context),
               const SizedBox(height: 12),
               if (filteredEntries.isEmpty)
                 _buildEmptyExpensesState(context)
@@ -313,6 +318,7 @@ class _ExpensesTab extends ConsumerWidget {
     WidgetRef ref,
     BalanceSummary balance,
   ) {
+    final strings = AppStrings.of(context);
     final isSettled = balance.isSettledUp;
     final iAmOwed = balance.netOwedToUser1 > 0.001;
 
@@ -323,10 +329,10 @@ class _ExpensesTab extends ConsumerWidget {
     Widget statusIcon;
 
     if (isSettled) {
-      cardBg = const Color(0xFFF3FAF4);
-      borderColor = const Color(0xFFC8E6C9);
-      title = 'All settled up! 🎉';
-      subtitle = 'No pending balances between you and $partnerName.';
+      cardBg = context.isDarkMode ? const Color(0xFF1B2E1D) : const Color(0xFFF3FAF4);
+      borderColor = context.isDarkMode ? const Color(0xFF2E7D32) : const Color(0xFFC8E6C9);
+      title = strings.allSettledUp;
+      subtitle = strings.noPendingBalances(partnerName);
       statusIcon = const Icon(
         Icons.check_circle_rounded,
         color: AppTheme.successGreen,
@@ -335,8 +341,8 @@ class _ExpensesTab extends ConsumerWidget {
     } else if (iAmOwed) {
       cardBg = context.isDarkMode ? const Color(0xFF1B2E1D) : const Color(0xFFF1F8E9);
       borderColor = const Color(0xFFAED581);
-      title = 'You are owed R\$ ${balance.netOwedToUser1.toStringAsFixed(2)} 💚';
-      subtitle = '$partnerName owes you for shared expenses.';
+      title = strings.youAreOwed(balance.netOwedToUser1.toStringAsFixed(2));
+      subtitle = strings.partnerOwesYou(partnerName);
       statusIcon = const Icon(
         Icons.arrow_downward_rounded,
         color: AppTheme.successGreen,
@@ -345,8 +351,8 @@ class _ExpensesTab extends ConsumerWidget {
     } else {
       cardBg = context.isDarkMode ? const Color(0xFF332014) : const Color(0xFFFFF3E0);
       borderColor = const Color(0xFFFFCC80);
-      title = 'You owe R\$ ${balance.netOwedToUser2.toStringAsFixed(2)} 🧡';
-      subtitle = 'You owe $partnerName for shared expenses.';
+      title = strings.youOweAmount(balance.netOwedToUser2.toStringAsFixed(2));
+      subtitle = strings.youOwePartner(partnerName);
       statusIcon = const Icon(
         Icons.arrow_upward_rounded,
         color: Color(0xFFF57C00),
@@ -403,7 +409,7 @@ class _ExpensesTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Unsettled Total: R\$ ${balance.totalSpent.toStringAsFixed(2)}',
+                      strings.unsettledTotal(balance.totalSpent.toStringAsFixed(2)),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -411,7 +417,7 @@ class _ExpensesTab extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '${balance.unsettledCount} open item(s)',
+                      strings.openItemsCount(balance.unsettledCount),
                       style: TextStyle(
                         fontSize: 11,
                         color: context.textSecondary,
@@ -423,17 +429,17 @@ class _ExpensesTab extends ConsumerWidget {
                   FilledButton.tonalIcon(
                     onPressed: () => _confirmSettleUp(context, ref),
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.primaryRose,
+                      backgroundColor: context.isDarkMode ? const Color(0xFF2E7D32) : Colors.white,
+                      foregroundColor: context.isDarkMode ? Colors.white : AppTheme.primaryRose,
                       elevation: 1,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     icon: const Icon(Icons.handshake_rounded, size: 18),
-                    label: const Text(
-                      'Settle Up',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    label: Text(
+                      strings.settleUpBtn,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
               ],
@@ -499,7 +505,8 @@ class _ExpensesTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryChips() {
+  Widget _buildCategoryChips(BuildContext context) {
+    final strings = AppStrings.of(context);
     final categories = ['All', ...FinanceEntry.categories];
     return SizedBox(
       height: 38,
@@ -510,21 +517,35 @@ class _ExpensesTab extends ConsumerWidget {
         itemBuilder: (context, index) {
           final cat = categories[index];
           final isSelected = cat == selectedCategory;
+          final localizedLabel = switch (cat) {
+            'All' => strings.categoryAll,
+            'Dining' => strings.categoryDining,
+            'Groceries' => strings.categoryGroceries,
+            'Travel' => strings.categoryTravelFinance,
+            'Home' => strings.categoryHomeFinance,
+            'Entertainment' => strings.categoryEntertainment,
+            'Bills' => strings.categoryBills,
+            _ => strings.categoryOther,
+          };
           return FilterChip(
             selected: isSelected,
-            label: Text(cat),
+            label: Text(localizedLabel),
             labelStyle: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.white : context.textPrimary,
+              color: isSelected
+                  ? Colors.white
+                  : (context.isDarkMode ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
             ),
             selectedColor: AppTheme.primaryRose,
-            backgroundColor: AppTheme.surfaceVariantLight,
+            backgroundColor: context.isDarkMode ? AppTheme.surfaceVariantDark : AppTheme.surfaceVariantLight,
             showCheckmark: false,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
               side: BorderSide(
-                color: isSelected ? AppTheme.primaryRose : AppTheme.outlineLight,
+                color: isSelected
+                    ? AppTheme.primaryRose
+                    : (context.isDarkMode ? AppTheme.outlineDark : AppTheme.outlineLight),
               ),
             ),
             onSelected: (_) => onCategorySelected(cat),
@@ -738,6 +759,7 @@ class _ExpensesTab extends ConsumerWidget {
   }
 
   Widget _buildEmptyExpensesState(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
@@ -750,7 +772,7 @@ class _ExpensesTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No expenses recorded',
+              strings.noExpensesRecorded,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -759,7 +781,7 @@ class _ExpensesTab extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap "+ Add Expense" to log dinners, groceries, or vacations together!',
+              strings.noExpensesDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -834,7 +856,7 @@ class _SavingsTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
-              _buildTotalSavingsHeroCard(totalSaved, goals.length),
+              _buildTotalSavingsHeroCard(context, totalSaved, goals.length),
               const SizedBox(height: 16),
               if (goals.isEmpty)
                 _buildEmptySavingsState(context)
@@ -848,7 +870,9 @@ class _SavingsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildTotalSavingsHeroCard(double totalSaved, int goalCount) {
+  Widget _buildTotalSavingsHeroCard(BuildContext context, double totalSaved, int goalCount) {
+    final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -888,9 +912,9 @@ class _SavingsTab extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Joint Piggy Bank Total',
-                  style: TextStyle(
+                Text(
+                  isPt ? 'Total no Cofrinho do Casal' : 'Joint Piggy Bank Total',
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -907,7 +931,9 @@ class _SavingsTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Saving together across $goalCount shared dream(s) ✨',
+                  isPt
+                      ? '$goalCount meta(s) sendo construída(s) juntos ✨'
+                      : 'Saving together across $goalCount shared dream(s) ✨',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -945,11 +971,11 @@ class _SavingsTab extends ConsumerWidget {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 14),
-      color: Colors.white,
+      color: context.cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         side: BorderSide(
-          color: isReached ? const Color(0xFFFFD54F) : AppTheme.outlineLight,
+          color: isReached ? const Color(0xFFFFD54F) : context.outlineColor,
           width: isReached ? 2.0 : 1.0,
         ),
       ),
@@ -1296,6 +1322,8 @@ class _SavingsTab extends ConsumerWidget {
   }
 
   Widget _buildEmptySavingsState(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
@@ -1308,7 +1336,7 @@ class _SavingsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No savings goals yet',
+              isPt ? 'Nenhuma meta no cofrinho ainda' : 'No savings goals yet',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1317,7 +1345,9 @@ class _SavingsTab extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Start a joint piggy bank for your next vacation, wedding, or home dream!',
+              isPt
+                  ? 'Crie cofrinhos compartilhados para viagens, jantares especiais ou sonhos a dois!'
+                  : 'Start a joint piggy bank for your next vacation, wedding, or home dream!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,

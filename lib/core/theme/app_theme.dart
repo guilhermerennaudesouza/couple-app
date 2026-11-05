@@ -203,6 +203,14 @@ class AppTheme {
         thickness: 0.8,
         space: 1,
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceVariantLight,
+        selectedColor: primaryRose,
+        labelStyle: const TextStyle(color: textPrimaryLight, fontSize: 13),
+        secondaryLabelStyle: const TextStyle(color: Colors.white, fontSize: 13),
+        side: const BorderSide(color: outlineLight),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
     );
   }
 
@@ -320,6 +328,14 @@ class AppTheme {
         color: outlineDark,
         thickness: 0.8,
         space: 1,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceVariantDark,
+        selectedColor: primaryRose,
+        labelStyle: const TextStyle(color: textPrimaryDark, fontSize: 13),
+        secondaryLabelStyle: const TextStyle(color: Colors.white, fontSize: 13),
+        side: const BorderSide(color: outlineDark),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

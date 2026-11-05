@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../core/crypto/vault_crypto_service.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
@@ -161,6 +162,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   Future<void> _handleCompletedPin() async {
     final coupleId = _getActiveCoupleId();
     final pin = _enteredPin;
+    final strings = AppStrings.of(context);
 
     if (_isSettingUpPin) {
       if (_setupInitialPin == null) {
@@ -195,8 +197,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 _enteredPin = '';
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Vault PIN set successfully! 🔐'),
+                SnackBar(
+                  content: Text(strings.pinSetSuccess),
                   backgroundColor: AppTheme.primaryRose,
                 ),
               );
@@ -204,7 +206,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           } catch (e) {
             if (!mounted) return;
             setState(() {
-              _pinErrorMessage = 'Failed to derive key. Please try again.';
+              _pinErrorMessage = strings.isPortuguese ? 'Falha ao processar chave. Tente novamente.' : 'Failed to derive key. Please try again.';
               _enteredPin = '';
               _setupInitialPin = null;
             });
@@ -212,7 +214,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         } else {
           if (!mounted) return;
           setState(() {
-            _pinErrorMessage = 'PINs do not match. Please start over.';
+            _pinErrorMessage = strings.pinMismatch;
             _enteredPin = '';
             _setupInitialPin = null;
           });
@@ -234,7 +236,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         if (derivedKeyBytes != storedKey) {
           if (!mounted) return;
           setState(() {
-            _pinErrorMessage = 'Incorrect PIN. Please try again.';
+            _pinErrorMessage = strings.incorrectPin;
             _enteredPin = '';
           });
           HapticFeedback.vibrate();
@@ -260,17 +262,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _pinErrorMessage = 'Unlock error: $e';
+        _pinErrorMessage = '${strings.isPortuguese ? "Erro ao desbloquear" : "Unlock error"}: $e';
         _enteredPin = '';
       });
     }
   }
 
   Future<void> _unlockWithBiometrics() async {
+    final strings = AppStrings.of(context);
     final coupleId = _getActiveCoupleId();
     try {
       final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Scan fingerprint to unlock your Private Vault',
+        localizedReason: strings.biometricScanReason,
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
@@ -292,9 +295,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Please enter your 6-digit PIN once to enable biometric unlock.',
+                  strings.isPortuguese
+                      ? 'Digite seu PIN de 6 dígitos uma vez para ativar a biometria.'
+                      : 'Please enter your 6-digit PIN once to enable biometric unlock.',
                 ),
               ),
             );
@@ -306,7 +311,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Biometric verification unavailable: $e'),
+            content: Text('${strings.isPortuguese ? "Biometria indisponível" : "Biometric verification unavailable"}: $e'),
           ),
         );
       }
@@ -314,6 +319,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   void _lockVault() {
+    final strings = AppStrings.of(context);
     setState(() {
       _unlockedKey = null;
       _enteredPin = '';
@@ -321,9 +327,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       _pinErrorMessage = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vault locked 🔒'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(strings.vaultLocked),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -345,15 +351,22 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     final effectiveUid = _getEffectiveUid(couple);
     final partnerUid = _getPartnerUid(couple, effectiveUid);
 
+    final strings = AppStrings.of(context);
+    final partnerProfile = couple?.getMyProfile(partnerUid);
+    final partnerName =
+        partnerProfile != null && partnerProfile.name.isNotEmpty
+            ? partnerProfile.name
+            : (strings.isPortuguese ? 'Seu Amor' : 'Partner');
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Private Vault & Cheatsheet'),
+        title: Text(strings.vaultTitleBar),
         actions: [
           if (_tabController.index == 0 && _unlockedKey != null)
             TextButton.icon(
               onPressed: _lockVault,
-              icon: Icon(Icons.lock_rounded, size: 18),
-              label: Text('Lock Now'),
+              icon: const Icon(Icons.lock_rounded, size: 18),
+              label: Text(strings.lockNow),
               style: TextButton.styleFrom(
                 foregroundColor: AppTheme.primaryRose,
               ),
@@ -372,18 +385,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     ? Icons.lock_open_rounded
                     : Icons.lock_outline_rounded,
               ),
-              text: 'Private Vault 🔐',
+              text: strings.tabSecretVault,
             ),
-            const Tab(
-              icon: Icon(Icons.favorite_rounded),
-              text: 'Partner Cheatsheet 📝',
+            Tab(
+              icon: const Icon(Icons.favorite_rounded),
+              text: strings.tabPartnerCheatsheet,
             ),
           ],
         ),
       ),
       body: activeCoupleId.isEmpty
           ? Center(
-              child: Text('Please pair or select a couple space first.'),
+              child: Text(strings.noSpaceConnectedDesc),
             )
           : TabBarView(
               controller: _tabController,
@@ -403,6 +416,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         activeCoupleId,
         effectiveUid,
         couple,
+        partnerName,
       ),
     );
   }
@@ -411,7 +425,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     String coupleId,
     String effectiveUid,
     CoupleModel? couple,
+    String partnerName,
   ) {
+    final strings = AppStrings.of(context);
     if (_tabController.index == 0) {
       if (_unlockedKey == null) return null;
       return FloatingActionButton.extended(
@@ -420,7 +436,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         backgroundColor: AppTheme.primaryRose,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('New Secret'),
+        label: Text(strings.newSecret),
       );
     } else {
       // Cheatsheet Tab
@@ -430,14 +446,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           coupleId,
           _cheatsheetViewIndex == 0 ? effectiveUid : _getPartnerUid(couple, effectiveUid),
           _cheatsheetViewIndex == 0,
+          partnerName,
         ),
         backgroundColor: AppTheme.primaryRose,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.edit_rounded),
         label: Text(
           _cheatsheetViewIndex == 0
-              ? 'Edit My Cheatsheet'
-              : 'Edit Partner Info',
+              ? strings.editMyCheatsheet
+              : strings.editPartnerCheatsheet(partnerName),
         ),
       );
     }
@@ -448,17 +465,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   // ===========================================================================
 
   Widget _buildLockGateView() {
+    final strings = AppStrings.of(context);
     final titleText = _isSettingUpPin
         ? (_setupInitialPin == null
-            ? 'Set Up Vault PIN'
-            : 'Confirm Your 6-Digit PIN')
-        : 'Private Encrypted Vault';
+            ? strings.pinSetupTitle
+            : strings.pinConfirmTitle)
+        : strings.vaultPrivateTitle;
 
     final subtitleText = _isSettingUpPin
         ? (_setupInitialPin == null
-            ? 'Choose a 6-digit PIN to securely derive your AES-256 encryption key.'
-            : 'Re-enter your 6-digit PIN to confirm encryption key setup.')
-        : 'Enter your 6-digit PIN or use biometrics to unlock zero-knowledge secrets.';
+            ? strings.pinSetupDesc
+            : strings.pinConfirmDesc)
+        : strings.pinUnlockDesc;
 
     return SafeArea(
       child: Center(
@@ -520,7 +538,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       border: Border.all(
                         color: isFilled
                             ? AppTheme.primaryRose
-                            : AppTheme.outlineLight,
+                            : context.outlineColor,
                         width: 2,
                       ),
                     ),
@@ -637,6 +655,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   // ===========================================================================
 
   Widget _buildUnlockedVaultView(String coupleId, String currentUid) {
+    final strings = AppStrings.of(context);
     final vaultItemsAsync = ref.watch(vaultItemsStreamProvider(coupleId));
 
     return vaultItemsAsync.when(
@@ -672,7 +691,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(
-                      label: Text(category),
+                      label: Text(_translateVaultCategory(category, strings)),
                       selected: isSelected,
                       selectedColor: AppTheme.primaryRose.withOpacity(0.18),
                       labelStyle: TextStyle(
@@ -692,7 +711,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 }).toList(),
               ),
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: context.outlineColor),
             // Vault Items List
             Expanded(
               child: filteredItems.isEmpty
@@ -709,7 +728,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No encrypted items yet',
+                              strings.noEncryptedItemsYet,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -718,7 +737,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Tap the button below to store passwords, romantic notes, document codes, or personal secrets with AES-256 encryption.',
+                              strings.noEncryptedItemsDesc,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
@@ -748,6 +767,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   Widget _buildVaultItemCard(String coupleId, VaultItemModel item) {
+    final strings = AppStrings.of(context);
     IconData typeIcon;
     switch (item.type) {
       case VaultItemModel.typePassword:
@@ -766,7 +786,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     }
 
     final formattedDate =
-        DateFormat('MMM d, yyyy').format(item.updatedAt);
+        DateFormat(strings.isPortuguese ? 'd MMM, yyyy' : 'MMM d, yyyy', strings.isPortuguese ? 'pt_BR' : 'en_US').format(item.updatedAt);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -808,7 +828,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  item.category,
+                  _translateVaultCategory(item.category, strings),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -840,6 +860,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     String coupleId,
     VaultItemModel item,
   ) async {
+    final strings = AppStrings.of(context);
     String? decryptedText;
     bool isRevealed = false;
     bool hasDecryptionError = false;
@@ -861,6 +882,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
+      ),
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
@@ -899,15 +924,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (dialogCtx) => AlertDialog(
-                              title: const Text('Delete Secret?'),
+                              title: Text(strings.deleteSecretTitle),
                               content: Text(
-                                'Are you sure you want to delete "${item.title}"? This cannot be undone.',
+                                strings.deleteSecretConfirm(item.title),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () =>
                                       Navigator.pop(dialogCtx, false),
-                                  child: const Text('Cancel'),
+                                  child: Text(strings.isPortuguese ? 'Cancelar' : 'Cancel'),
                                 ),
                                 FilledButton(
                                   style: FilledButton.styleFrom(
@@ -915,7 +940,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                   ),
                                   onPressed: () =>
                                       Navigator.pop(dialogCtx, true),
-                                  child: const Text('Delete'),
+                                  child: Text(strings.isPortuguese ? 'Excluir' : 'Delete'),
                                 ),
                               ],
                             ),
@@ -938,12 +963,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     spacing: 8,
                     children: [
                       Chip(
-                        label: Text(item.category),
+                        label: Text(_translateVaultCategory(item.category, strings)),
                         backgroundColor: context.surfaceVariant,
                         visualDensity: VisualDensity.compact,
                       ),
                       Chip(
-                        label: Text(item.type.toUpperCase()),
+                        label: Text(_translateVaultType(item.type, strings)),
                         backgroundColor: context.surfaceVariant,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -951,7 +976,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Secret Content (Encrypted AES-256)',
+                    strings.secretContentLabel,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -965,16 +990,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     decoration: BoxDecoration(
                       color: context.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.outlineLight),
+                      border: Border.all(color: context.outlineColor),
                     ),
                     child: hasDecryptionError
                         ? Text(
-                            'Decryption failed. Key mismatch or tampered data.',
-                            style: TextStyle(color: AppTheme.errorRed),
+                            strings.isPortuguese
+                                ? 'Falha na descriptografia. Chave incompatível ou dados alterados.'
+                                : 'Decryption failed. Key mismatch or tampered data.',
+                            style: const TextStyle(color: AppTheme.errorRed),
                           )
                         : Text(
                             isRevealed
-                                ? (decryptedText ?? 'Empty secret')
+                                ? (decryptedText ?? (strings.isPortuguese ? 'Conteúdo vazio' : 'Empty secret'))
                                 : '••••••••••••••••••••••',
                             style: TextStyle(
                               fontSize: 16,
@@ -1002,7 +1029,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 : Icons.visibility_outlined,
                             size: 18,
                           ),
-                          label: Text(isRevealed ? 'Hide' : 'Reveal'),
+                          label: Text(isRevealed ? strings.hide : strings.reveal),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1015,16 +1042,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                     ClipboardData(text: decryptedText!),
                                   );
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
+                                    SnackBar(
                                       content: Text(
-                                        'Copied to clipboard 📋',
+                                        strings.copiedToClipboard,
                                       ),
-                                      duration: Duration(seconds: 2),
+                                      duration: const Duration(seconds: 2),
                                     ),
                                   );
                                 },
                           icon: const Icon(Icons.copy_rounded, size: 18),
-                          label: const Text('Copy Secret'),
+                          label: Text(strings.copySecret),
                         ),
                       ),
                     ],
@@ -1040,6 +1067,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   void _showAddVaultItemSheet(String coupleId, String effectiveUid) {
+    final strings = AppStrings.of(context);
     final titleController = TextEditingController();
     final secretController = TextEditingController();
     String selectedType = VaultItemModel.typeNote;
@@ -1049,6 +1077,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
+      ),
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
@@ -1065,7 +1097,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'New Encrypted Secret 🔐',
+                      strings.newEncryptedSecret,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -1075,21 +1107,23 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     const SizedBox(height: 16),
                     TextField(
                       controller: titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        hintText: 'e.g. Netflix Password, Love Note, Safe Code',
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Título' : 'Title',
+                        hintText: strings.isPortuguese
+                            ? 'ex: Senha da Netflix, Bilhete de Amor, Código do Cofre'
+                            : 'e.g. Netflix Password, Love Note, Safe Code',
                       ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: selectedType,
-                      decoration: const InputDecoration(
-                        labelText: 'Type',
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Tipo' : 'Type',
                       ),
                       items: VaultItemModel.standardTypes.map((type) {
                         return DropdownMenuItem(
                           value: type,
-                          child: Text(type.toUpperCase()),
+                          child: Text(_translateVaultType(type, strings)),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -1101,13 +1135,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
+                      decoration: InputDecoration(
+                        labelText: strings.categoryLabel,
                       ),
                       items: VaultItemModel.standardCategories.map((cat) {
                         return DropdownMenuItem(
                           value: cat,
-                          child: Text(cat),
+                          child: Text(_translateVaultCategory(cat, strings)),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -1120,10 +1154,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     TextField(
                       controller: secretController,
                       maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Secret Plaintext',
-                        hintText:
-                            'Enter your secret text. This is encrypted client-side with AES-256-GCM before sending.',
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Texto Secreto' : 'Secret Plaintext',
+                        hintText: strings.isPortuguese
+                            ? 'Digite seu segredo. Ele será criptografado no seu aparelho com AES-256-GCM antes de ser salvo.'
+                            : 'Enter your secret text. This is encrypted client-side with AES-256-GCM before sending.',
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -1135,9 +1170,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                               final secret = secretController.text.trim();
                               if (title.isEmpty || secret.isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'Please provide both a title and secret content.',
+                                      strings.isPortuguese
+                                          ? 'Por favor, informe o título e o conteúdo secreto.'
+                                          : 'Please provide both a title and secret content.',
                                     ),
                                   ),
                                 );
@@ -1146,8 +1183,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
                               if (_unlockedKey == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Vault is locked.'),
+                                  SnackBar(
+                                    content: Text(strings.vaultLocked),
                                   ),
                                 );
                                 return;
@@ -1182,10 +1219,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Secret encrypted and saved securely 🔐',
-                                    ),
+                                  SnackBar(
+                                    content: Text(strings.secretSaved),
                                     backgroundColor: AppTheme.primaryRose,
                                   ),
                                 );
@@ -1196,7 +1231,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Error saving secret: $e'),
+                                      content: Text('${strings.isPortuguese ? "Erro ao salvar" : "Error saving secret"}: $e'),
                                     ),
                                   );
                                 }
@@ -1211,7 +1246,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Encrypt & Save Secret'),
+                          : Text(strings.encryptAndSaveBtn),
                     ),
                   ],
                 ),
@@ -1221,6 +1256,46 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         );
       },
     );
+  }
+
+  String _translateVaultCategory(String category, AppStrings strings) {
+    if (!strings.isPortuguese) return category;
+    switch (category) {
+      case 'All':
+        return 'Todos';
+      case 'Personal':
+        return 'Pessoal';
+      case 'Passwords':
+        return 'Senhas';
+      case 'Financial':
+        return 'Financeiro';
+      case 'Romantic':
+        return 'Romântico';
+      case 'Important Codes':
+        return 'Códigos Importantes';
+      case 'Documents':
+        return 'Documentos';
+      case 'Other':
+        return 'Outros';
+      default:
+        return category;
+    }
+  }
+
+  String _translateVaultType(String type, AppStrings strings) {
+    if (!strings.isPortuguese) return type.toUpperCase();
+    switch (type.toLowerCase()) {
+      case 'note':
+        return 'NOTA';
+      case 'password':
+        return 'SENHA';
+      case 'document':
+        return 'DOCUMENTO';
+      case 'code':
+        return 'CÓDIGO';
+      default:
+        return type.toUpperCase();
+    }
   }
 
   // ===========================================================================
@@ -1242,11 +1317,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       )),
     );
 
+    final strings = AppStrings.of(context);
     final partnerProfile = couple?.getMyProfile(partnerUid);
     final partnerName =
         partnerProfile != null && partnerProfile.name.isNotEmpty
             ? partnerProfile.name
-            : 'Partner';
+            : (strings.isPortuguese ? 'Seu Amor' : 'Partner');
 
     return Column(
       children: [
@@ -1255,14 +1331,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           padding: const EdgeInsets.all(16.0),
           child: SegmentedButton<int>(
             segments: [
-              const ButtonSegment<int>(
+              ButtonSegment<int>(
                 value: 0,
-                label: Text('My Cheatsheet'),
-                icon: Icon(Icons.person_rounded),
+                label: Text(strings.cheatsheetMe),
+                icon: const Icon(Icons.person_rounded),
               ),
               ButtonSegment<int>(
                 value: 1,
-                label: Text("$partnerName's Cheatsheet"),
+                label: Text(strings.cheatsheetPartner(partnerName)),
                 icon: const Icon(Icons.favorite_rounded),
               ),
             ],
@@ -1284,7 +1360,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Text(
-                  'Error loading cheatsheet: $err',
+                  '${strings.isPortuguese ? "Erro ao carregar o guia" : "Error loading cheatsheet"}: $err',
                   style: const TextStyle(color: AppTheme.errorRed),
                 ),
               ),
@@ -1302,21 +1378,23 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: AppTheme.pastelPeach.withOpacity(0.4),
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.secondaryBlush.withValues(alpha: 0.15)
+                              : AppTheme.pastelPeach.withOpacity(0.4),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.secondaryBlush),
+                          border: Border.all(color: AppTheme.secondaryBlush.withValues(alpha: 0.5)),
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.visibility_rounded,
                               color: AppTheme.primaryRose,
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'This is what your partner sees when planning surprises and gifts for you 💕',
+                                strings.cheatsheetVisibilityHint,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: context.textPrimary,
@@ -1335,42 +1413,42 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       children: [
                         _buildCheatsheetCard(
                           emoji: '💍',
-                          title: 'Ring Size',
+                          title: strings.ringSize,
                           value: model.ringSize,
                         ),
                         _buildCheatsheetCard(
                           emoji: '👟',
-                          title: 'Shoe Size',
+                          title: strings.shoeSize,
                           value: model.shoeSize,
                         ),
                         _buildCheatsheetCard(
                           emoji: '👗',
-                          title: 'Clothing Size',
+                          title: strings.clothingSize,
                           value: model.clothingSize,
                         ),
                         _buildCheatsheetCard(
                           emoji: '☕',
-                          title: 'Favorite Coffee',
+                          title: strings.favoriteCoffee,
                           value: model.coffeeOrder,
                         ),
                         _buildCheatsheetCard(
                           emoji: '🍕',
-                          title: 'Comfort Food',
+                          title: strings.comfortFood,
                           value: model.comfortFood,
                         ),
                         _buildCheatsheetCard(
                           emoji: '⚠️',
-                          title: 'Allergies / Dislikes',
+                          title: strings.allergiesDislikes,
                           value: model.allergies,
                         ),
                         _buildCheatsheetCard(
                           emoji: '🌸',
-                          title: 'Favorite Flowers',
+                          title: strings.favoriteFlowers,
                           value: model.favoriteFlowers,
                         ),
                         _buildCheatsheetCard(
                           emoji: '🎁',
-                          title: 'Gift Notes',
+                          title: strings.giftNotes,
                           value: model.notes,
                         ),
                       ],
@@ -1391,17 +1469,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     required String title,
     required String? value,
   }) {
+    final strings = AppStrings.of(context);
     final hasValue = value != null && value.trim().isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: hasValue
               ? AppTheme.primaryRose.withOpacity(0.25)
-              : AppTheme.outlineLight,
+              : context.outlineColor,
           width: 1,
         ),
         boxShadow: [
@@ -1421,7 +1500,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
             children: [
               Text(
                 emoji,
-                style: TextStyle(fontSize: 24),
+                style: const TextStyle(fontSize: 24),
               ),
               Icon(
                 hasValue ? Icons.check_circle_rounded : Icons.info_outline_rounded,
@@ -1448,7 +1527,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                hasValue ? value : 'Not set yet',
+                hasValue ? value : strings.notSetYet,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: hasValue ? FontWeight.bold : FontWeight.normal,
@@ -1470,8 +1549,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   Future<void> _showEditCheatsheetSheet(
     String coupleId,
     String targetUid,
-    bool isMyCheatsheet,
-  ) async {
+    bool isMyCheatsheet, [
+    String? partnerName,
+  ]) async {
+    final strings = AppStrings.of(context);
+    final pName = partnerName ?? (strings.isPortuguese ? 'Seu Amor' : 'Partner');
     final existing = await ref
         .read(cheatsheetRepositoryProvider)
         .getCheatsheet(coupleId, targetUid);
@@ -1499,6 +1581,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
+      ),
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
@@ -1516,8 +1602,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   children: [
                     Text(
                       isMyCheatsheet
-                          ? 'Edit My Cheatsheet 💕'
-                          : 'Edit Partner Cheatsheet 💕',
+                          ? strings.editMyCheatsheet
+                          : strings.editPartnerCheatsheet(pName),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -1527,67 +1613,68 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     const SizedBox(height: 16),
                     TextField(
                       controller: ringController,
-                      decoration: const InputDecoration(
-                        labelText: '💍 Ring Size',
-                        hintText: 'e.g. 6.5, 17mm',
+                      decoration: InputDecoration(
+                        labelText: '💍 ${strings.ringSize}',
+                        hintText: strings.isPortuguese ? 'ex: 16, 17mm, aro 15' : 'e.g. 6.5, 17mm',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: shoeController,
-                      decoration: const InputDecoration(
-                        labelText: '👟 Shoe Size',
-                        hintText: 'e.g. US 8.5 / EU 39',
+                      decoration: InputDecoration(
+                        labelText: '👟 ${strings.shoeSize}',
+                        hintText: strings.isPortuguese ? 'ex: 37 BR / 38 BR' : 'e.g. US 8.5 / EU 39',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: clothingController,
-                      decoration: const InputDecoration(
-                        labelText: '👗 / 👕 Clothing Size',
-                        hintText: 'e.g. Small / Medium / 32W',
+                      decoration: InputDecoration(
+                        labelText: '👗 / 👕 ${strings.clothingSize}',
+                        hintText: strings.isPortuguese ? 'ex: P / M / 38 / 40' : 'e.g. Small / Medium / 32W',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: coffeeController,
-                      decoration: const InputDecoration(
-                        labelText: '☕ Favorite Coffee Order',
-                        hintText: 'e.g. Iced oat latte with vanilla syrup',
+                      decoration: InputDecoration(
+                        labelText: '☕ ${strings.favoriteCoffee}',
+                        hintText: strings.isPortuguese ? 'ex: Cappuccino com canela, expresso duplo' : 'e.g. Iced oat latte with vanilla syrup',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: comfortFoodController,
-                      decoration: const InputDecoration(
-                        labelText: '🍕 Comfort Food & Cravings',
-                        hintText: 'e.g. Pepperoni pizza, dark chocolate',
+                      decoration: InputDecoration(
+                        labelText: '🍕 ${strings.comfortFood}',
+                        hintText: strings.isPortuguese ? 'ex: Pizza de calabresa, chocolate amargo' : 'e.g. Pepperoni pizza, dark chocolate',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: allergiesController,
-                      decoration: const InputDecoration(
-                        labelText: '⚠️ Allergies & Dislikes',
-                        hintText: 'e.g. Peanuts, lactose intolerance, cilantro',
+                      decoration: InputDecoration(
+                        labelText: '⚠️ ${strings.allergiesDislikes}',
+                        hintText: strings.isPortuguese ? 'ex: Amendoim, lactose, frutos do mar' : 'e.g. Peanuts, lactose intolerance, cilantro',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: flowersController,
-                      decoration: const InputDecoration(
-                        labelText: '🌸 Favorite Flowers & Scents',
-                        hintText: 'e.g. Peonies, white lilies, lavender scent',
+                      decoration: InputDecoration(
+                        labelText: '🌸 ${strings.favoriteFlowers}',
+                        hintText: strings.isPortuguese ? 'ex: Rosas vermelhas, orquídeas, lírios' : 'e.g. Peonies, white lilies, lavender scent',
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: notesController,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: '🎁 Personal Gift Notes',
-                        hintText:
-                            'e.g. Collects vinyl records, prefers silver over gold jewelry',
+                      decoration: InputDecoration(
+                        labelText: '🎁 ${strings.giftNotes}',
+                        hintText: strings.isPortuguese
+                            ? 'ex: Coleciona discos de vinil, prefere joias de prata a ouro'
+                            : 'e.g. Collects vinyl records, prefers silver over gold jewelry',
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -1641,8 +1728,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Cheatsheet saved 💕'),
+                                  SnackBar(
+                                    content: Text(strings.cheatsheetSaved),
                                     backgroundColor: AppTheme.primaryRose,
                                   ),
                                 );
@@ -1653,7 +1740,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Error saving: $e'),
+                                      content: Text('${strings.isPortuguese ? "Erro ao salvar" : "Error saving"}: $e'),
                                     ),
                                   );
                                 }
@@ -1668,7 +1755,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Save Cheatsheet'),
+                          : Text(strings.saveCheatsheet),
                     ),
                   ],
                 ),

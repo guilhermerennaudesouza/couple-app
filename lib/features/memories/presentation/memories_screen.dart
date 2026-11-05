@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/memory_model.dart';
@@ -183,10 +184,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
         ref.watch(currentCoupleIdProvider).valueOrNull ??
         '';
 
+    final strings = AppStrings.of(context);
+
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Memories & Vault'),
+          title: Text(strings.memoriesTitleBar),
         ),
         body: Center(
           child: Padding(
@@ -200,15 +203,15 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   color: AppTheme.primaryRose.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'No Couple Space Connected',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  strings.noSpaceConnected,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Please pair with your partner before accessing shared memories and time capsules.',
+                Text(
+                  strings.noSpaceConnectedDesc,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textSecondaryDark),
+                  style: TextStyle(color: context.textSecondary),
                 ),
               ],
             ),
@@ -222,7 +225,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Memories & Vault'),
+        title: Text(strings.memoriesTitleBar),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -230,18 +233,18 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           labelColor: AppTheme.primaryRose,
           unselectedLabelColor: context.textSecondary,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.photo_library_outlined, size: 20),
-              text: 'Timeline',
+              icon: const Icon(Icons.photo_library_outlined, size: 20),
+              text: strings.tabTimeline,
             ),
             Tab(
-              icon: Icon(Icons.lock_clock_outlined, size: 20),
-              text: 'Time Capsules',
+              icon: const Icon(Icons.lock_clock_outlined, size: 20),
+              text: strings.tabTimeCapsules,
             ),
             Tab(
-              icon: Icon(Icons.card_giftcard_outlined, size: 20),
-              text: 'Wishlist',
+              icon: const Icon(Icons.card_giftcard_outlined, size: 20),
+              text: strings.tabWishlist,
             ),
           ],
         ),
@@ -259,6 +262,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
   }
 
   Widget? _buildFab(BuildContext context, String coupleId, String effectiveUid) {
+    final strings = AppStrings.of(context);
     switch (_tabController.index) {
       case 0:
         return FloatingActionButton.extended(
@@ -267,7 +271,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           foregroundColor: Colors.white,
           onPressed: () => _showAddMemorySheet(context, coupleId, effectiveUid),
           icon: const Icon(Icons.add_a_photo_rounded),
-          label: const Text('Add Memory'),
+          label: Text(strings.addMemoryBtn),
         );
       case 1:
         return FloatingActionButton.extended(
@@ -276,7 +280,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           foregroundColor: Colors.white,
           onPressed: () => _showSealCapsuleSheet(context, coupleId, effectiveUid),
           icon: const Icon(Icons.lock_clock_rounded),
-          label: const Text('Seal Capsule'),
+          label: Text(strings.sealCapsule),
         );
       case 2:
         return FloatingActionButton.extended(
@@ -285,7 +289,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           foregroundColor: Colors.white,
           onPressed: () => _showAddWishSheet(context, coupleId, effectiveUid),
           icon: const Icon(Icons.add_shopping_cart_rounded),
-          label: const Text('Add Wish'),
+          label: Text(strings.addWishBtn),
         );
       default:
         return null;
@@ -302,6 +306,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String effectiveUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final memoriesAsync = ref.watch(memoriesStreamProvider(coupleId));
 
     return memoriesAsync.when(
@@ -348,7 +353,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'No Memories Yet',
+                    strings.noMemoriesYet,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -357,9 +362,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Capture your favorite dates, trips, and milestone moments together.',
+                    strings.noMemoriesDesc,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondaryDark),
+                    style: TextStyle(color: context.textSecondary),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
@@ -371,7 +376,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     ),
                     onPressed: () => _showAddMemorySheet(context, coupleId, effectiveUid),
                     icon: const Icon(Icons.add_a_photo_rounded),
-                    label: const Text('Add First Memory'),
+                    label: Text(strings.addFirstMemory),
                   ),
                 ],
               ),
@@ -398,7 +403,8 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String effectiveUid,
     CoupleModel? couple,
   ) {
-    final formattedDate = DateFormat.yMMMMd().format(memory.date);
+    final strings = AppStrings.of(context);
+    final formattedDate = DateFormat.yMMMMd(strings.isPortuguese ? 'pt_BR' : 'en_US').format(memory.date);
     final creatorName = _getUserDisplayName(couple, memory.createdBy);
 
     return Card(
@@ -507,9 +513,14 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceVariantLight.withOpacity(0.5),
+                  color: context.isDarkMode
+                      ? AppTheme.surfaceVariantDark.withOpacity(0.5)
+                      : AppTheme.surfaceVariantLight.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.outlineLight.withOpacity(0.5)),
+                  border: Border.all(
+                    color: (context.isDarkMode ? AppTheme.outlineDark : AppTheme.outlineLight)
+                        .withOpacity(0.5),
+                  ),
                 ),
                 child: Text(
                   memory.caption,
@@ -533,10 +544,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 Icon(Icons.favorite, size: 14, color: AppTheme.secondaryBlush),
                 const SizedBox(width: 6),
                 Text(
-                  'Added by $creatorName',
+                  strings.isPortuguese ? 'Adicionado por $creatorName' : 'Added by $creatorName',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.textSecondaryDark,
+                    color: context.textSecondary,
                   ),
                 ),
               ],
@@ -609,6 +620,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String effectiveUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final capsulesAsync = ref.watch(timeCapsulesStreamProvider(coupleId));
 
     return capsulesAsync.when(
@@ -655,7 +667,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'No Time Capsules Sealed',
+                    strings.isPortuguese ? 'Nenhuma Cápsula Selada' : 'No Time Capsules Sealed',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -664,9 +676,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Bury a secret love letter or throwback photos to be opened on a future anniversary or milestone.',
+                    strings.isPortuguese
+                        ? 'Guarde uma carta de amor secreta ou fotos especiais para abrir em um aniversário ou momento futuro.'
+                        : 'Bury a secret love letter or throwback photos to be opened on a future anniversary or milestone.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondaryDark),
+                    style: TextStyle(color: context.textSecondary),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
@@ -678,7 +692,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     ),
                     onPressed: () => _showSealCapsuleSheet(context, coupleId, effectiveUid),
                     icon: const Icon(Icons.lock_clock_rounded),
-                    label: const Text('Seal First Capsule'),
+                    label: Text(strings.isPortuguese ? 'Selar Primeira Cápsula' : 'Seal First Capsule'),
                   ),
                 ],
               ),
@@ -694,8 +708,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.pastelPeach, AppTheme.pastelLavender],
+                gradient: LinearGradient(
+                  colors: context.isDarkMode
+                      ? [const Color(0xFF3E2723), const Color(0xFF311B92)]
+                      : [AppTheme.pastelPeach, AppTheme.pastelLavender],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -703,24 +719,26 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.hourglass_bottom_rounded, size: 28, color: AppTheme.primaryRose),
-                  SizedBox(width: 12),
+                  const Icon(Icons.hourglass_bottom_rounded, size: 28, color: AppTheme.primaryRose),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Vault of Love Letters',
+                          strings.isPortuguese ? 'Cofre de Cartas de Amor' : 'Vault of Love Letters',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: context.textPrimary,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Letters and photos sealed tight until their unlock date arrives 🔒',
-                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
+                          strings.isPortuguese
+                              ? 'Cartas e fotos trancadas até a data especial chegar 🔒'
+                              : 'Letters and photos sealed tight until their unlock date arrives 🔒',
+                          style: TextStyle(fontSize: 12, color: context.textSecondary),
                         ),
                       ],
                     ),
@@ -745,9 +763,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String effectiveUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final isReadyToOpen = capsule.canOpen();
     final isOpened = capsule.isOpened;
-    final formattedUnlockDate = DateFormat.yMMMMd().add_jm().format(capsule.unlockDate);
+    final formattedUnlockDate = DateFormat.yMMMMd(strings.isPortuguese ? 'pt_BR' : 'en_US').add_jm().format(capsule.unlockDate);
     final creatorName = _getUserDisplayName(couple, capsule.createdBy);
 
     return Card(
@@ -801,8 +820,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                       const SizedBox(width: 5),
                       Text(
                         isOpened
-                            ? 'Unsealed'
-                            : (isReadyToOpen ? 'Ready to Open! 🎉' : 'Locked 🔒'),
+                            ? (strings.isPortuguese ? 'Aberta' : 'Unsealed')
+                            : (isReadyToOpen
+                                ? (strings.isPortuguese ? 'Pronta para Abrir! 🎉' : 'Ready to Open! 🎉')
+                                : (strings.isPortuguese ? 'Trancada 🔒' : 'Locked 🔒')),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -818,7 +839,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryDark),
+                  icon: Icon(Icons.more_vert_rounded, size: 20, color: context.textSecondary),
                   onPressed: () => _confirmDeleteCapsule(context, coupleId, capsule),
                 ),
               ],
@@ -839,14 +860,18 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             // Date & countdown
             Row(
               children: [
-                Icon(Icons.schedule_rounded, size: 14, color: AppTheme.textSecondaryDark),
+                Icon(Icons.schedule_rounded, size: 14, color: context.textSecondary),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     isOpened
-                        ? 'Opened ${DateFormat.yMMMMd().format(capsule.openedAt ?? capsule.unlockDate)}'
-                        : 'Unlock date: $formattedUnlockDate',
-                    style: TextStyle(fontSize: 13, color: AppTheme.textSecondaryDark),
+                        ? (strings.isPortuguese
+                            ? 'Aberta em ${DateFormat.yMMMMd('pt_BR').format(capsule.openedAt ?? capsule.unlockDate)}'
+                            : 'Opened ${DateFormat.yMMMMd().format(capsule.openedAt ?? capsule.unlockDate)}')
+                        : (strings.isPortuguese
+                            ? 'Data de abertura: $formattedUnlockDate'
+                            : 'Unlock date: $formattedUnlockDate'),
+                    style: TextStyle(fontSize: 13, color: context.textSecondary),
                   ),
                 ),
               ],
@@ -861,8 +886,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '⏳ Unlocks in ${_formatDuration(capsule.timeRemaining())}',
-                  style: TextStyle(
+                  strings.isPortuguese
+                      ? '⏳ Abre em ${_formatDuration(capsule.timeRemaining(), isPt: true)}'
+                      : '⏳ Unlocks in ${_formatDuration(capsule.timeRemaining())}',
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.primaryRose,
@@ -880,16 +907,23 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceVariantLight.withOpacity(0.6),
+                  color: context.isDarkMode
+                      ? AppTheme.surfaceVariantDark.withOpacity(0.6)
+                      : AppTheme.surfaceVariantLight.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.outlineLight.withOpacity(0.5)),
+                  border: Border.all(
+                    color: (context.isDarkMode ? AppTheme.outlineDark : AppTheme.outlineLight)
+                        .withOpacity(0.5),
+                  ),
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.lock_rounded, size: 36, color: AppTheme.primaryRoseLight),
+                    const Icon(Icons.lock_rounded, size: 36, color: AppTheme.primaryRoseLight),
                     const SizedBox(height: 8),
                     Text(
-                      'Secret words locked in the vault',
+                      strings.isPortuguese
+                          ? 'Palavras secretas guardadas no cofre'
+                          : 'Secret words locked in the vault',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -899,10 +933,14 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     const SizedBox(height: 4),
                     Text(
                       capsule.photoUrls.isNotEmpty
-                          ? 'Includes message & ${capsule.photoUrls.length} throwback photos'
-                          : 'Sealed by $creatorName',
+                          ? (strings.isPortuguese
+                              ? 'Inclui mensagem & ${capsule.photoUrls.length} foto(s) especiais'
+                              : 'Includes message & ${capsule.photoUrls.length} throwback photos')
+                          : (strings.isPortuguese
+                              ? 'Selado por $creatorName'
+                              : 'Sealed by $creatorName'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -915,14 +953,20 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Patience my love! 🔒 This capsule unlocks on $formattedUnlockDate',
+                          strings.isPortuguese
+                              ? 'Paciência, meu amor! 🔒 Esta cápsula só abre em $formattedUnlockDate'
+                              : 'Patience my love! 🔒 This capsule unlocks on $formattedUnlockDate',
                         ),
                         duration: const Duration(seconds: 3),
                       ),
                     );
                   },
-                  icon: Icon(Icons.lock_rounded, size: 16),
-                  label: Text('Locked Until Scheduled Date'),
+                  icon: const Icon(Icons.lock_rounded, size: 16),
+                  label: Text(
+                    strings.isPortuguese
+                        ? 'Bloqueada Até a Data Programada'
+                        : 'Locked Until Scheduled Date',
+                  ),
                 ),
               ),
             ] else if (!isOpened && isReadyToOpen) ...[
@@ -931,27 +975,31 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.pastelPeach.withOpacity(0.6),
+                  color: context.isDarkMode
+                      ? const Color(0xFF3E2723)
+                      : AppTheme.pastelPeach.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: AppTheme.primaryRose.withOpacity(0.3)),
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.cake_rounded, size: 40, color: AppTheme.primaryRose),
-                    SizedBox(height: 8),
+                    const Icon(Icons.cake_rounded, size: 40, color: AppTheme.primaryRose),
+                    const SizedBox(height: 8),
                     Text(
-                      'The wait is over! 🎉',
-                      style: TextStyle(
+                      strings.isPortuguese ? 'A espera acabou! 🎉' : 'The wait is over! 🎉',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryRoseDark,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Tap below to break the seal and reveal the secret letter!',
+                      strings.isPortuguese
+                          ? 'Toque abaixo para quebrar o selo e revelar a carta secreta!'
+                          : 'Tap below to break the seal and reveal the secret letter!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -967,8 +1015,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     ),
                   ),
                   onPressed: () => _openCapsule(context, coupleId, capsule),
-                  icon: Icon(Icons.lock_open_rounded),
-                  label: Text('Break Seal & Open Capsule 🎉'),
+                  icon: const Icon(Icons.lock_open_rounded),
+                  label: Text(
+                    strings.isPortuguese
+                        ? 'Quebrar o Selo & Abrir Cápsula 🎉'
+                        : 'Break Seal & Open Capsule 🎉',
+                  ),
                 ),
               ),
             ] else ...[
@@ -1033,21 +1085,21 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     );
   }
 
-  String _formatDuration(Duration duration) {
+  String _formatDuration(Duration duration, {bool isPt = false}) {
     if (duration.isNegative || duration == Duration.zero) {
-      return 'Unlocked now!';
+      return isPt ? 'Desbloqueada agora!' : 'Unlocked now!';
     }
     final days = duration.inDays;
     final hours = duration.inHours % 24;
     final minutes = duration.inMinutes % 60;
 
     if (days > 0) {
-      return '$days d $hours h';
+      return isPt ? '$days d $hours h' : '$days d $hours h';
     }
     if (hours > 0) {
-      return '$hours h $minutes m';
+      return isPt ? '$hours h $minutes min' : '$hours h $minutes m';
     }
-    return '$minutes m';
+    return isPt ? '$minutes min' : '$minutes m';
   }
 
   Future<void> _openCapsule(
@@ -1055,6 +1107,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String coupleId,
     TimeCapsuleModel capsule,
   ) async {
+    final strings = AppStrings.of(context);
     try {
       await ref.read(timeCapsuleRepositoryProvider).openCapsule(coupleId, capsule.id);
       if (!mounted) return;
@@ -1065,11 +1118,15 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.celebration_rounded, color: AppTheme.goldAccent, size: 28),
-              SizedBox(width: 8),
-              Expanded(child: Text('Capsule Unsealed! 🎉')),
+              const Icon(Icons.celebration_rounded, color: AppTheme.goldAccent, size: 28),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  strings.isPortuguese ? 'Cápsula Revelada! 🎉' : 'Capsule Unsealed! 🎉',
+                ),
+              ),
             ],
           ),
           content: Column(
@@ -1077,7 +1134,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'You broke the seal on "${capsule.title}"!',
+                strings.isPortuguese
+                    ? 'Você quebrou o selo de "${capsule.title}"!'
+                    : 'You broke the seal on "${capsule.title}"!',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -1098,7 +1157,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRose),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cherish Forever ✨'),
+              child: Text(
+                strings.isPortuguese ? 'Guardar no Coração ✨' : 'Cherish Forever ✨',
+              ),
             ),
           ],
         ),
@@ -1106,7 +1167,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to open capsule: $e')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese ? 'Erro ao abrir cápsula: $e' : 'Failed to open capsule: $e',
+          ),
+        ),
       );
     }
   }
@@ -1121,6 +1186,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String effectiveUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final wishlistAsync = ref.watch(wishlistStreamProvider(coupleId));
 
     return wishlistAsync.when(
@@ -1133,12 +1199,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
+              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
               const SizedBox(height: 12),
               Text(
-                'Failed to load wishlist: $err',
+                strings.isPortuguese ? 'Erro ao carregar lista de desejos: $err' : 'Failed to load wishlist: $err',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondaryDark),
+                style: TextStyle(color: context.textSecondary),
               ),
             ],
           ),
@@ -1162,8 +1228,8 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  _buildCategoryChip('All'),
-                  ...WishModel.categories.map((c) => _buildCategoryChip(c)),
+                  _buildCategoryChip(context, 'All'),
+                  ...WishModel.categories.map((c) => _buildCategoryChip(context, c)),
                 ],
               ),
             ),
@@ -1175,26 +1241,30 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceVariantLight.withOpacity(0.5),
+                    color: context.isDarkMode
+                        ? AppTheme.surfaceVariantDark.withOpacity(0.5)
+                        : AppTheme.surfaceVariantLight.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.shopping_bag_outlined, size: 16, color: AppTheme.primaryRose),
+                      const Icon(Icons.shopping_bag_outlined, size: 16, color: AppTheme.primaryRose),
                       const SizedBox(width: 8),
                       Text(
-                        '$purchasedCount of $totalCount fulfilled',
+                        strings.isPortuguese
+                            ? '$purchasedCount de $totalCount realizados'
+                            : '$purchasedCount of $totalCount fulfilled',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textSecondaryDark,
+                          color: context.textSecondary,
                         ),
                       ),
                       const Spacer(),
                       if (purchasedCount > 0 && purchasedCount == totalCount)
                         Text(
-                          'All fulfilled! 🎉',
-                          style: TextStyle(
+                          strings.isPortuguese ? 'Todos realizados! 🎉' : 'All fulfilled! 🎉',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.successGreen,
@@ -1221,7 +1291,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                                 color: AppTheme.pastelPeach.withOpacity(0.5),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.card_giftcard_rounded,
                                 size: 40,
                                 color: AppTheme.primaryRose,
@@ -1230,8 +1300,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                             const SizedBox(height: 20),
                             Text(
                               _selectedWishlistCategory == 'All'
-                                  ? 'Wishlist is Empty'
-                                  : 'No $_selectedWishlistCategory Wishes',
+                                  ? (strings.isPortuguese ? 'Lista de Desejos Vazia' : 'Wishlist is Empty')
+                                  : (strings.isPortuguese
+                                      ? 'Nenhum Desejo em ${_getLocalizedWishCategory(_selectedWishlistCategory, strings)}'
+                                      : 'No $_selectedWishlistCategory Wishes'),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -1240,9 +1312,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Add dream gifts, vacation ideas, or things you want to buy together.',
+                              strings.isPortuguese
+                                  ? 'Adicione presentes dos sonhos, ideias de viagens ou coisas que querem comprar juntos.'
+                                  : 'Add dream gifts, vacation ideas, or things you want to buy together.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppTheme.textSecondaryDark),
+                              style: TextStyle(color: context.textSecondary),
                             ),
                             const SizedBox(height: 24),
                             FilledButton.icon(
@@ -1254,7 +1328,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                               ),
                               onPressed: () => _showAddWishSheet(context, coupleId, effectiveUid),
                               icon: const Icon(Icons.add_shopping_cart_rounded),
-                              label: const Text('Add Wish'),
+                              label: Text(strings.addWishBtn),
                             ),
                           ],
                         ),
@@ -1275,12 +1349,26 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     );
   }
 
-  Widget _buildCategoryChip(String label) {
+  String _getLocalizedWishCategory(String category, AppStrings strings) {
+    return switch (category) {
+      'All' => strings.categoryAll,
+      'Gifts' => strings.isPortuguese ? 'Presentes' : 'Gifts',
+      'Travel' => strings.isPortuguese ? 'Viagens' : 'Travel',
+      'Date Night' => strings.isPortuguese ? 'Encontros' : 'Date Night',
+      'Home' => strings.isPortuguese ? 'Casa' : 'Home',
+      'Experiences' => strings.isPortuguese ? 'Experiências' : 'Experiences',
+      _ => strings.isPortuguese ? 'Outros' : 'Other',
+    };
+  }
+
+  Widget _buildCategoryChip(BuildContext context, String label) {
+    final strings = AppStrings.of(context);
     final isSelected = _selectedWishlistCategory == label;
+    final displayLabel = _getLocalizedWishCategory(label, strings);
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
-        label: Text(label),
+        label: Text(displayLabel),
         selected: isSelected,
         selectedColor: AppTheme.primaryRose,
         labelStyle: TextStyle(
@@ -1289,7 +1377,12 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           fontSize: 12,
         ),
         checkmarkColor: Colors.white,
-        backgroundColor: AppTheme.surfaceVariantLight,
+        backgroundColor: context.isDarkMode ? AppTheme.surfaceVariantDark : AppTheme.surfaceVariantLight,
+        side: BorderSide(
+          color: isSelected
+              ? Colors.transparent
+              : (context.isDarkMode ? AppTheme.outlineDark : AppTheme.outlineLight),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onSelected: (val) {
           setState(() {
@@ -1307,6 +1400,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     String effectiveUid,
     CoupleModel? couple,
   ) {
+    final strings = AppStrings.of(context);
     final creatorName = _getUserDisplayName(couple, wish.createdBy);
 
     return Card(
@@ -1372,7 +1466,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              wish.category,
+                              _getLocalizedWishCategory(wish.category, strings),
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -1389,7 +1483,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                '\$${wish.estimatedPrice!.toStringAsFixed(2)}',
+                                strings.isPortuguese
+                                    ? 'R\$ ${wish.estimatedPrice!.toStringAsFixed(2)}'
+                                    : '\$${wish.estimatedPrice!.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -1406,7 +1502,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
 
                 // Delete Menu
                 IconButton(
-                  icon: Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryDark),
+                  icon: Icon(Icons.more_vert_rounded, size: 20, color: context.textSecondary),
                   onPressed: () => _confirmDeleteWish(context, coupleId, wish),
                 ),
               ],
@@ -1420,7 +1516,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   wish.description!,
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppTheme.textSecondaryDark,
+                    color: context.textSecondary,
                   ),
                 ),
               ),
@@ -1437,9 +1533,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: wish.url!));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Link copied to clipboard! 📋'),
-                            duration: Duration(seconds: 2),
+                          SnackBar(
+                            content: Text(
+                              strings.isPortuguese
+                                  ? 'Link copiado para a área de transferência! 📋'
+                                  : 'Link copied to clipboard! 📋',
+                            ),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       },
@@ -1452,11 +1552,11 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.link_rounded, size: 14, color: AppTheme.primaryRose),
-                            SizedBox(width: 4),
+                            const Icon(Icons.link_rounded, size: 14, color: AppTheme.primaryRose),
+                            const SizedBox(width: 4),
                             Text(
-                              'Copy Link',
-                              style: TextStyle(
+                              strings.isPortuguese ? 'Copiar Link' : 'Copy Link',
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.primaryRose,
@@ -1468,7 +1568,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     ),
                   const Spacer(),
                   Text(
-                    wish.isPurchased ? 'Purchased 🎉' : 'Added by $creatorName',
+                    wish.isPurchased
+                        ? (strings.isPortuguese ? 'Comprado 🎉' : 'Purchased 🎉')
+                        : (strings.isPortuguese ? 'Adicionado por $creatorName' : 'Added by $creatorName'),
                     style: TextStyle(
                       fontSize: 11,
                       color: wish.isPurchased ? AppTheme.successGreen : context.textSecondary,
@@ -1562,18 +1664,23 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
   }
 
   void _confirmDeleteMemory(BuildContext context, String coupleId, MemoryModel memory) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Text('Delete Memory?'),
-        content: Text('Are you sure you want to remove "${memory.title}" from your shared timeline?'),
+        title: Text(strings.isPortuguese ? 'Excluir Memória?' : 'Delete Memory?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja remover "${memory.title}" da linha do tempo?'
+              : 'Are you sure you want to remove "${memory.title}" from your shared timeline?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
@@ -1583,16 +1690,24 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 await ref.read(memoriesRepositoryProvider).deleteMemory(coupleId, memory.id);
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Memory deleted')),
+                  SnackBar(
+                    content: Text(
+                      strings.isPortuguese ? 'Memória excluída' : 'Memory deleted',
+                    ),
+                  ),
                 );
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete memory: $e')),
+                  SnackBar(
+                    content: Text(
+                      strings.isPortuguese ? 'Erro ao excluir memória: $e' : 'Failed to delete memory: $e',
+                    ),
+                  ),
                 );
               }
             },
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -1600,18 +1715,23 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
   }
 
   void _confirmDeleteCapsule(BuildContext context, String coupleId, TimeCapsuleModel capsule) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Text('Delete Time Capsule?'),
-        content: Text('Are you sure you want to delete "${capsule.title}"?'),
+        title: Text(strings.isPortuguese ? 'Excluir Cápsula do Tempo?' : 'Delete Time Capsule?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja excluir a cápsula "${capsule.title}"?'
+              : 'Are you sure you want to delete "${capsule.title}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
@@ -1621,16 +1741,24 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 await ref.read(timeCapsuleRepositoryProvider).deleteCapsule(coupleId, capsule.id);
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Time capsule deleted')),
+                  SnackBar(
+                    content: Text(
+                      strings.isPortuguese ? 'Cápsula do tempo excluída' : 'Time capsule deleted',
+                    ),
+                  ),
                 );
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete capsule: $e')),
+                  SnackBar(
+                    content: Text(
+                      strings.isPortuguese ? 'Erro ao excluir cápsula: $e' : 'Failed to delete capsule: $e',
+                    ),
+                  ),
                 );
               }
             },
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -1638,18 +1766,23 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
   }
 
   void _confirmDeleteWish(BuildContext context, String coupleId, WishModel wish) {
+    final strings = AppStrings.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.dialogBorderRadius),
         ),
-        title: const Text('Delete Wish?'),
-        content: Text('Are you sure you want to remove "${wish.title}" from the shared wishlist?'),
+        title: Text(strings.isPortuguese ? 'Excluir Desejo?' : 'Delete Wish?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Tem certeza de que deseja remover "${wish.title}" da lista de desejos compartilhada?'
+              : 'Are you sure you want to remove "${wish.title}" from the shared wishlist?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
@@ -1659,16 +1792,24 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 await ref.read(memoriesRepositoryProvider).deleteWish(coupleId, wish.id);
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Wish removed from wishlist')),
+                  SnackBar(
+                    content: Text(
+                      strings.isPortuguese ? 'Desejo removido da lista' : 'Wish removed from wishlist',
+                    ),
+                  ),
                 );
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete wish: $e')),
+                  SnackBar(
+                    content: Text(
+                      strings.isPortuguese ? 'Erro ao excluir desejo: $e' : 'Failed to delete wish: $e',
+                    ),
+                  ),
                 );
               }
             },
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -1811,10 +1952,11 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
       ),
       padding: EdgeInsets.only(
         top: 20,
@@ -1831,9 +1973,9 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
               children: [
                 const Icon(Icons.favorite_rounded, color: AppTheme.primaryRose),
                 const SizedBox(width: 8),
-                const Text(
-                  'Add New Memory',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  strings.isPortuguese ? 'Adicionar Nova Memória' : 'Add New Memory',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -1848,8 +1990,10 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Title *',
-                hintText: 'e.g., Sunset picnic at the park',
+                labelText: strings.isPortuguese ? 'Título *' : 'Title *',
+                hintText: strings.isPortuguese
+                    ? 'ex: Piquenique ao pôr do sol no parque'
+                    : 'e.g., Sunset picnic at the park',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.title_rounded, color: AppTheme.primaryRose),
               ),
@@ -1860,8 +2004,8 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.calendar_month_rounded, color: AppTheme.primaryRose),
-              title: const Text('Memory Date'),
-              subtitle: Text(DateFormat.yMMMMd().format(_selectedDate)),
+              title: Text(strings.isPortuguese ? 'Data da Memória' : 'Memory Date'),
+              subtitle: Text(DateFormat.yMMMMd(strings.isPortuguese ? 'pt_BR' : 'en_US').format(_selectedDate)),
               trailing: OutlinedButton(
                 onPressed: () async {
                   final picked = await showDatePicker(
@@ -1874,7 +2018,7 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                     setState(() => _selectedDate = picked);
                   }
                 },
-                child: const Text('Change'),
+                child: Text(strings.isPortuguese ? 'Alterar' : 'Change'),
               ),
             ),
             const SizedBox(height: 8),
@@ -1883,8 +2027,8 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
             TextField(
               controller: _locationController,
               decoration: InputDecoration(
-                labelText: 'Location (optional)',
-                hintText: 'e.g., Central Park, NYC',
+                labelText: strings.isPortuguese ? 'Local (opcional)' : 'Location (optional)',
+                hintText: strings.isPortuguese ? 'ex: Parque do Ibirapuera' : 'e.g., Central Park, NYC',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.location_on_rounded, color: AppTheme.primaryRose),
               ),
@@ -1897,8 +2041,10 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
               maxLines: 3,
               minLines: 2,
               decoration: InputDecoration(
-                labelText: 'Caption / Story',
-                hintText: 'What made this moment special?',
+                labelText: strings.isPortuguese ? 'Legenda / História' : 'Caption / Story',
+                hintText: strings.isPortuguese
+                    ? 'O que tornou esse momento inesquecível?'
+                    : 'What made this moment special?',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.chat_bubble_outline_rounded, color: AppTheme.primaryRose),
               ),
@@ -1906,9 +2052,9 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
             const SizedBox(height: 16),
 
             // Photo Management
-            const Text(
-              'Photos',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Text(
+              strings.isPortuguese ? 'Fotos' : 'Photos',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 8),
 
@@ -1971,7 +2117,11 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.add_photo_alternate_rounded),
-                    label: Text(_isUploading ? 'Uploading...' : 'Pick Photo'),
+                    label: Text(
+                      _isUploading
+                          ? (strings.isPortuguese ? 'Enviando...' : 'Uploading...')
+                          : (strings.isPortuguese ? 'Escolher Foto' : 'Pick Photo'),
+                    ),
                   ),
                 ),
               ],
@@ -1985,7 +2135,7 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                   child: TextField(
                     controller: _urlInputController,
                     decoration: InputDecoration(
-                      hintText: 'Or paste image URL',
+                      hintText: strings.isPortuguese ? 'Ou cole o link da imagem' : 'Or paste image URL',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -2015,7 +2165,10 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
                 onPressed: (_isSaving || _isUploading) ? null : _saveMemory,
                 child: _isSaving
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Save Memory ✨', style: TextStyle(fontSize: 16)),
+                    : Text(
+                        strings.isPortuguese ? 'Salvar Memória ✨' : 'Save Memory ✨',
+                        style: const TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -2175,10 +2328,11 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
       ),
       padding: EdgeInsets.only(
         top: 20,
@@ -2195,9 +2349,9 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
               children: [
                 const Icon(Icons.lock_clock_rounded, color: AppTheme.primaryRose),
                 const SizedBox(width: 8),
-                const Text(
-                  'Seal a Time Capsule',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  strings.isPortuguese ? 'Selar Cápsula do Tempo' : 'Seal a Time Capsule',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -2212,8 +2366,10 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Capsule Title *',
-                hintText: 'e.g., Open on our 3rd Anniversary',
+                labelText: strings.isPortuguese ? 'Título da Cápsula *' : 'Capsule Title *',
+                hintText: strings.isPortuguese
+                    ? 'ex: Abrir no nosso 3º aniversário de namoro'
+                    : 'e.g., Open on our 3rd Anniversary',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.title_rounded, color: AppTheme.primaryRose),
               ),
@@ -2224,8 +2380,8 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.alarm_rounded, color: AppTheme.primaryRose),
-              title: const Text('Unlock Date & Time *'),
-              subtitle: Text(DateFormat.yMMMMd().add_jm().format(_unlockDate)),
+              title: Text(strings.isPortuguese ? 'Data & Hora de Abertura *' : 'Unlock Date & Time *'),
+              subtitle: Text(DateFormat.yMMMMd(strings.isPortuguese ? 'pt_BR' : 'en_US').add_jm().format(_unlockDate)),
               trailing: OutlinedButton(
                 onPressed: () async {
                   final pickedDate = await showDatePicker(
@@ -2252,7 +2408,7 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                     }
                   }
                 },
-                child: const Text('Change'),
+                child: Text(strings.isPortuguese ? 'Alterar' : 'Change'),
               ),
             ),
             const SizedBox(height: 8),
@@ -2263,8 +2419,10 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
               maxLines: 5,
               minLines: 3,
               decoration: InputDecoration(
-                labelText: 'Secret Letter / Message *',
-                hintText: 'Write your promises, reflections, or secret words here...',
+                labelText: strings.isPortuguese ? 'Carta de Amor Secreta *' : 'Secret Letter / Message *',
+                hintText: strings.isPortuguese
+                    ? 'Escreva suas juras, promessas ou palavras secretas...'
+                    : 'Write your promises, reflections, or secret words here...',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.edit_note_rounded, color: AppTheme.primaryRose),
               ),
@@ -2272,9 +2430,9 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
             const SizedBox(height: 16),
 
             // Sealed Photos
-            const Text(
-              'Attach Throwback Photos (optional)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Text(
+              strings.isPortuguese ? 'Anexar Fotos Especiais (opcional)' : 'Attach Throwback Photos (optional)',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 8),
 
@@ -2337,7 +2495,11 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.add_photo_alternate_rounded),
-                    label: Text(_isUploading ? 'Uploading...' : 'Pick Photo'),
+                    label: Text(
+                      _isUploading
+                          ? (strings.isPortuguese ? 'Enviando...' : 'Uploading...')
+                          : (strings.isPortuguese ? 'Escolher Foto' : 'Pick Photo'),
+                    ),
                   ),
                 ),
               ],
@@ -2351,7 +2513,7 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                   child: TextField(
                     controller: _urlInputController,
                     decoration: InputDecoration(
-                      hintText: 'Or paste image URL',
+                      hintText: strings.isPortuguese ? 'Ou cole o link da imagem' : 'Or paste image URL',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -2382,7 +2544,10 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
                 icon: const Icon(Icons.lock_outline_rounded),
                 label: _isSaving
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Seal Capsule 🔒', style: TextStyle(fontSize: 16)),
+                    : Text(
+                        strings.isPortuguese ? 'Selar Cápsula 🔒' : 'Seal Capsule 🔒',
+                        style: const TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],
@@ -2474,10 +2639,11 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
       ),
       padding: EdgeInsets.only(
         top: 20,
@@ -2494,9 +2660,9 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
               children: [
                 const Icon(Icons.card_giftcard_rounded, color: AppTheme.primaryRose),
                 const SizedBox(width: 8),
-                const Text(
-                  'Add to Wishlist',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  strings.isPortuguese ? 'Adicionar à Lista de Desejos' : 'Add to Wishlist',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -2511,8 +2677,10 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Item / Wish Title *',
-                hintText: 'e.g., Weekend trip to the mountains',
+                labelText: strings.isPortuguese ? 'Nome do Item / Desejo *' : 'Item / Wish Title *',
+                hintText: strings.isPortuguese
+                    ? 'ex: Viagem de fim de semana nas montanhas'
+                    : 'e.g., Weekend trip to the mountains',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.shopping_bag_outlined, color: AppTheme.primaryRose),
               ),
@@ -2520,17 +2688,25 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
             const SizedBox(height: 12),
 
             // Category Chips
-            const Text(
-              'Category',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            Text(
+              strings.isPortuguese ? 'Categoria' : 'Category',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: WishModel.categories.map((c) {
                 final isSelected = _category == c;
+                final localizedC = switch (c) {
+                  'Gifts' => strings.isPortuguese ? 'Presentes' : 'Gifts',
+                  'Travel' => strings.isPortuguese ? 'Viagens' : 'Travel',
+                  'Date Night' => strings.isPortuguese ? 'Encontros' : 'Date Night',
+                  'Home' => strings.isPortuguese ? 'Casa' : 'Home',
+                  'Experiences' => strings.isPortuguese ? 'Experiências' : 'Experiences',
+                  _ => strings.isPortuguese ? 'Outros' : 'Other',
+                };
                 return ChoiceChip(
-                  label: Text(c),
+                  label: Text(localizedC),
                   selected: isSelected,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
@@ -2550,9 +2726,9 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
               controller: _priceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Estimated Price (optional)',
-                hintText: 'e.g., 79.99',
-                prefixText: '\$ ',
+                labelText: strings.isPortuguese ? 'Preço Estimado (opcional)' : 'Estimated Price (optional)',
+                hintText: strings.isPortuguese ? 'ex: 150.00' : 'e.g., 79.99',
+                prefixText: strings.isPortuguese ? 'R\$ ' : '\$ ',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.attach_money_rounded, color: AppTheme.primaryRose),
               ),
@@ -2564,7 +2740,7 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
               controller: _urlController,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                labelText: 'Website / Product Link (optional)',
+                labelText: strings.isPortuguese ? 'Link do Produto / Site (opcional)' : 'Website / Product Link (optional)',
                 hintText: 'https://...',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.link_rounded, color: AppTheme.primaryRose),
@@ -2577,8 +2753,10 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
               controller: _descriptionController,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: 'Notes / Description (optional)',
-                hintText: 'Size, color, details or why we want it',
+                labelText: strings.isPortuguese ? 'Observações / Detalhes (opcional)' : 'Notes / Description (optional)',
+                hintText: strings.isPortuguese
+                    ? 'Tamanho, cor, detalhes ou por que queremos'
+                    : 'Size, color, details or why we want it',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.description_outlined, color: AppTheme.primaryRose),
               ),
@@ -2599,7 +2777,10 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
                 onPressed: _isSaving ? null : _saveWish,
                 child: _isSaving
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Add to Wishlist 🎁', style: TextStyle(fontSize: 16)),
+                    : Text(
+                        strings.isPortuguese ? 'Adicionar à Lista 🎁' : 'Add to Wishlist 🎁',
+                        style: const TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ],

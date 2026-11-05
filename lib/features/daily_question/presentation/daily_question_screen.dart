@@ -407,7 +407,9 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppTheme.pastelPeach.withValues(alpha: 0.6),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.secondaryBlush.withValues(alpha: 0.15)
+                : AppTheme.pastelPeach.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppTheme.secondaryBlush.withValues(alpha: 0.5)),
           ),
@@ -442,10 +444,10 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               color: context.textSecondary.withValues(alpha: 0.7),
             ),
             filled: true,
-            fillColor: AppTheme.surfaceLight,
+            fillColor: context.cardColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
-              borderSide: const BorderSide(color: AppTheme.outlineLight),
+              borderSide: BorderSide(color: context.outlineColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
@@ -572,7 +574,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceLight,
+            color: context.cardColor,
             borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
             border: Border.all(color: AppTheme.secondaryBlush.withValues(alpha: 0.6)),
             boxShadow: [
@@ -679,9 +681,9 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceLight,
+              color: context.cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.outlineLight),
+              border: Border.all(color: context.outlineColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1062,7 +1064,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
       margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppTheme.outlineLight),
+        side: BorderSide(color: context.outlineColor),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -1075,7 +1077,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
             decoration: BoxDecoration(
               color: q.isRevealed
                   ? AppTheme.primaryRose.withValues(alpha: 0.12)
-                  : AppTheme.surfaceVariantLight,
+                  : context.surfaceVariant,
               shape: BoxShape.circle,
             ),
             child: Icon(

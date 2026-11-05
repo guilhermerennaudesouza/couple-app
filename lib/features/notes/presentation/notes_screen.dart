@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/note_model.dart';
@@ -109,23 +110,27 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final coupleAsync = ref.watch(coupleStreamProvider(activeCoupleId));
     final currentCouple = coupleAsync.valueOrNull ?? widget.initialCouple;
     final notesAsync = ref.watch(notesStreamProvider(activeCoupleId));
+    final strings = AppStrings.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.push_pin_rounded, color: AppTheme.primaryRose, size: 22),
-            SizedBox(width: 8),
-            Text(
-              'Love Notes & Widget',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const Icon(Icons.push_pin_rounded, color: AppTheme.primaryRose, size: 22),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                strings.loveNotesAndWidget,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Widget Info',
+            tooltip: strings.widgetInfo,
             icon: const Icon(Icons.info_outline_rounded),
             onPressed: () => _showWidgetInfoDialog(context),
           ),
@@ -136,9 +141,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         foregroundColor: Colors.white,
         elevation: 3,
         icon: const Icon(Icons.edit_note_rounded),
-        label: const Text(
-          'New Note',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        label: Text(
+          strings.newNote,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         onPressed: () => _showNoteEditor(
           context: context,
@@ -198,6 +203,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     required String authorUid,
     required String authorName,
   }) {
+    final strings = AppStrings.of(context);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
@@ -210,7 +216,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 color: AppTheme.pastelPeach.withOpacity(0.5),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.sticky_note_2_rounded,
                 size: 72,
                 color: AppTheme.primaryRose,
@@ -218,7 +224,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              'No Sticky Notes Yet',
+              strings.noStickyNotesYet,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -227,8 +233,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Leave sweet surprises, daily compliments, or reminders for your partner. '
-              'Pin your favorite note directly to their Android Home Screen widget!',
+              strings.noStickyNotesDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -247,9 +252,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 ),
               ),
               icon: const Icon(Icons.add_rounded),
-              label: const Text(
-                'Leave First Love Note',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              label: Text(
+                strings.leaveFirstLoveNote,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
               onPressed: () => _showNoteEditor(
                 context: context,
@@ -363,13 +368,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                   GestureDetector(
                     onTap: () async {
                       final repo = ref.read(noteRepositoryProvider);
+                      final isPt = AppStrings.of(context).isPortuguese;
                       if (note.isPinnedToWidget) {
                         await repo.unpinNoteFromWidget(coupleId, note.id);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Unpinned from Home Widget'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(isPt ? 'Desafixado do Widget' : 'Unpinned from Home Widget'),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
@@ -377,9 +383,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         await repo.pinNoteToWidget(coupleId, note.id);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pinned to Partner\'s Home Widget! 💕'),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text(isPt ? 'Fixado no Widget do seu Amor! 💕' : 'Pinned to Partner\'s Home Widget! 💕'),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         }
@@ -415,14 +421,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                     color: AppTheme.primaryRose.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.home_filled, size: 10, color: AppTheme.primaryRoseDark),
-                      SizedBox(width: 4),
+                      const Icon(Icons.home_filled, size: 10, color: AppTheme.primaryRoseDark),
+                      const SizedBox(width: 4),
                       Text(
-                        'Glance Widget',
-                        style: TextStyle(
+                        AppStrings.of(context).isPortuguese ? 'Widget na Tela Inicial 📌' : 'Glance Widget 📌',
+                        style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.primaryRoseDark,
@@ -864,6 +870,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   }
 
   void _showWidgetInfoDialog(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -872,9 +880,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         ),
         title: Row(
           children: [
-            Icon(Icons.widgets_rounded, color: AppTheme.primaryRose),
-            SizedBox(width: 8),
-            Text('Android Glance Widget'),
+            const Icon(Icons.widgets_rounded, color: AppTheme.primaryRose),
+            const SizedBox(width: 8),
+            Text(isPt ? 'Widgets do Android na Tela Inicial' : 'Android Glance Widget'),
           ],
         ),
         content: Column(
@@ -882,17 +890,19 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'How to add Krivo to your Home Screen:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              isPt ? 'Como adicionar os widgets à sua tela inicial:' : 'How to add widgets to your Home Screen:',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
-            SizedBox(height: 8),
-            Text('1. Go to your Android phone home screen.'),
-            Text('2. Touch and hold an empty space on the home screen.'),
-            Text('3. Tap "Widgets" and find "Krivo".'),
-            Text('4. Drag the "Couple Sticky Note" widget to your screen.'),
-            SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Text(isPt ? '1. Vá para a tela inicial do seu celular Android.' : '1. Go to your Android phone home screen.'),
+            Text(isPt ? '2. Toque e segure em um espaço vazio.' : '2. Touch and hold an empty space on the home screen.'),
+            Text(isPt ? '3. Toque em "Widgets" e procure por "Couple App".' : '3. Tap "Widgets" and find "Couple App".'),
+            Text(isPt ? '4. Arraste o widget do casal ou de notas para sua tela.' : '4. Drag the widget to your screen.'),
+            const SizedBox(height: 12),
             Text(
-              'Whenever either partner pins a note in Krivo, the widget instantly updates with the new message and matching pastel color! 💕',
+              isPt
+                  ? 'Sempre que você ou seu amor fixarem uma nota ou atualizarem o app, o widget atualiza automaticamente! 💕'
+                  : 'Whenever either partner pins a note in Krivo, the widget instantly updates with the new message! 💕',
               style: TextStyle(
                 color: context.textSecondary,
                 fontSize: 13,
@@ -904,7 +914,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Got it!'),
+            child: Text(isPt ? 'Entendi!' : 'Got it!'),
           ),
         ],
       ),

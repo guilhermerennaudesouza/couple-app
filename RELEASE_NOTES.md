@@ -1,3 +1,26 @@
+# Couple App v1.0.2 — Localização 100% Português & Contraste Modo Escuro 💑📱
+
+### ✨ O que há de novo / What's New
+
+- **🇧🇷 Tradução 100% Completa para Português em Todo o Aplicativo:**
+  - **Decidir Juntos & Ideias de Encontros:** Votações secretas, desempate no cara ou coroa, destaques da semana, categorias traduzidas (*Aconchegante, Ao Ar Livre, Gastronômico, Romântico, Aventura, Econômico*) e modais de criação.
+  - **Finanças Compartilhadas & Cofrinho:** Cards de resumo, filtros, formulários de despesas e metas de economia traduzidos.
+  - **Linha do Tempo, Cápsulas do Tempo & Desejos:** Telas vazias, botões, selamento de cartas e confirmações de exclusão em português.
+  - **Calendário & Momentos:** Contagem regressiva de aniversário, chips e formulários de eventos em português com datas no formato brasileiro.
+  - **Mural de Recados & Notas de Amor:** Instruções do widget, botões de ação e modais totalmente em português.
+  - **Tarefas & Afazeres:** Filtros (*Compartilhada, Você, Para Mim*), prazos (*Hoje, Atrasada*) e checklists.
+
+- **🌙 Contraste Otimizado para o Modo Escuro (AMOLED High Contrast):**
+  - Corrigido o card verde de Finanças para verde escuro profundo no modo escuro, garantindo legibilidade perfeita de valores e textos.
+  - Corrigidos os chips de filtro em Finanças e Ideias de Encontros (eliminado o fundo branco ofuscante).
+  - Todas as folhas inferiores (bottom sheets) agora usam a cor de fundo adaptativa do tema (`context.cardColor`), eliminando o branco ofuscante no modo escuro.
+  - Contornos, bordas e subtítulos adaptados dinamicamente com contraste WCAG AAA.
+
+- **🚀 Publicação Automática no GitHub Releases (OTA):**
+  - O aplicativo atualiza automaticamente via OTA sempre que uma nova tag `v*` é publicada no repositório GitHub.
+
+---
+
 # Couple App v1.0.1 — Atualização & Correções 💑📱
 
 ### ✨ O que há de novo / What's New

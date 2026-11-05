@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/calendar_event_model.dart';
@@ -57,6 +58,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final effectiveCoupleId = widget.coupleId ??
         widget.initialCouple?.id ??
         'default_couple_id';
@@ -71,7 +73,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Our Calendar & Moments'),
+        title: Text(strings.calendarTitle),
         centerTitle: true,
         actions: [
           IconButton(
@@ -82,8 +84,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               color: AppTheme.primaryRose,
             ),
             tooltip: _viewMode == CalendarViewMode.upcoming
-                ? 'Switch to Month Grid'
-                : 'Switch to Upcoming List',
+                ? (strings.isPortuguese ? 'Alternar para grade mensal' : 'Switch to Month Grid')
+                : (strings.isPortuguese ? 'Alternar para lista de próximos' : 'Switch to Upcoming List'),
             onPressed: () {
               setState(() {
                 _viewMode = _viewMode == CalendarViewMode.upcoming
@@ -94,7 +96,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined),
-            tooltip: 'Schedule Daily Question Reminder',
+            tooltip: strings.isPortuguese ? 'Configurar lembrete da Pergunta do Dia' : 'Schedule Daily Question Reminder',
             onPressed: () => _promptDailyReminderConfig(context),
           ),
         ],
@@ -103,9 +105,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         backgroundColor: AppTheme.primaryRose,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add Moment',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        label: Text(
+          strings.addMoment,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         onPressed: () => _showEventEditor(
           context: context,
@@ -126,7 +128,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     size: 48, color: AppTheme.errorRed),
                 const SizedBox(height: 12),
                 Text(
-                  'Could not load shared events: $err',
+                  strings.isPortuguese
+                      ? 'Não foi possível carregar os eventos: $err'
+                      : 'Could not load shared events: $err',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 14),
                 ),
@@ -135,7 +139,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   onPressed: () => ref.refresh(
                     calendarEventsStreamProvider(effectiveCoupleId),
                   ),
-                  child: const Text('Try Again'),
+                  child: Text(strings.retry),
                 ),
               ],
             ),
@@ -208,6 +212,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return null;
   }
 
+  String _categoryLabel(String cat, AppStrings strings) {
+    if (!strings.isPortuguese) return cat;
+    switch (cat) {
+      case 'All':
+        return 'Todas';
+      case CalendarEventModel.categoryAnniversary:
+        return 'Aniversários';
+      case CalendarEventModel.categoryDateNight:
+        return 'Encontros';
+      case CalendarEventModel.categoryBirthday:
+        return 'Aniversário';
+      case CalendarEventModel.categoryTravel:
+        return 'Viagens';
+      default:
+        return cat;
+    }
+  }
+
   /// Builds the prominent romantic anniversary countdown banner.
   Widget _buildAnniversaryBanner(
     BuildContext context, {
@@ -215,6 +237,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required CoupleModel? couple,
     required String coupleId,
   }) {
+    final strings = AppStrings.of(context);
     final now = DateTime.now();
     final daysUntil = anniversaryEvent?.daysUntilNext(from: now) ?? 0;
     final annivDate = anniversaryEvent?.date ?? couple?.anniversaryDate;
@@ -291,9 +314,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'ANNIVERSARY COUNTDOWN',
-                          style: TextStyle(
+                        Text(
+                          strings.anniversaryCountdown,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
                             letterSpacing: 1.2,
@@ -311,7 +334,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          DateFormat('MMM d').format(annivDate),
+                          DateFormat(strings.isPortuguese ? 'd \'de\' MMM' : 'MMM d', strings.isPortuguese ? 'pt_BR' : 'en_US').format(annivDate),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -323,11 +346,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (isToday) ...[
-                  const Row(
+                  Row(
                     children: [
                       Text(
-                        '🎉 Happy Anniversary! ❤️',
-                        style: TextStyle(
+                        strings.happyAnniversaryToday,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -336,9 +359,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Today is your special day. Cherish every second together!',
-                    style: TextStyle(
+                  Text(
+                    strings.happyAnniversaryDesc,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
                     ),
@@ -360,7 +383,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        daysUntil == 1 ? 'day until' : 'days until',
+                        daysUntil == 1
+                            ? (strings.isPortuguese ? 'dia para o' : 'day until')
+                            : (strings.isPortuguese ? 'dias para o' : 'days until'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -368,9 +393,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'our anniversary ✨',
-                        style: TextStyle(
+                      Text(
+                        strings.isPortuguese ? 'nosso aniversário ✨' : 'our anniversary ✨',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -382,8 +407,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   if (annivDate != null)
                     Text(
                       daysTogether > 0
-                          ? '$daysTogether days of shared love · Year ${yearsTogether + 1} milestone ahead'
-                          : 'Our love story continues to unfold 💕',
+                          ? strings.daysTogetherMilestone(daysTogether, yearsTogether + 1)
+                          : (strings.isPortuguese ? 'Nossa história de amor continua sendo escrita 💕' : 'Our love story continues to unfold 💕'),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 13,
@@ -401,6 +426,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   /// Builds horizontally scrollable category filter pills.
   Widget _buildCategoryPills(List<CalendarEventModel> events) {
+    final strings = AppStrings.of(context);
     final categories = ['All', ...CalendarEventModel.categories];
 
     return Padding(
@@ -413,13 +439,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             final count = cat == 'All'
                 ? events.length
                 : events.where((e) => e.category == cat).length;
+            final label = _categoryLabel(cat, strings);
 
             return Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: FilterChip(
                 selected: isSelected,
                 label: Text(
-                  count > 0 ? '$cat ($count)' : cat,
+                  count > 0 ? '$label ($count)' : label,
                   style: TextStyle(
                     color: isSelected ? Colors.white : context.textPrimary,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -427,9 +454,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                 ),
                 selectedColor: AppTheme.primaryRose,
-                backgroundColor: Theme.of(context).colorScheme.surface,
+                backgroundColor: context.surfaceVariant,
                 side: BorderSide(
-                  color: isSelected ? AppTheme.primaryRose : AppTheme.outlineLight,
+                  color: isSelected ? AppTheme.primaryRose : context.outlineColor,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -482,6 +509,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required List<CalendarEventModel> events,
     required String coupleId,
   }) {
+    final strings = AppStrings.of(context);
     final daysInMonth =
         DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
     final firstWeekday =
@@ -521,7 +549,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   },
                 ),
                 Text(
-                  DateFormat('MMMM yyyy').format(_focusedMonth),
+                  DateFormat(
+                    strings.isPortuguese ? 'MMMM \'de\' yyyy' : 'MMMM yyyy',
+                    strings.isPortuguese ? 'pt_BR' : 'en_US',
+                  ).format(_focusedMonth),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -546,17 +577,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             const SizedBox(height: 8),
 
             // Weekday symbols
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _WeekdayLabel('S'),
-                _WeekdayLabel('M'),
-                _WeekdayLabel('T'),
-                _WeekdayLabel('W'),
-                _WeekdayLabel('T'),
-                _WeekdayLabel('F'),
-                _WeekdayLabel('S'),
-              ],
+              children: (strings.isPortuguese
+                      ? const ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+                      : const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+                  .map((w) => _WeekdayLabel(w))
+                  .toList(),
             ),
             const SizedBox(height: 8),
 
@@ -662,7 +689,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     size: 20, color: AppTheme.primaryRose),
                 const SizedBox(width: 8),
                 Text(
-                  'Events for ${DateFormat('EEE, MMM d').format(_selectedDay)}',
+                  strings.isPortuguese
+                      ? 'Eventos para ${DateFormat('EEE, d \'de\' MMM', 'pt_BR').format(_selectedDay)}'
+                      : 'Events for ${DateFormat('EEE, MMM d').format(_selectedDay)}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -676,7 +705,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: Text(
-                  'No events scheduled on this day.',
+                  strings.isPortuguese
+                      ? 'Nenhum evento agendado para este dia.'
+                      : 'No events scheduled on this day.',
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodySmall?.color,
                     fontSize: 14,
@@ -703,6 +734,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required CalendarEventModel event,
     required String coupleId,
   }) {
+    final strings = AppStrings.of(context);
     final daysUntil = event.daysUntilNext();
     final isPast = event.isPast();
     final isToday = daysUntil == 0;
@@ -714,7 +746,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.outlineLight, width: 0.8),
+        side: BorderSide(color: context.outlineColor, width: 0.8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -783,7 +815,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               size: 14, color: context.textSecondary),
                           const SizedBox(width: 4),
                           Text(
-                            DateFormat('EEE, MMM d, yyyy').format(event.date),
+                            DateFormat(
+                              strings.isPortuguese ? 'EEE, d \'de\' MMM, yyyy' : 'EEE, MMM d, yyyy',
+                              strings.isPortuguese ? 'pt_BR' : 'en_US',
+                            ).format(event.date),
                             style: TextStyle(
                               fontSize: 12,
                               color: context.textSecondary,
@@ -802,12 +837,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.repeat_rounded,
+                              const Icon(Icons.repeat_rounded,
                                   size: 12, color: AppTheme.tertiaryMauve),
-                              SizedBox(width: 3),
+                              const SizedBox(width: 3),
                               Text(
-                                'Annual',
-                                style: TextStyle(
+                                strings.annualEvent,
+                                style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: AppTheme.tertiaryMauve,
@@ -824,8 +859,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 size: 14, color: AppTheme.primaryRose),
                             const SizedBox(width: 4),
                             Text(
-                              '${event.reminderDaysBefore}d before',
-                              style: TextStyle(
+                              strings.notifyDaysBefore(event.reminderDaysBefore),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.primaryRose,
                                 fontWeight: FontWeight.w500,
@@ -855,24 +890,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit_outlined, size: 18),
-                      SizedBox(width: 8),
-                      Text('Edit Event'),
+                      const Icon(Icons.edit_outlined, size: 18),
+                      const SizedBox(width: 8),
+                      Text(strings.isPortuguese ? 'Editar Evento' : 'Edit Event'),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline_rounded,
+                      const Icon(Icons.delete_outline_rounded,
                           size: 18, color: AppTheme.errorRed),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: AppTheme.errorRed)),
+                      const SizedBox(width: 8),
+                      Text(strings.delete, style: const TextStyle(color: AppTheme.errorRed)),
                     ],
                   ),
                 ),
@@ -886,6 +921,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   /// Builds a colored pill indicating the countdown status.
   Widget _buildCountdownPill(int daysUntil, bool isPast, bool isToday) {
+    final strings = AppStrings.of(context);
     if (isToday) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -893,9 +929,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           color: AppTheme.primaryRose,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Text(
-          'Today! 🎉',
-          style: TextStyle(
+        child: Text(
+          strings.todayTag,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 11,
             fontWeight: FontWeight.bold,
@@ -912,7 +948,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
-          'Past',
+          strings.isPortuguese ? 'Passado' : 'Past',
           style: TextStyle(
             color: context.textSecondary,
             fontSize: 11,
@@ -929,9 +965,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           color: AppTheme.goldAccent,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Text(
-          'Tomorrow ⏳',
-          style: TextStyle(
+        child: Text(
+          strings.isPortuguese ? 'Amanhã ⏳' : 'Tomorrow ⏳',
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 11,
             fontWeight: FontWeight.bold,
@@ -947,7 +983,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        'In $daysUntil days',
+        strings.inDays(daysUntil),
         style: const TextStyle(
           color: AppTheme.primaryRoseDark,
           fontSize: 11,
@@ -959,6 +995,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   /// Builds an inviting empty state when no calendar events exist.
   Widget _buildEmptyState(BuildContext context, {required String coupleId}) {
+    final strings = AppStrings.of(context);
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
@@ -966,11 +1003,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: AppTheme.surfaceVariantLight,
+            decoration: BoxDecoration(
+              color: context.surfaceVariant,
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.favorite_border_rounded,
               size: 54,
               color: AppTheme.primaryRose,
@@ -978,7 +1015,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'No Upcoming Moments Yet',
+            strings.isPortuguese ? 'Nenhum Momento Agendado' : 'No Upcoming Moments Yet',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -987,7 +1024,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Plan your next romantic date night, track anniversaries, or schedule a weekend getaway together.',
+            strings.isPortuguese
+                ? 'Planejem seu próximo encontro romântico, acompanhem aniversários ou agendem uma viagem especial a dois.'
+                : 'Plan your next romantic date night, track anniversaries, or schedule a weekend getaway together.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -1001,7 +1040,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               minimumSize: const Size(200, 48),
             ),
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Schedule Date Night'),
+            label: Text(strings.isPortuguese ? 'Agendar Encontro' : 'Schedule Date Night'),
             onPressed: () => _showEventEditor(
               context: context,
               coupleId: coupleId,
@@ -1028,9 +1067,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         existingEvent?.category ?? CalendarEventModel.categoryDateNight;
     int reminderDays = existingEvent?.reminderDaysBefore ?? 1;
 
+    final strings = AppStrings.of(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1054,8 +1095,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       children: [
                         Text(
                           existingEvent == null
-                              ? 'Schedule a Couple Moment'
-                              : 'Edit Moment',
+                              ? (strings.isPortuguese ? 'Agendar Momento a Dois' : 'Schedule a Couple Moment')
+                              : (strings.isPortuguese ? 'Editar Momento' : 'Edit Moment'),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -1072,10 +1113,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     // Title
                     TextField(
                       controller: titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Event Title',
-                        hintText: 'e.g. Candlelight Dinner, Coast Trip',
-                        prefixIcon: Icon(Icons.title_rounded),
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Título do Evento' : 'Event Title',
+                        hintText: strings.isPortuguese ? 'ex: Jantar à luz de velas, Viagem à praia' : 'e.g. Candlelight Dinner, Coast Trip',
+                        prefixIcon: const Icon(Icons.title_rounded),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1084,10 +1125,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     TextField(
                       controller: descController,
                       maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes & Description (Optional)',
-                        hintText: 'Restaurant address, reservation details...',
-                        prefixIcon: Icon(Icons.notes_rounded),
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Notas & Descrição (Opcional)' : 'Notes & Description (Optional)',
+                        hintText: strings.isPortuguese ? 'Endereço do restaurante, detalhes da reserva...' : 'Restaurant address, reservation details...',
+                        prefixIcon: const Icon(Icons.notes_rounded),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1096,13 +1137,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ListTile(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
-                        side: const BorderSide(color: AppTheme.outlineLight),
+                        side: BorderSide(color: context.outlineColor),
                       ),
                       leading: const Icon(Icons.calendar_today_rounded,
                           color: AppTheme.primaryRose),
-                      title: const Text('Event Date'),
+                      title: Text(strings.isPortuguese ? 'Data do Evento' : 'Event Date'),
                       subtitle: Text(
-                        DateFormat('EEEE, MMMM d, yyyy').format(selectedDate),
+                        DateFormat(
+                          strings.isPortuguese ? 'EEEE, d \'de\' MMMM \'de\' yyyy' : 'EEEE, MMMM d, yyyy',
+                          strings.isPortuguese ? 'pt_BR' : 'en_US',
+                        ).format(selectedDate),
                         style: const TextStyle(
                           color: AppTheme.primaryRose,
                           fontWeight: FontWeight.w600,
@@ -1126,9 +1170,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     const SizedBox(height: 16),
 
                     // Category Selector
-                    const Text(
-                      'Category',
-                      style: TextStyle(
+                    Text(
+                      strings.isPortuguese ? 'Categoria' : 'Category',
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1139,7 +1183,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       children: CalendarEventModel.categories.map((cat) {
                         final isSelected = selectedCategory == cat;
                         return ChoiceChip(
-                          label: Text(cat),
+                          label: Text(_categoryLabel(cat, strings)),
                           selected: isSelected,
                           selectedColor: AppTheme.primaryRose,
                           labelStyle: TextStyle(
@@ -1169,10 +1213,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       contentPadding: EdgeInsets.zero,
                       secondary: const Icon(Icons.repeat_rounded,
                           color: AppTheme.tertiaryMauve),
-                      title: const Text('Repeats Annually'),
-                      subtitle: const Text(
-                        'Automatically counts down every year (Anniversary, Birthday)',
-                        style: TextStyle(fontSize: 12),
+                      title: Text(strings.isPortuguese ? 'Repete Anualmente' : 'Repeats Annually'),
+                      subtitle: Text(
+                        strings.isPortuguese
+                            ? 'Faz contagem regressiva todo ano (Aniversário de Namoro, Aniversário)'
+                            : 'Automatically counts down every year (Anniversary, Birthday)',
+                        style: const TextStyle(fontSize: 12),
                       ),
                       value: isAnnual,
                       activeColor: AppTheme.primaryRose,
@@ -1187,30 +1233,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     // Reminder Dropdown
                     DropdownButtonFormField<int>(
                       value: reminderDays,
-                      decoration: const InputDecoration(
-                        labelText: 'Notification Reminder',
-                        prefixIcon: Icon(Icons.alarm_rounded),
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Lembrete de Notificação' : 'Notification Reminder',
+                        prefixIcon: const Icon(Icons.alarm_rounded),
                       ),
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: 0,
-                          child: Text('On the day of the event (10:00 AM)'),
+                          child: Text(strings.isPortuguese ? 'No dia do evento (10:00)' : 'On the day of the event (10:00 AM)'),
                         ),
                         DropdownMenuItem(
                           value: 1,
-                          child: Text('1 day before (10:00 AM)'),
+                          child: Text(strings.isPortuguese ? '1 dia antes (10:00)' : '1 day before (10:00 AM)'),
                         ),
                         DropdownMenuItem(
                           value: 3,
-                          child: Text('3 days before (10:00 AM)'),
+                          child: Text(strings.isPortuguese ? '3 dias antes (10:00)' : '3 days before (10:00 AM)'),
                         ),
                         DropdownMenuItem(
                           value: 7,
-                          child: Text('1 week before (10:00 AM)'),
+                          child: Text(strings.isPortuguese ? '1 semana antes (10:00)' : '1 week before (10:00 AM)'),
                         ),
                         DropdownMenuItem(
                           value: 14,
-                          child: Text('2 weeks before (10:00 AM)'),
+                          child: Text(strings.isPortuguese ? '2 semanas antes (10:00)' : '2 weeks before (10:00 AM)'),
                         ),
                       ],
                       onChanged: (val) {
@@ -1226,14 +1272,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     // Save / Submit Button
                     ElevatedButton(
                       child: Text(
-                        existingEvent == null ? 'Save Moment' : 'Update Moment',
+                        existingEvent == null
+                            ? (strings.isPortuguese ? 'Salvar Momento' : 'Save Moment')
+                            : (strings.isPortuguese ? 'Atualizar Momento' : 'Update Moment'),
                       ),
                       onPressed: () async {
                         final title = titleController.text.trim();
                         if (title.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter an event title'),
+                            SnackBar(
+                              content: Text(strings.isPortuguese ? 'Por favor, insira o título do evento' : 'Please enter an event title'),
                               backgroundColor: AppTheme.errorRed,
                             ),
                           );
@@ -1263,7 +1311,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Saved "${event.title}"!'),
+                              content: Text(strings.isPortuguese ? '"${event.title}" salvo com sucesso!' : 'Saved "${event.title}"!'),
                               backgroundColor: AppTheme.successGreen,
                             ),
                           );
@@ -1282,27 +1330,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   /// Prompts dialog to test / configure 20:00 Daily Question recurring reminder.
   void _promptDailyReminderConfig(BuildContext context) {
+    final strings = AppStrings.of(context);
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.notifications_active_rounded,
+            const Icon(Icons.notifications_active_rounded,
                 color: AppTheme.primaryRose),
-            SizedBox(width: 8),
-            Text('Daily Question Alarm'),
+            const SizedBox(width: 8),
+            Text(strings.isPortuguese ? 'Lembrete da Pergunta do Dia' : 'Daily Question Alarm'),
           ],
         ),
-        content: const Text(
-          'Daily Question notifications are scheduled for 20:00 (8:00 PM) every evening on this device:\n\n'
-          '"Time for your Daily Question! Answer together tonight ✨"\n\n'
-          'Would you like to re-schedule and verify this alarm now?',
-          style: TextStyle(fontSize: 14),
+        content: Text(
+          strings.isPortuguese
+              ? 'As notificações da Pergunta do Dia estão agendadas para as 20:00 todas as noites neste celular:\n\n"Hora da sua Pergunta do Dia! Respondam juntos hoje à noite ✨"\n\nDeseja reativar e testar esse lembrete agora?'
+              : 'Daily Question notifications are scheduled for 20:00 (8:00 PM) every evening on this device:\n\n"Time for your Daily Question! Answer together tonight ✨"\n\nWould you like to re-schedule and verify this alarm now?',
+          style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1313,14 +1362,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               if (dialogCtx.mounted) {
                 Navigator.pop(dialogCtx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Daily Question 20:00 alarm activated! ✨'),
+                  SnackBar(
+                    content: Text(strings.isPortuguese ? 'Lembrete das 20:00 ativado com sucesso! ✨' : 'Daily Question 20:00 alarm activated! ✨'),
                     backgroundColor: AppTheme.successGreen,
                   ),
                 );
               }
             },
-            child: const Text('Activate Alarm'),
+            child: Text(strings.isPortuguese ? 'Ativar Lembrete' : 'Activate Alarm'),
           ),
         ],
       ),
@@ -1333,15 +1382,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required String coupleId,
     required CalendarEventModel event,
   }) {
+    final strings = AppStrings.of(context);
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Event?'),
-        content: Text('Are you sure you want to remove "${event.title}"?'),
+        title: Text(strings.isPortuguese ? 'Excluir Evento?' : 'Delete Event?'),
+        content: Text(strings.isPortuguese ? 'Tem certeza de que deseja remover "${event.title}"?' : 'Are you sure you want to remove "${event.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
@@ -1353,12 +1403,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Removed "${event.title}"'),
+                    content: Text(strings.isPortuguese ? '"${event.title}" removido' : 'Removed "${event.title}"'),
                   ),
                 );
               }
             },
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),

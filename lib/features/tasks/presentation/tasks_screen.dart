@@ -199,6 +199,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     String? partnerUid,
     String partnerName,
   ) {
+    final strings = AppStrings.of(context);
     final tasksAsync = ref.watch(tasksStreamProvider(coupleId));
 
     return Column(
@@ -221,10 +222,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
               if (filteredTasks.isEmpty) {
                 return _buildEmptyState(
                   icon: Icons.checklist_rtl_rounded,
-                  title: 'No tasks found',
+                  title: strings.noTasksFound,
                   subtitle: _currentTaskFilter == TaskFilter.completed
-                      ? 'No completed tasks yet. Finish a task together to see it here!'
-                      : 'All caught up! Tap the button below to add your first chore or to-do.',
+                      ? strings.noCompletedTasksDesc
+                      : strings.noTasksDesc,
                 );
               }
 
@@ -316,6 +317,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     String? partnerUid,
     String partnerName,
   ) {
+    final strings = AppStrings.of(context);
     final isDone = task.isCompleted;
     final isOverdue = task.dueDate != null &&
         task.dueDate!.isBefore(DateTime.now()) &&
@@ -338,7 +340,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         ref.read(taskRepositoryProvider).deleteTask(coupleId, task.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task "${task.title}" deleted'),
+            content: Text(strings.taskDeleted(task.title)),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -349,11 +351,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
           side: BorderSide(
             color: isDone
-                ? AppTheme.outlineLight.withOpacity(0.5)
-                : AppTheme.outlineLight,
+                ? context.outlineColor.withOpacity(0.5)
+                : context.outlineColor,
           ),
         ),
-        color: isDone ? (context.isDarkMode ? AppTheme.surfaceVariantDark : Colors.grey.shade50) : (context.isDarkMode ? AppTheme.surfaceDark : Colors.white),
+        color: isDone
+            ? (context.isDarkMode ? AppTheme.surfaceVariantDark : Colors.grey.shade50)
+            : context.cardColor,
         elevation: isDone ? 0 : 0.5,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -422,17 +426,17 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                         // Category Chip
                         _buildSmallChip(
                           icon: _categoryIcon(task.category),
-                          label: task.category,
-                          color: AppTheme.surfaceVariantLight,
+                          label: _translateCategory(task.category, strings),
+                          color: context.surfaceVariant,
                           textColor: AppTheme.primaryRoseDark,
                         ),
 
                         // Assignee Badge
-                        _buildAssigneeBadge(task.assignedTo, myUid, partnerUid, partnerName),
+                        _buildAssigneeBadge(task.assignedTo, myUid, partnerUid, partnerName, strings),
 
                         // Due Date Badge
                         if (task.dueDate != null)
-                          _buildDueDateBadge(task.dueDate!, isOverdue, isDone),
+                          _buildDueDateBadge(task.dueDate!, isOverdue, isDone, strings),
                       ],
                     ),
                   ],
@@ -459,11 +463,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     String myUid,
     String? partnerUid,
     String partnerName,
+    AppStrings strings,
   ) {
     if (assignedTo == null || assignedTo.isEmpty) {
       return _buildSmallChip(
         icon: Icons.person_outline_rounded,
-        label: 'Shared',
+        label: strings.sharedBadge,
         color: context.surfaceVariant,
         textColor: context.textSecondary,
       );
@@ -472,7 +477,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     final isMe = assignedTo == myUid;
     return _buildSmallChip(
       icon: isMe ? Icons.face_rounded : Icons.favorite_rounded,
-      label: isMe ? 'You' : partnerName,
+      label: isMe ? strings.youBadge : partnerName,
       color: isMe
           ? AppTheme.pastelPeach.withOpacity(0.6)
           : AppTheme.secondaryBlush.withOpacity(0.3),
@@ -480,10 +485,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     );
   }
 
-  Widget _buildDueDateBadge(DateTime date, bool isOverdue, bool isDone) {
+  Widget _buildDueDateBadge(DateTime date, bool isOverdue, bool isDone, AppStrings strings) {
     final now = DateTime.now();
     final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-    final formatted = isToday ? 'Today' : DateFormat('MMM d').format(date);
+    final formatted = isToday
+        ? strings.todayBadge
+        : DateFormat(strings.isPortuguese ? 'd MMM' : 'MMM d', strings.isPortuguese ? 'pt_BR' : 'en_US').format(date);
 
     Color bg;
     Color fg;
@@ -504,10 +511,34 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
 
     return _buildSmallChip(
       icon: isOverdue && !isDone ? Icons.warning_amber_rounded : Icons.schedule_rounded,
-      label: isOverdue && !isDone ? 'Overdue ($formatted)' : formatted,
+      label: isOverdue && !isDone ? strings.overdueBadge(formatted) : formatted,
       color: bg,
       textColor: fg,
     );
+  }
+
+  String _translateCategory(String category, AppStrings strings) {
+    if (!strings.isPortuguese) return category;
+    switch (category.toLowerCase()) {
+      case 'home':
+        return 'Casa';
+      case 'shopping':
+        return 'Compras';
+      case 'errands':
+        return 'Tarefas';
+      case 'romance':
+        return 'Romance';
+      case 'travel':
+        return 'Viagem';
+      case 'health':
+        return 'Saúde';
+      case 'finance':
+        return 'Finanças';
+      case 'general':
+        return 'Geral';
+      default:
+        return category;
+    }
   }
 
   Widget _buildSmallChip({
@@ -545,6 +576,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
   // ==========================================
 
   Widget _buildListsTab(String coupleId, String myUid, String partnerName) {
+    final strings = AppStrings.of(context);
     final listsAsync = ref.watch(listsStreamProvider(coupleId));
 
     return listsAsync.when(
@@ -570,18 +602,18 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No checklists yet',
+                  strings.noChecklistsYet,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Start with our curated templates or make your own!',
+                  strings.noChecklistsDesc,
                   style: TextStyle(color: context.textSecondary),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Add Pre-made Templates'),
+                  label: Text(strings.addTemplatesBtn),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryRose,
                     foregroundColor: Colors.white,
@@ -616,6 +648,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     String myUid,
     String partnerName,
   ) {
+    final strings = AppStrings.of(context);
     final inlineController = _getInlineController(list.id);
     final progress = list.progressPercentage;
 
@@ -623,7 +656,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.outlineLight),
+        side: BorderSide(color: context.outlineColor),
       ),
       elevation: 0.5,
       child: ExpansionTile(
@@ -697,28 +730,28 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 20),
-                  SizedBox(width: 8),
-                  Text('Delete List', style: TextStyle(color: AppTheme.errorRed)),
+                  const Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 20),
+                  const SizedBox(width: 8),
+                  Text(strings.deleteList, style: const TextStyle(color: AppTheme.errorRed)),
                 ],
               ),
             ),
           ],
         ),
         children: [
-          const Divider(height: 1, thickness: 0.6, color: AppTheme.outlineLight),
+          Divider(height: 1, thickness: 0.6, color: context.outlineColor),
 
           // Items List
           if (list.items.isEmpty)
             Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: Text(
-                  'No items yet. Type below to add!',
+                  strings.noItemsYet,
                   style: TextStyle(
                     color: context.textSecondary,
                     fontSize: 13,
@@ -804,7 +837,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                   child: TextField(
                     controller: inlineController,
                     decoration: InputDecoration(
-                      hintText: 'Add an item...',
+                      hintText: strings.addAnItem,
                       hintStyle: TextStyle(
                         fontSize: 13,
                         color: context.textSecondary.withOpacity(0.7),
@@ -814,11 +847,11 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppTheme.outlineLight),
+                        borderSide: BorderSide(color: context.outlineColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppTheme.outlineLight),
+                        borderSide: BorderSide(color: context.outlineColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -886,6 +919,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     String? partnerUid,
     String partnerName,
   ) {
+    final strings = AppStrings.of(context);
     final titleController = TextEditingController();
     final descController = TextEditingController();
     String selectedCategory = 'General';
@@ -895,7 +929,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
       ),
@@ -918,7 +952,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Add Task or Chore',
+                          strings.addTaskOrChore,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -926,7 +960,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close_rounded),
+                          icon: const Icon(Icons.close_rounded),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
@@ -938,8 +972,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       controller: titleController,
                       autofocus: true,
                       decoration: InputDecoration(
-                        labelText: 'Task Title *',
-                        hintText: 'e.g., Clean the coffee machine',
+                        labelText: strings.taskTitleLabel,
+                        hintText: strings.taskTitleExample,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                         ),
@@ -952,8 +986,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       controller: descController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        labelText: 'Notes / Description (Optional)',
-                        hintText: 'Add details or context...',
+                        labelText: strings.taskNotesLabel,
+                        hintText: strings.taskNotesHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                         ),
@@ -962,9 +996,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     const SizedBox(height: 16),
 
                     // Category Selection
-                    const Text(
-                      'Category',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    Text(
+                      strings.categoryLabel,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -972,7 +1006,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       children: TaskRepository.standardCategories.map((cat) {
                         final isSel = selectedCategory == cat;
                         return ChoiceChip(
-                          label: Text(cat),
+                          label: Text(_translateCategory(cat, strings)),
                           selected: isSel,
                           onSelected: (selected) {
                             if (selected) {
@@ -981,7 +1015,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           },
                           selectedColor: AppTheme.primaryRoseLight.withOpacity(0.3),
                           side: BorderSide(
-                            color: isSel ? AppTheme.primaryRose : AppTheme.outlineLight,
+                            color: isSel ? AppTheme.primaryRose : context.outlineColor,
                           ),
                         );
                       }).toList(),
@@ -989,9 +1023,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     const SizedBox(height: 16),
 
                     // Assignee Selection
-                    const Text(
-                      'Assign To',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    Text(
+                      strings.assignToLabel,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -999,12 +1033,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       runSpacing: 4,
                       children: [
                         ChoiceChip(
-                          label: const Text('Unassigned'),
+                          label: Text(strings.unassignedLabel),
                           selected: assignedTo == null,
                           onSelected: (_) => setSheetState(() => assignedTo = null),
                         ),
                         ChoiceChip(
-                          label: const Text('Me'),
+                          label: Text(strings.meLabel),
                           selected: assignedTo == myUid,
                           onSelected: (_) => setSheetState(() => assignedTo = myUid),
                         ),
@@ -1025,8 +1059,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           icon: const Icon(Icons.calendar_today_rounded, size: 16),
                           label: Text(
                             selectedDueDate == null
-                                ? 'Set Due Date'
-                                : 'Due: ${DateFormat('MMM d, yyyy').format(selectedDueDate!)}',
+                                ? strings.setDueDate
+                                : strings.dueOn(DateFormat(strings.isPortuguese ? 'd MMM, yyyy' : 'MMM d, yyyy', strings.isPortuguese ? 'pt_BR' : 'en_US').format(selectedDueDate!)),
                           ),
                           onPressed: () async {
                             final picked = await showDatePicker(
@@ -1080,9 +1114,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           ref.read(taskRepositoryProvider).addTask(coupleId, task);
                           Navigator.pop(ctx);
                         },
-                        child: const Text(
-                          'Save Task',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        child: Text(
+                          strings.saveTask,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ),
@@ -1101,13 +1135,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
   }
 
   void _showAddListSheet(BuildContext context, String coupleId, String myUid) {
+    final strings = AppStrings.of(context);
     final titleController = TextEditingController();
     String selectedCategory = 'Shopping';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.dialogBorderRadius)),
       ),
@@ -1130,7 +1165,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Create Shared Checklist',
+                          strings.createSharedChecklist,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1149,8 +1184,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       controller: titleController,
                       autofocus: true,
                       decoration: InputDecoration(
-                        labelText: 'List Title *',
-                        hintText: 'e.g., Weekly Farmers Market',
+                        labelText: strings.listTitleLabel,
+                        hintText: strings.listTitleExample,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius),
                         ),
@@ -1158,9 +1193,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     ),
                     const SizedBox(height: 16),
 
-                    const Text(
-                      'Category',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    Text(
+                      strings.categoryLabel,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -1168,7 +1203,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       children: TaskRepository.standardCategories.map((cat) {
                         final isSel = selectedCategory == cat;
                         return ChoiceChip(
-                          label: Text(cat),
+                          label: Text(_translateCategory(cat, strings)),
                           selected: isSel,
                           onSelected: (selected) {
                             if (selected) {
@@ -1177,7 +1212,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           },
                           selectedColor: AppTheme.primaryRoseLight.withOpacity(0.3),
                           side: BorderSide(
-                            color: isSel ? AppTheme.primaryRose : AppTheme.outlineLight,
+                            color: isSel ? AppTheme.primaryRose : context.outlineColor,
                           ),
                         );
                       }).toList(),
@@ -1210,9 +1245,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           ref.read(taskRepositoryProvider).addList(coupleId, list);
                           Navigator.pop(ctx);
                         },
-                        child: const Text(
-                          'Create List',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        child: Text(
+                          strings.createListBtn,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ),
