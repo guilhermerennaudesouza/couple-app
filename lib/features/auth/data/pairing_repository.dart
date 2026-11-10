@@ -107,11 +107,51 @@ class PairingRepository {
       return couple;
     }
 
-    // Space already has 2 members
+    // Space already has 2 members: allow seamless re-join if partner name matches
     if (couple.isFull) {
-      throw const PairingException(
-        'This couple space is already full with 2 partners.',
+      final normalizedName = name.trim().toLowerCase();
+      String? matchingOldUid;
+      for (final memberUid in couple.members) {
+        final existingProfile = couple.partnerProfiles[memberUid];
+        if (existingProfile != null &&
+            existingProfile.name.trim().toLowerCase() == normalizedName) {
+          matchingOldUid = memberUid;
+          break;
+        }
+      }
+
+      if (matchingOldUid == null) {
+        throw const PairingException(
+          'This couple space is already full with 2 partners.',
+        );
+      }
+
+      final oldProfile = couple.partnerProfiles[matchingOldUid];
+      final rejoiningProfile = PartnerProfile(
+        uid: uid,
+        name: oldProfile?.name ?? name.trim(),
+        avatarUrl: avatarUrl ?? oldProfile?.avatarUrl,
+        fcmToken: fcmToken ?? oldProfile?.fcmToken,
+        joinedAt: oldProfile?.joinedAt ?? DateTime.now(),
       );
+
+      final updatedMembers = couple.members
+          .map((m) => m == matchingOldUid ? uid : m)
+          .toList();
+      final updatedProfiles =
+          Map<String, PartnerProfile>.from(couple.partnerProfiles)
+            ..remove(matchingOldUid)
+            ..[uid] = rejoiningProfile;
+
+      final updatedCouple = couple.copyWith(
+        members: updatedMembers,
+        partnerProfiles: updatedProfiles,
+      );
+
+      await doc.reference.set(updatedCouple.toMap());
+      await _storage.write(key: currentCoupleIdKey, value: couple.id);
+
+      return updatedCouple;
     }
 
     final newProfile = PartnerProfile(
