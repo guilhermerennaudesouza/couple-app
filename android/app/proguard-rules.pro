@@ -6,6 +6,7 @@
 -keep class io.flutter.view.** { *; }
 -keep class * implements io.flutter.plugin.common.PluginRegistry$PluginRegistrantCallback { *; }
 -keep class * extends io.flutter.embedding.android.FlutterActivity { *; }
+-keep class * extends io.flutter.embedding.android.FlutterFragmentActivity { *; }
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
 # Jetpack Glance and Compose App Widgets
@@ -46,3 +47,9 @@
 # OTA Update Plugin (FileProvider & InstallResultReceiver)
 -keep class sk.fourq.otaupdate.** { *; }
 -dontwarn sk.fourq.otaupdate.**
+
+# Biometric Authentication (local_auth & androidx.biometric)
+-keep class io.flutter.plugins.localauth.** { *; }
+-keep class androidx.biometric.** { *; }
+-dontwarn io.flutter.plugins.localauth.**
+-dontwarn androidx.biometric.**

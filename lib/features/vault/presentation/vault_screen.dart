@@ -120,10 +120,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       await _localAuth.isDeviceSupported();
 
       if (mounted) {
+        final hadPin = _hasStoredPin;
         setState(() {
           _hasStoredPin = storedKey != null || hasPinFlag == 'true';
           _isSettingUpPin = !_hasStoredPin;
         });
+        if (_hasStoredPin && !hadPin && _unlockedKey == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _unlockedKey == null) {
+              _unlockWithBiometrics(silentError: true);
+            }
+          });
+        }
       }
     } catch (e) {
       debugPrint('VaultScreen._checkSecuritySetup error: $e');
@@ -268,15 +276,33 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     }
   }
 
-  Future<void> _unlockWithBiometrics() async {
+  Future<void> _unlockWithBiometrics({bool silentError = false}) async {
     final strings = AppStrings.of(context);
     final coupleId = _getActiveCoupleId();
     try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck && !isSupported) {
+        if (!silentError && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                strings.isPortuguese
+                    ? 'Biometria não disponível neste aparelho.'
+                    : 'Biometrics not available on this device.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       final authenticated = await _localAuth.authenticate(
         localizedReason: strings.biometricScanReason,
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
+          useErrorDialogs: true,
         ),
       );
 
@@ -308,7 +334,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       }
     } catch (e) {
       debugPrint('VaultScreen._unlockWithBiometrics error: $e');
-      if (mounted) {
+      if (!silentError && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${strings.isPortuguese ? "Biometria indisponível" : "Biometric verification unavailable"}: $e'),
@@ -560,6 +586,25 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
               const SizedBox(height: 28),
               // Numeric Keypad
               _buildPinKeypad(context),
+              if (!_isSettingUpPin && _hasStoredPin) ...[
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryRose,
+                    side: BorderSide(color: AppTheme.primaryRose.withOpacity(0.5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.fingerprint_rounded, size: 22),
+                  label: Text(
+                    strings.unlockWithBiometrics,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  onPressed: () => _unlockWithBiometrics(silentError: false),
+                ),
+              ],
             ],
           ),
         ),

@@ -1,7 +1,7 @@
 name: couple_app
 description: "A private, unmetered Flutter couples application backed by Firebase Spark tier."
 publish_to: "none"
-version: 1.0.5+6
+version: 1.0.6+7
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
