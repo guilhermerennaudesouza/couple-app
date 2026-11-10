@@ -42,3 +42,7 @@
 
 # Google Play Core / Deferred Components (unused in standalone release APK)
 -dontwarn com.google.android.play.core.**
+
+# OTA Update Plugin (FileProvider & InstallResultReceiver)
+-keep class sk.fourq.otaupdate.** { *; }
+-dontwarn sk.fourq.otaupdate.**

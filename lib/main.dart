@@ -435,6 +435,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                                 statusText =
                                     strings.updateDownloading(event.value ?? '0');
                               } else if (event.status == OtaStatus.INSTALLING) {
+                                isDownloading = false;
                                 statusText = strings.isPortuguese
                                     ? 'Iniciando instalador do sistema...'
                                     : 'Starting system installer...';
@@ -446,7 +447,10 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                                     ? 'Permissão necessária para instalar atualizações.'
                                     : 'Permission required to install updates.';
                               } else if (event.status ==
-                                  OtaStatus.INTERNAL_ERROR) {
+                                      OtaStatus.INTERNAL_ERROR ||
+                                  event.status == OtaStatus.DOWNLOAD_ERROR ||
+                                  event.status ==
+                                      OtaStatus.INSTALLATION_ERROR) {
                                 isDownloading = false;
                                 errorMessage = strings.updateError;
                               }
