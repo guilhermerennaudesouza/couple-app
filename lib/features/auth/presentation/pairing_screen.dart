@@ -165,14 +165,22 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       firstDate: DateTime(1970),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
+        final isDark = context.isDarkMode;
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryRose,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: context.textPrimary,
-            ),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppTheme.primaryRose,
+                    onPrimary: Colors.white,
+                    surface: AppTheme.surfaceDark,
+                    onSurface: context.textPrimary,
+                  )
+                : ColorScheme.light(
+                    primary: AppTheme.primaryRose,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: context.textPrimary,
+                  ),
           ),
           child: child!,
         );
@@ -192,7 +200,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Theme',
+            tooltip: AppStrings.of(context).theme,
             icon: Icon(
               context.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
               color: AppTheme.primaryRose,
@@ -248,7 +256,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       return _buildWaitingForPartnerView(_createdCouple!, strings);
     }
 
-    final formattedDate = DateFormat.yMMMMd().format(_selectedAnniversary);
+    final formattedDate = DateFormat.yMMMMd(
+      strings.isPortuguese ? 'pt_BR' : 'en_US',
+    ).format(_selectedAnniversary);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
@@ -593,7 +603,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => Center(
+        child: Text(
+          strings.isPortuguese ? 'Erro: $err' : 'Error: $err',
+        ),
+      ),
     );
   }
 

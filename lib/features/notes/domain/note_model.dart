@@ -13,6 +13,9 @@ class NoteModel {
   final String authorUid;
   final String authorName;
   final DateTime updatedAt;
+  final bool isScratchCard;
+  final bool isScratched;
+  final String? drawingDataJson;
 
   /// Curated romantic pastel color palette for sticky notes.
   static const List<String> presetColors = [
@@ -34,6 +37,16 @@ class NoteModel {
     '#FFE0B2': 'Peach Glow',
   };
 
+  /// Portuguese names for preset pastel colors.
+  static const Map<String, String> colorNamesPt = {
+    '#FFE082': 'Baunilha Suave',
+    '#FFCDD2': 'Rosa Blush',
+    '#C8E6C9': 'Verde Menta',
+    '#E1BEE7': 'Lavanda Romântica',
+    '#BBDEFB': 'Azul Céu',
+    '#FFE0B2': 'Pêssego Quente',
+  };
+
   NoteModel({
     required this.id,
     required this.title,
@@ -43,7 +56,13 @@ class NoteModel {
     required this.authorUid,
     required this.authorName,
     DateTime? updatedAt,
+    this.isScratchCard = false,
+    this.isScratched = false,
+    this.drawingDataJson,
   }) : updatedAt = updatedAt ?? DateTime.now();
+
+  /// Whether this love note contains a freehand doodle drawing.
+  bool get hasDrawing => drawingDataJson != null && drawingDataJson!.trim().isNotEmpty;
 
   /// Converts the note into a Firestore-compatible map.
   Map<String, dynamic> toMap() {
@@ -56,6 +75,9 @@ class NoteModel {
       'authorUid': authorUid,
       'authorName': authorName,
       'updatedAt': updatedAt.toIso8601String(),
+      'isScratchCard': isScratchCard,
+      'isScratched': isScratched,
+      if (drawingDataJson != null) 'drawingDataJson': drawingDataJson,
     };
   }
 
@@ -70,6 +92,9 @@ class NoteModel {
       authorUid: map['authorUid'] as String? ?? '',
       authorName: map['authorName'] as String? ?? '',
       updatedAt: _parseDateTime(map['updatedAt']),
+      isScratchCard: map['isScratchCard'] as bool? ?? false,
+      isScratched: map['isScratched'] as bool? ?? false,
+      drawingDataJson: map['drawingDataJson'] as String?,
     );
   }
 
@@ -83,6 +108,9 @@ class NoteModel {
     String? authorUid,
     String? authorName,
     DateTime? updatedAt,
+    bool? isScratchCard,
+    bool? isScratched,
+    String? drawingDataJson,
   }) {
     return NoteModel(
       id: id ?? this.id,
@@ -93,6 +121,9 @@ class NoteModel {
       authorUid: authorUid ?? this.authorUid,
       authorName: authorName ?? this.authorName,
       updatedAt: updatedAt ?? this.updatedAt,
+      isScratchCard: isScratchCard ?? this.isScratchCard,
+      isScratched: isScratched ?? this.isScratched,
+      drawingDataJson: drawingDataJson ?? this.drawingDataJson,
     );
   }
 

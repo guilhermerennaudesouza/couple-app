@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Krivo</string>
-    <string name="note_glance_widget_name">Couple Sticky Note</string>
-    <string name="note_glance_widget_description">Live sticky love note shared between you and your partner</string>
-    <string name="couple_glance_widget_name">Days Together</string>
-    <string name="couple_glance_widget_description">Milestone countdown and love counter tracking your days together</string>
-    <string name="daily_prompt_glance_widget_name">Daily Question</string>
-    <string name="daily_prompt_glance_widget_description">Today\'s couple question and mutual answer status</string>
-    <string name="tasks_glance_widget_name">Couple Tasks</string>
-    <string name="tasks_glance_widget_description">Shared task checklist and pending chores</string>
+    <string name="note_glance_widget_name">Recadinho do Casal</string>
+    <string name="note_glance_widget_description">Recado de amor adesivo compartilhado em tempo real com seu amor</string>
+    <string name="couple_glance_widget_name">Dias Juntos</string>
+    <string name="couple_glance_widget_description">Contador de dias juntos e marcos do relacionamento</string>
+    <string name="daily_prompt_glance_widget_name">Pergunta do Dia</string>
+    <string name="daily_prompt_glance_widget_description">Pergunta diária do casal e status de resposta mútua</string>
+    <string name="tasks_glance_widget_name">Tarefas do Casal</string>
+    <string name="tasks_glance_widget_description">Lista compartilhada de tarefas e afazeres do casal</string>
 </resources>

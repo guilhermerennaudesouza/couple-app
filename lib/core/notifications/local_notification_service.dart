@@ -12,9 +12,9 @@ import '../../features/calendar/domain/calendar_event_model.dart';
 /// - Calendar anniversary countdowns and event alarms scheduled N days prior at 10:00 AM.
 class LocalNotificationService {
   static const String channelId = 'krivo_couples_channel';
-  static const String channelName = 'Couple Reminders & Prompts';
+  static const String channelName = 'Lembretes e Perguntas do Casal';
   static const String channelDescription =
-      'Daily questions, anniversaries, and date night reminders';
+      'Perguntas diárias, aniversários e lembretes de encontros';
 
   static const int dailyPromptNotificationId = 1001;
   static const int anniversaryPromptNotificationId = 2001;
@@ -141,8 +141,8 @@ class LocalNotificationService {
       final scheduledTime = _nextInstanceOfTime(hour, minute);
       await _notificationsPlugin.zonedSchedule(
         dailyPromptNotificationId,
-        'Daily Question ✨',
-        'Time for your Daily Question! Answer together tonight ✨',
+        'Pergunta do Dia ✨',
+        'Hora da Pergunta do Dia! Respondam juntos hoje à noite ✨',
         scheduledTime,
         _notificationDetails(),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -156,8 +156,8 @@ class LocalNotificationService {
       try {
         await _notificationsPlugin.periodicallyShow(
           dailyPromptNotificationId,
-          'Daily Question ✨',
-          'Time for your Daily Question! Answer together tonight ✨',
+          'Pergunta do Dia ✨',
+          'Hora da Pergunta do Dia! Respondam juntos hoje à noite ✨',
           RepeatInterval.daily,
           _notificationDetails(),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -172,16 +172,16 @@ class LocalNotificationService {
     try {
       final reminderId = (event.id.hashCode.abs() % 100000) + 3000;
       final title = event.category == CalendarEventModel.categoryAnniversary
-          ? 'Anniversary Reminder ❤️'
-          : 'Upcoming: ${event.title}';
+          ? 'Lembrete de Aniversário ❤️'
+          : 'Em breve: ${event.title}';
 
       final String body;
       if (event.reminderDaysBefore == 0) {
-        body = 'Today is ${event.title}! Enjoy your special moments together 💕';
+        body = 'Hoje é ${event.title}! Aproveitem momentos especiais juntos 💕';
       } else if (event.reminderDaysBefore == 1) {
-        body = 'Tomorrow is ${event.title}! Are you ready?';
+        body = 'Amanhã é ${event.title}! Já está tudo pronto? 💕';
       } else {
-        body = '${event.title} is in ${event.reminderDaysBefore} days! 💕';
+        body = 'Faltam ${event.reminderDaysBefore} dias para ${event.title}! 💕';
       }
 
       final nextOcc = event.nextOccurrenceDate();

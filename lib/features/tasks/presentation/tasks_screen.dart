@@ -212,7 +212,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
             ),
             error: (err, _) => Center(
               child: Text(
-                'Could not load tasks: $err',
+                strings.isPortuguese
+                    ? 'Não foi possível carregar tarefas: $err'
+                    : 'Could not load tasks: $err',
                 style: const TextStyle(color: AppTheme.errorRed),
               ),
             ),
@@ -285,7 +287,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       side: BorderSide(
-        color: isSelected ? AppTheme.primaryRose : AppTheme.outlineLight,
+        color: isSelected ? AppTheme.primaryRose : context.outlineColor,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
@@ -585,8 +587,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
       ),
       error: (err, _) => Center(
         child: Text(
-          'Could not load checklists: $err',
-          style: TextStyle(color: AppTheme.errorRed),
+          strings.isPortuguese
+              ? 'Não foi possível carregar listas: $err'
+              : 'Could not load checklists: $err',
+          style: const TextStyle(color: AppTheme.errorRed),
         ),
       ),
       data: (lists) {
@@ -679,7 +683,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
           ),
         ),
         title: Text(
-          list.title,
+          TaskRepository.translateChecklistTitle(
+            list.title,
+            isPt: strings.isPortuguese,
+          ),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -697,7 +704,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: context.surfaceVariant,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         list.isFullyCompleted
                             ? AppTheme.successGreen
@@ -802,7 +809,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                       },
                     ),
                     title: Text(
-                      item.text,
+                      TaskRepository.translateChecklistItemText(
+                        item.text,
+                        isPt: strings.isPortuguese,
+                      ),
                       style: TextStyle(
                         fontSize: 14,
                         color: item.isDone

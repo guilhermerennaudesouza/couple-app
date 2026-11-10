@@ -102,9 +102,11 @@ class TasksGlanceWidgetContent : GlanceAppWidget() {
             0
         }
 
-        val isPt = java.util.Locale.getDefault().language == "pt" ||
-            prefs.getString("flutter.language", "") == "pt" ||
-            prefs.getString("language", "") == "pt"
+        val savedLocale = prefs.getString("flutter.app_locale", null)
+            ?: prefs.getString("app_locale", null)
+            ?: prefs.getString("flutter.language", null)
+            ?: prefs.getString("language", null)
+        val isPt = savedLocale != "en"
 
         val hasTasks = task1Title.isNotBlank() || task2Title.isNotBlank() || task3Title.isNotBlank()
 

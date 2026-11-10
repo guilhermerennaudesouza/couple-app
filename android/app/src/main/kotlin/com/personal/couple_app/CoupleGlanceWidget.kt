@@ -100,9 +100,11 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("partner_name", null)
             ?: ""
 
-        val isPt = java.util.Locale.getDefault().language == "pt" ||
-            prefs.getString("flutter.language", "") == "pt" ||
-            prefs.getString("language", "") == "pt"
+        val savedLocale = prefs.getString("flutter.app_locale", null)
+            ?: prefs.getString("app_locale", null)
+            ?: prefs.getString("flutter.language", null)
+            ?: prefs.getString("language", null)
+        val isPt = savedLocale != "en"
 
         val formattedDays = prefs.getString("flutter.formatted_days", null)
             ?: prefs.getString("formatted_days", null)

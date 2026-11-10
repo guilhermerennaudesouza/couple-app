@@ -231,6 +231,7 @@ class _DecideTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
     final sessionsAsync = ref.watch(decideSessionsStreamProvider(coupleId));
 
     return sessionsAsync.when(
@@ -240,7 +241,11 @@ class _DecideTab extends ConsumerWidget {
       error: (err, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text('Error loading ballots: $err'),
+          child: Text(
+            strings.isPortuguese
+                ? 'Erro ao carregar votações: $err'
+                : 'Error loading ballots: $err',
+          ),
         ),
       ),
       data: (sessions) {
@@ -1113,7 +1118,11 @@ class _DateIdeasTab extends ConsumerWidget {
       error: (err, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text('Error loading date ideas: $err'),
+          child: Text(
+            AppStrings.of(context).isPortuguese
+                ? 'Erro ao carregar ideias de encontro: $err'
+                : 'Error loading date ideas: $err',
+          ),
         ),
       ),
       data: (ideas) {
@@ -1318,7 +1327,10 @@ class _WeeklyPickBanner extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            idea.title,
+            DateIdeasRepository.translateIdeaTitle(
+              idea.title,
+              languageCode: strings.isPortuguese ? 'pt' : 'en',
+            ),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -1329,7 +1341,11 @@ class _WeeklyPickBanner extends ConsumerWidget {
           if (idea.description.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              idea.description,
+              DateIdeasRepository.translateIdeaDescription(
+                idea.title,
+                idea.description,
+                languageCode: strings.isPortuguese ? 'pt' : 'en',
+              ),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.92),
                 fontSize: 13,
@@ -1492,7 +1508,10 @@ class _DateIdeaCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      idea.title,
+                      DateIdeasRepository.translateIdeaTitle(
+                        idea.title,
+                        languageCode: strings.isPortuguese ? 'pt' : 'en',
+                      ),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1507,7 +1526,11 @@ class _DateIdeaCard extends ConsumerWidget {
                     if (idea.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        idea.description,
+                        DateIdeasRepository.translateIdeaDescription(
+                          idea.title,
+                          idea.description,
+                          languageCode: strings.isPortuguese ? 'pt' : 'en',
+                        ),
                         style: TextStyle(
                           fontSize: 13,
                           color: context.textSecondary,

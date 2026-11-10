@@ -72,6 +72,42 @@ class TaskRepository {
         ),
       ];
 
+  static const Map<String, String> _checklistTitlePtMap = {
+    'Weekly Groceries': 'Compras da Semana',
+    'Weekend Getaway Packing': 'Mala de Viagem de Fim de Semana',
+    'Date Night Prep': 'Preparativos para o Encontro',
+  };
+
+  static const Map<String, String> _checklistItemPtMap = {
+    'Almond milk': 'Leite / bebida vegetal',
+    'Fresh avocados': 'Abacates frescos',
+    'Sourdough bread': 'Pão artesanal',
+    'Organic eggs': 'Ovos caipiras / orgânicos',
+    'Greek yogurt': 'Iogurte natural',
+    'Coffee beans': 'Café em grãos / moído',
+    'Dark chocolate': 'Chocolate meio amargo',
+    'Passports & IDs': 'Documentos & RG',
+    'Phone chargers & power bank': 'Carregadores & bateria portátil',
+    'Comfortable walking shoes': 'Calçados confortáveis para caminhar',
+    'Toiletries & sunscreen': 'Itens de higiene & protetor solar',
+    'Warm jackets & layers': 'Casacos & roupas confortáveis',
+    'Camera / tripod': 'Câmera / tripé para fotos',
+    'Pick date outfits': 'Escolher o look do encontro',
+    'Make dinner reservation': 'Fazer reserva para o jantar',
+    'Curate cozy music playlist': 'Preparar playlist romântica',
+    'Buy flowers or favorite sweets': 'Comprar flores ou doces favoritos',
+  };
+
+  static String translateChecklistTitle(String title, {required bool isPt}) {
+    if (!isPt) return title;
+    return _checklistTitlePtMap[title] ?? title;
+  }
+
+  static String translateChecklistItemText(String text, {required bool isPt}) {
+    if (!isPt) return text;
+    return _checklistItemPtMap[text] ?? text;
+  }
+
   // ==========================================
   // Tasks & Chores Operations
   // ==========================================

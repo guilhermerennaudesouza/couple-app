@@ -666,7 +666,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Text(
-            'Error loading vault: $err',
+            strings.isPortuguese
+                ? 'Erro ao carregar o cofre: $err'
+                : 'Error loading vault: $err',
             style: const TextStyle(color: AppTheme.errorRed),
           ),
         ),

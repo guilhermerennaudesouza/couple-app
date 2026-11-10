@@ -12,6 +12,7 @@ class AppTheme {
   static const Color primaryRoseDark = Color(0xFFB3233F);
 
   static const Color secondaryBlush = Color(0xFFFFB4A2);
+  static const Color secondaryPlum = Color(0xFF9C27B0);
   static const Color tertiaryMauve = Color(0xFFB5838D);
   static const Color pastelPeach = Color(0xFFFFE5D9);
   static const Color pastelLavender = Color(0xFFE8D7F1);
@@ -351,6 +352,9 @@ extension ThemeContextExt on BuildContext {
 
   /// Secondary high-contrast text color adapted to light/dark mode.
   Color get textSecondary => isDarkMode ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
+
+  /// Muted secondary text color adapted to light/dark mode.
+  Color get textMuted => isDarkMode ? AppTheme.textSecondaryDark.withOpacity(0.75) : AppTheme.textSecondaryLight.withOpacity(0.75);
 
   /// Card surface color adapted to light/dark mode.
   Color get cardColor => Theme.of(this).cardTheme.color ?? (isDarkMode ? AppTheme.surfaceDark : AppTheme.surfaceLight);

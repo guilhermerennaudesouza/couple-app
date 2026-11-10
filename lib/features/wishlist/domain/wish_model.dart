@@ -30,6 +30,8 @@ class WishModel {
   final String? purchasedBy;
   final String createdBy;
   final DateTime createdAt;
+  final bool isSecretRadar;
+  final String? occasion;
 
   WishModel({
     required this.id,
@@ -42,6 +44,8 @@ class WishModel {
     this.purchasedBy,
     required this.createdBy,
     DateTime? createdAt,
+    this.isSecretRadar = false,
+    this.occasion,
   }) : createdAt = createdAt ?? DateTime.now();
 
   /// Converts this wish into a Firestore-compatible map.
@@ -57,6 +61,8 @@ class WishModel {
       'purchasedBy': purchasedBy,
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
+      'isSecretRadar': isSecretRadar,
+      if (occasion != null) 'occasion': occasion,
     };
   }
 
@@ -87,6 +93,8 @@ class WishModel {
       purchasedBy: map['purchasedBy'] as String?,
       createdBy: map['createdBy'] as String? ?? '',
       createdAt: _parseDateTime(map['createdAt']),
+      isSecretRadar: map['isSecretRadar'] as bool? ?? false,
+      occasion: map['occasion'] as String?,
     );
   }
 
@@ -106,6 +114,8 @@ class WishModel {
     bool clearPurchasedBy = false,
     String? createdBy,
     DateTime? createdAt,
+    bool? isSecretRadar,
+    String? occasion,
   }) {
     return WishModel(
       id: id ?? this.id,
@@ -118,6 +128,8 @@ class WishModel {
       purchasedBy: clearPurchasedBy ? null : (purchasedBy ?? this.purchasedBy),
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
+      isSecretRadar: isSecretRadar ?? this.isSecretRadar,
+      occasion: occasion ?? this.occasion,
     );
   }
 

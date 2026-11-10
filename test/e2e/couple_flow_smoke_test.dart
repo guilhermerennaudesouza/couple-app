@@ -841,14 +841,21 @@ void main() {
       expect(find.text('KRIVO COUPLE HUB'), findsOneWidget);
       expect(find.text('Alex & Sam'), findsOneWidget);
 
-      // Verify all 4 feature cards
+      // Verify top 4 feature cards
       expect(find.text('Memories, Wishlist & Capsules'), findsOneWidget);
       expect(find.text('Shared Finance & Savings'), findsOneWidget);
       expect(find.text('Private Encrypted Vault'), findsOneWidget);
       expect(find.text('Love Notes & Sticky Wall'), findsOneWidget);
 
-      // Verify space details & settings card (scroll down if offscreen)
-      await tester.scrollUntilVisible(find.text('SPACE DETAILS & SETTINGS'), 300);
+      // Verify the 4 new Krivo feature cards
+      await tester.scrollUntilVisible(find.text('Our Retrospective & Couple XP'), 250);
+      expect(find.text('Love Coupons & Loyalty'), findsOneWidget);
+      expect(find.text('Intimacy Games & Dares (18+)'), findsOneWidget);
+      expect(find.text('Cycle Tracker & Partner Care'), findsOneWidget);
+      expect(find.text('Our Retrospective & Couple XP'), findsOneWidget);
+
+      // Verify space details & settings card (scroll down to bottom of card)
+      await tester.scrollUntilVisible(find.text('Unpair / Disconnect Space'), 250);
       expect(find.text('SPACE DETAILS & SETTINGS'), findsOneWidget);
       expect(find.text('Space ID'), findsOneWidget);
       expect(find.text(testCoupleId), findsOneWidget);

@@ -109,6 +109,24 @@ service cloud.firestore {
         allow read, write: if isCoupleMember(coupleId);
       }
 
+      // 15. Love Coupons & Loyalty Vouchers (Krivo Feature)
+      match /loyalty_coupons/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 16. Intimacy Games & 18+ Challenges (Krivo Feature)
+      match /adult_games/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+      match /adult_game_state/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 17. Menstrual Cycle & Partner Care Tracker (Krivo Feature)
+      match /cycle_data/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
       // Fallback rule for any nested couple subcollection documents
       match /{allSubcollections=**} {
         allow read, write: if isCoupleMember(coupleId);

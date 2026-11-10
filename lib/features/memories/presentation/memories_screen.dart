@@ -173,7 +173,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
         user.displayName!.isNotEmpty) {
       return user.displayName!;
     }
-    return 'Sweetheart';
+    return 'Amor';
   }
 
   @override
@@ -319,12 +319,14 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
+              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
               const SizedBox(height: 12),
               Text(
-                'Failed to load memories: $err',
+                strings.isPortuguese
+                    ? 'Falha ao carregar memórias: $err'
+                    : 'Failed to load memories: $err',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondaryDark),
+                style: TextStyle(color: context.textSecondary),
               ),
             ],
           ),
@@ -633,12 +635,14 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
+              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorRed),
               const SizedBox(height: 12),
               Text(
-                'Failed to load time capsules: $err',
+                strings.isPortuguese
+                    ? 'Falha ao carregar cápsulas do tempo: $err'
+                    : 'Failed to load time capsules: $err',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondaryDark),
+                style: TextStyle(color: context.textSecondary),
               ),
             ],
           ),
@@ -1029,7 +1033,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceVariantLight.withOpacity(0.5),
+                  color: context.surfaceVariant.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: AppTheme.goldAccent.withOpacity(0.4)),
                 ),
@@ -1041,11 +1045,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                         const Icon(Icons.format_quote_rounded, color: AppTheme.primaryRose, size: 20),
                         const SizedBox(width: 4),
                         Text(
-                          'Written by $creatorName',
+                          strings.isPortuguese
+                              ? 'Escrita por $creatorName'
+                              : 'Written by $creatorName',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textSecondaryDark,
+                            color: context.textSecondary,
                           ),
                         ),
                       ],
@@ -1071,11 +1077,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.favorite, size: 13, color: AppTheme.secondaryBlush),
+                const Icon(Icons.favorite, size: 13, color: AppTheme.secondaryBlush),
                 const SizedBox(width: 5),
                 Text(
-                  'Created by $creatorName',
-                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryDark),
+                  strings.isPortuguese
+                      ? 'Criada por $creatorName'
+                      : 'Created by $creatorName',
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
               ],
             ),
@@ -1211,12 +1219,24 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
         ),
       ),
       data: (allWishes) {
+        final visibleWishes = allWishes
+            .where((w) => !w.isSecretRadar || w.createdBy == effectiveUid)
+            .toList();
         final filteredWishes = _selectedWishlistCategory == 'All'
-            ? allWishes
-            : allWishes.where((w) => w.category == _selectedWishlistCategory).toList();
+            ? visibleWishes.where((w) => !w.isSecretRadar).toList()
+            : _selectedWishlistCategory == 'Radar'
+                ? visibleWishes.where((w) => w.isSecretRadar).toList()
+                : visibleWishes
+                    .where((w) =>
+                        !w.isSecretRadar &&
+                        w.category == _selectedWishlistCategory)
+                    .toList();
 
-        final purchasedCount = allWishes.where((w) => w.isPurchased).length;
-        final totalCount = allWishes.length;
+        final sharedWishes =
+            visibleWishes.where((w) => !w.isSecretRadar).toList();
+        final purchasedCount =
+            sharedWishes.where((w) => w.isPurchased).length;
+        final totalCount = sharedWishes.length;
 
         return Column(
           children: [
@@ -1229,6 +1249,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   _buildCategoryChip(context, 'All'),
+                  _buildCategoryChip(context, 'Radar'),
                   ...WishModel.categories.map((c) => _buildCategoryChip(context, c)),
                 ],
               ),
@@ -1352,9 +1373,10 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
   String _getLocalizedWishCategory(String category, AppStrings strings) {
     return switch (category) {
       'All' => strings.categoryAll,
+      'Radar' => strings.isPortuguese ? 'Radar Secreto 🕵️' : 'Secret Radar 🕵️',
       'Gifts' => strings.isPortuguese ? 'Presentes' : 'Gifts',
-      'Travel' => strings.isPortuguese ? 'Viagens' : 'Travel',
-      'Date Night' => strings.isPortuguese ? 'Encontros' : 'Date Night',
+      'Trips' || 'Travel' => strings.isPortuguese ? 'Viagens' : 'Trips',
+      'Dates' || 'Date Night' => strings.isPortuguese ? 'Encontros' : 'Dates',
       'Home' => strings.isPortuguese ? 'Casa' : 'Home',
       'Experiences' => strings.isPortuguese ? 'Experiências' : 'Experiences',
       _ => strings.isPortuguese ? 'Outros' : 'Other',
@@ -1433,7 +1455,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update wish: $e')),
+                        SnackBar(
+                          content: Text(
+                            strings.isPortuguese
+                                ? 'Falha ao atualizar desejo: $e'
+                                : 'Failed to update wish: $e',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -1880,8 +1908,13 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isUploading = false);
+        final isPt = AppStrings.of(context).isPortuguese;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Photo processing failed: $e')),
+          SnackBar(
+            content: Text(
+              isPt ? 'Erro ao processar foto: $e' : 'Photo processing failed: $e',
+            ),
+          ),
         );
       }
     }
@@ -1955,14 +1988,26 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Memory saved to timeline! ✨')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Memória salva na linha do tempo! ✨'
+                  : 'Memory saved to timeline! ✨',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save memory: $e')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Falha ao salvar memória: $e'
+                  : 'Failed to save memory: $e',
+            ),
+          ),
         );
       }
     }
@@ -2257,8 +2302,13 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isUploading = false);
+        final isPt = AppStrings.of(context).isPortuguese;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Photo processing failed: $e')),
+          SnackBar(
+            content: Text(
+              isPt ? 'Erro ao processar foto: $e' : 'Photo processing failed: $e',
+            ),
+          ),
         );
       }
     }
@@ -2359,7 +2409,9 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Time capsule sealed until ${DateFormat.yMMMMd().format(_unlockDate)}! 🔒',
+              strings.isPortuguese
+                  ? 'Cápsula do tempo selada até ${DateFormat.yMMMMd('pt_BR').format(_unlockDate)}! 🔒'
+                  : 'Time capsule sealed until ${DateFormat.yMMMMd().format(_unlockDate)}! 🔒',
             ),
           ),
         );
@@ -2368,7 +2420,13 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to seal capsule: $e')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Falha ao selar cápsula: $e'
+                  : 'Failed to seal capsule: $e',
+            ),
+          ),
         );
       }
     }
@@ -2629,6 +2687,7 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
   final _urlController = TextEditingController();
 
   String _category = WishModel.categoryGifts;
+  bool _isSecretRadar = false;
   bool _isSaving = false;
 
   @override
@@ -2672,6 +2731,7 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
         estimatedPrice: price,
         category: _category,
         createdBy: widget.effectiveUid,
+        isSecretRadar: _isSecretRadar,
       );
 
       await ref.read(memoriesRepositoryProvider).addWish(widget.coupleId, wish);
@@ -2679,14 +2739,30 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Added to shared wishlist! ✨')),
+          SnackBar(
+            content: Text(
+              _isSecretRadar
+                  ? (strings.isPortuguese
+                      ? 'Dica salva no seu Radar Secreto de Presentes! 🕵️✨'
+                      : 'Saved to your Secret Gift Radar! 🕵️✨')
+                  : (strings.isPortuguese
+                      ? 'Adicionado à lista de desejos! ✨'
+                      : 'Added to shared wishlist! ✨'),
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add wish: $e')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Falha ao adicionar desejo: $e'
+                  : 'Failed to add wish: $e',
+            ),
+          ),
         );
       }
     }
@@ -2754,8 +2830,8 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
                 final isSelected = _category == c;
                 final localizedC = switch (c) {
                   'Gifts' => strings.isPortuguese ? 'Presentes' : 'Gifts',
-                  'Travel' => strings.isPortuguese ? 'Viagens' : 'Travel',
-                  'Date Night' => strings.isPortuguese ? 'Encontros' : 'Date Night',
+                  'Trips' || 'Travel' => strings.isPortuguese ? 'Viagens' : 'Trips',
+                  'Dates' || 'Date Night' => strings.isPortuguese ? 'Encontros' : 'Dates',
                   'Home' => strings.isPortuguese ? 'Casa' : 'Home',
                   'Experiences' => strings.isPortuguese ? 'Experiências' : 'Experiences',
                   _ => strings.isPortuguese ? 'Outros' : 'Other',
@@ -2774,7 +2850,26 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppTheme.primaryRose,
+              value: _isSecretRadar,
+              title: Text(
+                strings.isPortuguese
+                    ? 'Salvar no Meu Radar Secreto 🕵️'
+                    : 'Save to My Secret Gift Radar 🕵️',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              ),
+              subtitle: Text(
+                strings.isPortuguese
+                    ? 'Apenas você vê este item (ideal para anotar dicas secretas de presentes que seu amor mencionou)'
+                    : 'Only visible to you for planning secret gift surprises',
+                style: TextStyle(fontSize: 11.5, color: context.textSecondary),
+              ),
+              onChanged: (v) => setState(() => _isSecretRadar = v),
+            ),
+            const SizedBox(height: 8),
 
             // Estimated Price
             TextField(

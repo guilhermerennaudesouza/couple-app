@@ -202,7 +202,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     if (couple != null) {
       return CalendarEventModel(
         id: 'anniversary_virtual',
-        title: 'Our Anniversary',
+        title: 'Nosso Aniversário ❤️',
         date: couple.anniversaryDate,
         isAnnual: true,
         category: CalendarEventModel.categoryAnniversary,
@@ -225,6 +225,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         return 'Aniversário';
       case CalendarEventModel.categoryTravel:
         return 'Viagens';
+      case CalendarEventModel.categorySpecial:
+        return 'Especial';
       default:
         return cat;
     }
@@ -775,7 +777,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          event.title,
+                          strings.isPortuguese &&
+                                  (event.title == 'Our Anniversary' ||
+                                      event.title == 'Our Anniversary ❤️')
+                              ? 'Nosso Aniversário ❤️'
+                              : event.title,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -794,7 +800,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   if (event.description.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      event.description,
+                      strings.isPortuguese &&
+                              event.description ==
+                                  'The day our love story began ❤️'
+                          ? 'O dia em que nossa história de amor começou ❤️'
+                          : event.description,
                       style: TextStyle(
                         fontSize: 13,
                         color: context.textSecondary,

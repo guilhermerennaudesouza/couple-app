@@ -9,6 +9,7 @@ import '../../auth/data/pairing_repository.dart';
 import '../domain/note_model.dart';
 import '../data/note_repository.dart';
 import '../../widgets/widget_sync_service.dart';
+import 'scratch_and_doodle_widgets.dart';
 
 /// Screen displaying the shared digital love notes / sticky notes wall.
 ///
@@ -50,7 +51,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     if (user != null && user.displayName != null && user.displayName!.isNotEmpty) {
       return user.displayName!;
     }
-    return 'Sweetheart';
+    return 'Amor';
   }
 
   Color _parseNoteColor(String hex) {
@@ -67,6 +68,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final effectiveUid = _getEffectiveUid();
     final activeCoupleId = widget.coupleId ??
         widget.initialCouple?.id ??
@@ -76,7 +78,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     if (activeCoupleId.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Sticky Notes'),
+          title: Text(strings.loveNotesAndWidget),
         ),
         body: Center(
           child: Padding(
@@ -91,12 +93,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No Couple Space Connected',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  strings.noSpaceConnected,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Please pair with your partner before sharing sticky notes.',
+                  strings.noSpaceConnectedDesc,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: context.textSecondary),
                 ),
@@ -110,7 +112,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final coupleAsync = ref.watch(coupleStreamProvider(activeCoupleId));
     final currentCouple = coupleAsync.valueOrNull ?? widget.initialCouple;
     final notesAsync = ref.watch(notesStreamProvider(activeCoupleId));
-    final strings = AppStrings.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -315,21 +316,49 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     required String authorName,
     required NoteModel note,
   }) {
+    final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final noteColor = _parseNoteColor(note.colorHex);
     final isAuthor = note.authorUid == effectiveUid;
-    final dateFormatted = DateFormat('MMM d, h:mm a').format(note.updatedAt);
+    final dateFormatted = DateFormat(
+      isPt ? "d 'de' MMM, HH:mm" : 'MMM d, h:mm a',
+      isPt ? 'pt_BR' : 'en_US',
+    ).format(note.updatedAt);
+    final isConcealedScratch = note.isScratchCard && !note.isScratched;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        onTap: () => _showNoteEditor(
-          context: context,
-          coupleId: coupleId,
-          authorUid: effectiveUid,
-          authorName: authorName,
-          existingNote: note,
-        ),
+        onTap: () {
+          if (isConcealedScratch) {
+            showDialog<void>(
+              context: context,
+              builder: (_) => ScratchCardRevealDialog(
+                title: note.title.isNotEmpty
+                    ? note.title
+                    : (isPt ? 'Raspadinha do Amor ✨' : 'Love Scratch Card ✨'),
+                secretContent: note.content,
+                authorName: note.authorName,
+                drawingDataJson: note.drawingDataJson,
+                onRevealed: () {
+                  ref.read(noteRepositoryProvider).saveNote(
+                        coupleId,
+                        note.copyWith(isScratched: true),
+                      );
+                },
+              ),
+            );
+          } else {
+            _showNoteEditor(
+              context: context,
+              coupleId: coupleId,
+              authorUid: effectiveUid,
+              authorName: authorName,
+              existingNote: note,
+            );
+          }
+        },
         onLongPress: () => _showDeleteConfirmDialog(context, coupleId, note),
         child: Container(
           decoration: BoxDecoration(
@@ -359,7 +388,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      note.title.isNotEmpty ? note.title : 'Love Note',
+                      note.title.isNotEmpty
+                          ? note.title
+                          : (isPt ? 'Recadinho' : 'Love Note'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -372,7 +403,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                   GestureDetector(
                     onTap: () async {
                       final repo = ref.read(noteRepositoryProvider);
-                      final isPt = AppStrings.of(context).isPortuguese;
                       if (note.isPinnedToWidget) {
                         await repo.unpinNoteFromWidget(coupleId, note.id);
                         if (context.mounted) {
@@ -431,7 +461,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       const Icon(Icons.home_filled, size: 10, color: AppTheme.primaryRoseDark),
                       const SizedBox(width: 4),
                       Text(
-                        AppStrings.of(context).isPortuguese ? 'Widget na Tela Inicial 📌' : 'Glance Widget 📌',
+                        isPt ? 'Widget na Tela Inicial 📌' : 'Glance Widget 📌',
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -445,18 +475,65 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
               const SizedBox(height: 8),
 
-              // Content Body
+              // Content Body (Scratch Card vs Revealed Note + Optional Doodle)
               Expanded(
-                child: Text(
-                  note.content,
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF3E312D),
-                    height: 1.35,
-                  ),
-                ),
+                child: isConcealedScratch
+                    ? Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFE29587),
+                              Color(0xFFD66D75),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('✨💌✨', style: TextStyle(fontSize: 22)),
+                            SizedBox(height: 6),
+                            Text(
+                              'Raspadinha Secreta!\nToque para raspar 💕',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (note.content.isNotEmpty)
+                              Text(
+                                note.content,
+                                maxLines:
+                                    (note.drawingDataJson ?? '').isNotEmpty
+                                        ? 2
+                                        : 5,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF3E312D),
+                                  height: 1.35,
+                                ),
+                              ),
+                            if ((note.drawingDataJson ?? '').isNotEmpty)
+                              DoodleDisplayBox(
+                                drawingDataJson: note.drawingDataJson!,
+                                height: note.content.isNotEmpty ? 64 : 96,
+                              ),
+                          ],
+                        ),
+                      ),
               ),
 
               const SizedBox(height: 8),
@@ -467,7 +544,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      isAuthor ? 'You 💕' : note.authorName,
+                      isAuthor ? (isPt ? 'Você 💕' : 'You 💕') : note.authorName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -504,6 +581,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final contentController = TextEditingController(text: existingNote?.content ?? '');
     String selectedColor = existingNote?.colorHex ?? NoteModel.presetColors.first;
     bool isPinned = existingNote?.isPinnedToWidget ?? false;
+    bool isScratchCard = existingNote?.isScratchCard ?? false;
+    String? drawingDataJson = existingNote?.drawingDataJson;
+    bool showDoodleCanvas = (existingNote?.drawingDataJson ?? '').isNotEmpty;
     final strings = AppStrings.of(context);
 
     showModalBottomSheet(
@@ -521,7 +601,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
+                  color: context.cardColor,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppTheme.dialogBorderRadius),
                   ),
@@ -656,8 +736,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             final colorHex = NoteModel.presetColors[idx];
                             final color = _parseNoteColor(colorHex);
                             final isSelected = colorHex == selectedColor;
-                            final colorName =
-                                NoteModel.colorNames[colorHex] ?? 'Pastel';
+                            final colorName = strings.isPortuguese
+                                ? (NoteModel.colorNamesPt[colorHex] ?? 'Pastel')
+                                : (NoteModel.colorNames[colorHex] ?? 'Pastel');
 
                             return GestureDetector(
                               onTap: () {
@@ -704,6 +785,91 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Doodle Canvas Toggle & Pad ("Desenho na Tela 🎨")
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            strings.isPortuguese
+                                ? 'Desenho à Mão Livre 🎨'
+                                : 'Freehand Doodle 🎨',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              setModalState(
+                                () => showDoodleCanvas = !showDoodleCanvas,
+                              );
+                            },
+                            icon: Icon(
+                              showDoodleCanvas
+                                  ? Icons.expand_less_rounded
+                                  : Icons.brush_rounded,
+                              size: 18,
+                            ),
+                            label: Text(
+                              showDoodleCanvas
+                                  ? 'Ocultar Quadro'
+                                  : 'Desenhar Recado',
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (showDoodleCanvas) ...[
+                        const SizedBox(height: 6),
+                        InteractiveDoodlePad(
+                          initialJson: drawingDataJson,
+                          onChanged: (json) {
+                            drawingDataJson = json;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Scratch Card Mode ("Raspadinha do Amor ✨")
+                      SwitchListTile(
+                        value: isScratchCard,
+                        activeColor: AppTheme.primaryRose,
+                        contentPadding: EdgeInsets.zero,
+                        title: Row(
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 18,
+                              color: AppTheme.primaryRose,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              strings.isPortuguese
+                                  ? 'Enviar como Raspadinha Secreta ✨'
+                                  : 'Send as Secret Scratch Card ✨',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          strings.isPortuguese
+                              ? 'Oculta a mensagem sob uma camada dourada até seu amor raspar com o dedo'
+                              : 'Hides the message under a scratchable foil layer until your partner scratches it',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                        onChanged: (val) {
+                          setModalState(() {
+                            isScratchCard = val;
+                          });
+                        },
+                      ),
 
                       // Glance Widget Pin Toggle
                       SwitchListTile(
@@ -787,13 +953,15 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             final title = titleController.text.trim();
                             final content = contentController.text.trim();
 
-                            if (title.isEmpty && content.isEmpty) {
+                            if (title.isEmpty &&
+                                content.isEmpty &&
+                                (drawingDataJson ?? '').isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     strings.isPortuguese
-                                        ? 'Por favor, digite um título ou recado.'
-                                        : 'Please enter a note title or content.',
+                                        ? 'Por favor, digite um recado ou faça um desenho.'
+                                        : 'Please enter a note title, content, or drawing.',
                                   ),
                                 ),
                               );
@@ -811,6 +979,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               authorUid: existingNote?.authorUid ?? authorUid,
                               authorName: existingNote?.authorName ?? authorName,
                               updatedAt: DateTime.now(),
+                              isScratchCard: isScratchCard,
+                              isScratched: isScratchCard ? false : true,
+                              drawingDataJson: drawingDataJson,
                             );
 
                             final repo = ref.read(noteRepositoryProvider);

@@ -94,9 +94,11 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("note_color", "#FFE082")
             ?: "#FFE082"
 
-        val isPt = java.util.Locale.getDefault().language == "pt" ||
-            prefs.getString("flutter.language", "") == "pt" ||
-            prefs.getString("language", "") == "pt"
+        val savedLocale = prefs.getString("flutter.app_locale", null)
+            ?: prefs.getString("app_locale", null)
+            ?: prefs.getString("flutter.language", null)
+            ?: prefs.getString("language", null)
+        val isPt = savedLocale != "en"
 
         val hasNote = content.isNotBlank() || title.isNotBlank()
         val cardColor = parseHexColor(colorHex, defaultColor = Color(0xFFFFE082))
@@ -108,7 +110,8 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                         title = title,
                         content = content,
                         author = author,
-                        cardColor = cardColor
+                        cardColor = cardColor,
+                        isPt = isPt
                     )
                 } else {
                     EmptyNoteCard(cardColor = cardColor, isPt = isPt)
@@ -122,7 +125,8 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
         title: String,
         content: String,
         author: String,
-        cardColor: Color
+        cardColor: Color,
+        isPt: Boolean
     ) {
         Box(
             modifier = GlanceModifier
@@ -150,7 +154,7 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
-                        text = if (title.isNotBlank()) title else "Love Note",
+                        text = if (title.isNotBlank()) title else if (isPt) "Recadinho" else "Love Note",
                         style = TextStyle(
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,

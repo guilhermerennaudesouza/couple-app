@@ -25,6 +25,10 @@ import 'package:couple_app/features/memories/presentation/memories_screen.dart';
 import 'package:couple_app/features/notes/presentation/notes_screen.dart';
 import 'package:couple_app/features/tasks/presentation/tasks_screen.dart';
 import 'package:couple_app/features/vault/presentation/vault_screen.dart';
+import 'package:couple_app/features/loyalty/presentation/loyalty_screen.dart';
+import 'package:couple_app/features/adult_games/presentation/adult_games_screen.dart';
+import 'package:couple_app/features/cycle/presentation/cycle_screen.dart';
+import 'package:couple_app/features/stats/presentation/couple_stats_screen.dart';
 import 'package:couple_app/features/widgets/widget_sync_service.dart';
 
 Future<void> main() async {
@@ -178,9 +182,9 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
                   size: 48,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Unable to load couple space',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  strings.unableToLoadSpace,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -502,6 +506,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
       ),
       body: SafeArea(
         child: ListView(
+          cacheExtent: 1500,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
             // Samsung One UI Hero Header
@@ -633,6 +638,74 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => NotesScreen(coupleId: coupleId),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Card 5: 🎟️ Cupons de Amor & Fidelidade (Krivo Feature)
+            _HubFeatureCard(
+              icon: Icons.confirmation_number_rounded,
+              iconColor: AppTheme.primaryRose,
+              iconBgColor: AppTheme.primaryRose.withOpacity(0.12),
+              title: strings.hubLoyaltyTitle,
+              subtitle: strings.hubLoyaltySub,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => LoyaltyScreen(coupleId: coupleId),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Card 6: 🔥 Jogos de Intimidade & Desafios 18+ (Krivo Feature)
+            _HubFeatureCard(
+              icon: Icons.local_fire_department_rounded,
+              iconColor: const Color(0xFFD81B60),
+              iconBgColor: const Color(0xFFD81B60).withOpacity(0.12),
+              title: strings.hubAdultGamesTitle,
+              subtitle: strings.hubAdultGamesSub,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AdultGamesScreen(coupleId: coupleId),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Card 7: 🌸 Ciclo Menstrual & Cuidado do Casal (Krivo Feature)
+            _HubFeatureCard(
+              icon: Icons.spa_rounded,
+              iconColor: const Color(0xFFEC407A),
+              iconBgColor: const Color(0xFFEC407A).withOpacity(0.12),
+              title: strings.hubCycleTitle,
+              subtitle: strings.hubCycleSub,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CycleScreen(coupleId: coupleId),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Card 8: 🏆 Nossa Retrospectiva & Nível XP (Krivo Feature)
+            _HubFeatureCard(
+              icon: Icons.emoji_events_rounded,
+              iconColor: const Color(0xFFD97706),
+              iconBgColor: const Color(0xFFD97706).withOpacity(0.12),
+              title: strings.hubStatsTitle,
+              subtitle: strings.hubStatsSub,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CoupleStatsScreen(coupleId: coupleId),
                   ),
                 );
               },
@@ -1078,7 +1151,7 @@ class _InfoRow extends StatelessWidget {
             icon: const Icon(Icons.copy_rounded, size: 18),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            tooltip: 'Copy $label',
+            tooltip: 'Copiar $label',
             onPressed: onCopy,
           ),
         ],

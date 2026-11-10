@@ -62,6 +62,18 @@ class DateIdeasRepository {
     return title;
   }
 
+  /// Translates a curated idea description to Portuguese if matched.
+  static String translateIdeaDescription(
+    String title,
+    String description, {
+    String languageCode = 'pt',
+  }) {
+    if (languageCode == 'pt') {
+      return _curatedTranslations[title]?['descPt'] ?? description;
+    }
+    return description;
+  }
+
   /// Curated default date ideas inspired by Krivo couple cards.
   static List<DateIdeaModel> defaultCuratedIdeas({
     required String createdBy,

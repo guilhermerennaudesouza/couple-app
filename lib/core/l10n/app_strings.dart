@@ -423,4 +423,22 @@ class AppStrings {
   String get biometricScanReason => isPortuguese ? 'Toque no sensor biométrico para desbloquear o Cofre Privado' : 'Scan fingerprint to unlock your Private Vault';
   String get pinMismatch => isPortuguese ? 'Os PINs não coincidem. Tente novamente.' : 'PINs do not match. Please start over.';
   String get pinSetSuccess => isPortuguese ? 'PIN do Cofre definido com sucesso! 🔐' : 'Vault PIN set successfully! 🔐';
+
+  // ---------------------------------------------------------------------------
+  // Krivo New Features: Cupons, Jogos 18+, Ciclo & Cuidado, Retrospectiva
+  // ---------------------------------------------------------------------------
+  String get hubLoyaltyTitle => isPortuguese ? 'Cupons de Amor & Fidelidade' : 'Love Coupons & Loyalty';
+  String get hubLoyaltySubtitle => isPortuguese ? 'Vales românticos resgatáveis, mimos e cartões do casal' : 'Redeemable romantic vouchers, treats, and shared loyalty cards';
+  String get hubLoyaltySub => hubLoyaltySubtitle;
+  String get hubAdultGamesTitle => isPortuguese ? 'Jogos de Intimidade & Desafios (18+)' : 'Intimacy Games & Dares (18+)';
+  String get hubAdultGamesSubtitle => isPortuguese ? 'Cartas quentes em 3 níveis (Suave, Ousado e Picante) para apimentar a relação' : 'Romantic and spicy deck across 3 levels (Gentle, Bold, Spicy)';
+  String get hubAdultGamesSub => hubAdultGamesSubtitle;
+  String get hubCycleTitle => isPortuguese ? 'Ciclo & Cuidado do Casal' : 'Cycle Tracker & Partner Care';
+  String get hubCycleSubtitle => isPortuguese ? 'Acompanhamento de fases, sintomas, dicas de empatia e pedidos de carinho' : 'Cycle phases, mood log, partner empathy tips, and care requests';
+  String get hubCycleSub => hubCycleSubtitle;
+  String get hubStatsTitle => isPortuguese ? 'Nossa Retrospectiva & Nível XP' : 'Our Retrospective & Couple XP';
+  String get hubStatsSubtitle => isPortuguese ? 'Conquistas, nível de conexão do casal e resumo de momentos juntos' : 'Relationship achievements, connection XP level, and milestone summary';
+  String get hubStatsSub => hubStatsSubtitle;
+  String get unableToLoadSpace => isPortuguese ? 'Não foi possível carregar o espaço do casal' : 'Unable to load couple space';
+  String copyLabelTooltip(String label) => isPortuguese ? 'Copiar $label' : 'Copy $label';
 }

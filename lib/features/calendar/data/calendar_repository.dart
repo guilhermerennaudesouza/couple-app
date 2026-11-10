@@ -106,8 +106,8 @@ class CalendarRepository {
       if (snapshot.docs.isEmpty) {
         final anniversaryEvent = CalendarEventModel(
           id: 'anniversary_default',
-          title: 'Our Anniversary',
-          description: 'The day our love story began ❤️',
+          title: 'Nosso Aniversário ❤️',
+          description: 'O dia em que nossa história de amor começou ❤️',
           date: couple.anniversaryDate,
           isAnnual: true,
           category: CalendarEventModel.categoryAnniversary,

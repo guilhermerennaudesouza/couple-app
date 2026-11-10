@@ -69,9 +69,9 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
       if (user?.displayName != null && user!.displayName!.isNotEmpty) {
         return user.displayName!;
       }
-      return 'You';
+      return 'Você';
     }
-    return 'Partner';
+    return 'Seu Amor';
   }
 
   @override
@@ -280,7 +280,13 @@ class _ExpensesTab extends ConsumerWidget {
 
     return entriesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error loading expenses: $err')),
+      error: (err, _) => Center(
+        child: Text(
+          AppStrings.of(context).isPortuguese
+              ? 'Erro ao carregar despesas: $err'
+              : 'Error loading expenses: $err',
+        ),
+      ),
       data: (entries) {
         final balance = calculateNetOwed(entries, user1: myUid, user2: partnerUid);
 
@@ -537,7 +543,7 @@ class _ExpensesTab extends ConsumerWidget {
             'Travel' => strings.categoryTravelFinance,
             'Home' => strings.categoryHomeFinance,
             'Entertainment' => strings.categoryEntertainment,
-            'Bills' => strings.categoryBills,
+            'Bills' || 'Utilities' => strings.categoryBills,
             _ => strings.categoryOther,
           };
           return FilterChip(
@@ -574,9 +580,13 @@ class _ExpensesTab extends ConsumerWidget {
     FinanceEntry entry,
   ) {
     final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final isPaidByMe = entry.paidBy == myUid;
-    final payerDisplayName = isPaidByMe ? 'You' : partnerName;
-    final dateStr = DateFormat('MMM d, y').format(entry.date);
+    final payerDisplayName = isPaidByMe ? (isPt ? 'Você' : 'You') : partnerName;
+    final dateStr = DateFormat(
+      isPt ? "d 'de' MMM, y" : 'MMM d, y',
+      isPt ? 'pt_BR' : 'en_US',
+    ).format(entry.date);
     final myShare = entry.shareFor(myUid, partnerUid: partnerUid);
     final partnerShare = entry.shareFor(partnerUid, partnerUid: myUid);
 
@@ -586,7 +596,9 @@ class _ExpensesTab extends ConsumerWidget {
         splitBadgeText = '50/50';
         break;
       case SplitRatio.paidByOther:
-        splitBadgeText = isPaidByMe ? '100% $partnerName owes' : '100% you owe';
+        splitBadgeText = isPaidByMe
+            ? (isPt ? '100% $partnerName deve' : '100% $partnerName owes')
+            : (isPt ? '100% você deve' : '100% you owe');
         break;
       case SplitRatio.custom:
         final payerPct = entry.customSplitPercentage ?? 50.0;
@@ -599,11 +611,11 @@ class _ExpensesTab extends ConsumerWidget {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 10),
-      color: entry.isSettled ? const Color(0xFFFBFBFB) : Colors.white,
+      color: entry.isSettled ? context.surfaceVariant : context.cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: entry.isSettled ? const Color(0xFFECECEC) : AppTheme.outlineLight,
+          color: context.outlineColor,
         ),
       ),
       child: ListTile(
@@ -651,7 +663,9 @@ class _ExpensesTab extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '$dateStr • Paid by $payerDisplayName',
+                    isPt
+                        ? '$dateStr • Pago por $payerDisplayName'
+                        : '$dateStr • Paid by $payerDisplayName',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -665,12 +679,12 @@ class _ExpensesTab extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
+                      color: AppTheme.successGreen.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Settled',
-                      style: TextStyle(
+                    child: Text(
+                      isPt ? 'Quitado' : 'Settled',
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.successGreen,
@@ -680,8 +694,12 @@ class _ExpensesTab extends ConsumerWidget {
                 else
                   Text(
                     isPaidByMe
-                        ? '+$partnerName owes R\$ ${partnerShare.toStringAsFixed(2)}'
-                        : 'You owe R\$ ${myShare.toStringAsFixed(2)}',
+                        ? (isPt
+                            ? '+$partnerName deve R\$ ${partnerShare.toStringAsFixed(2)}'
+                            : '+$partnerName owes R\$ ${partnerShare.toStringAsFixed(2)}')
+                        : (isPt
+                            ? 'Você deve R\$ ${myShare.toStringAsFixed(2)}'
+                            : 'You owe R\$ ${myShare.toStringAsFixed(2)}'),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -696,11 +714,11 @@ class _ExpensesTab extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceVariantLight,
+                color: context.surfaceVariant,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                'Split: $splitBadgeText',
+                isPt ? 'Divisão: $splitBadgeText' : 'Split: $splitBadgeText',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
@@ -867,7 +885,13 @@ class _SavingsTab extends ConsumerWidget {
 
     return goalsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error loading goals: $err')),
+      error: (err, _) => Center(
+        child: Text(
+          AppStrings.of(context).isPortuguese
+              ? 'Erro ao carregar metas: $err'
+              : 'Error loading goals: $err',
+        ),
+      ),
       data: (goals) {
         final totalSaved = goals.fold<double>(
           0.0,
@@ -978,6 +1002,7 @@ class _SavingsTab extends ConsumerWidget {
     SavingsGoalModel goal,
   ) {
     final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final isReached = goal.isTargetReached || goal.isCompleted;
     final progress = goal.progressRatio;
     final pct = goal.progressPercentage;
@@ -986,13 +1011,24 @@ class _SavingsTab extends ConsumerWidget {
     if (goal.targetDate != null) {
       final daysLeft = goal.targetDate!.difference(DateTime.now()).inDays;
       if (daysLeft < 0) {
-        countdownText = 'Target date passed';
+        countdownText = isPt ? 'Prazo encerrado' : 'Target date passed';
       } else if (daysLeft == 0) {
-        countdownText = 'Target date is today!';
+        countdownText = isPt ? 'A data alvo é hoje!' : 'Target date is today!';
       } else {
-        countdownText = '$daysLeft days left (${DateFormat.yMMMd().format(goal.targetDate!)})';
+        countdownText = isPt
+            ? 'Faltam $daysLeft dias (${DateFormat.yMMMd('pt_BR').format(goal.targetDate!)})'
+            : '$daysLeft days left (${DateFormat.yMMMd().format(goal.targetDate!)})';
       }
     }
+
+    final localizedGoalCat = switch (goal.category) {
+      'Vacation' => isPt ? 'Viagem & Férias' : 'Vacation',
+      'Wedding' => isPt ? 'Casamento' : 'Wedding',
+      'Home' => isPt ? 'Casa & Reforma' : 'Home',
+      'Date Night' => isPt ? 'Encontros Especiais' : 'Date Night',
+      'Emergency' => isPt ? 'Reserva de Emergência' : 'Emergency',
+      _ => isPt ? 'Outros Sonhos' : goal.category,
+    };
 
     return Card(
       elevation: 0,
@@ -1036,7 +1072,7 @@ class _SavingsTab extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        goal.category,
+                        localizedGoalCat,
                         style: TextStyle(
                           fontSize: 12,
                           color: context.textSecondary,
@@ -1053,13 +1089,13 @@ class _SavingsTab extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFFFD54F)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('🎉 ', style: TextStyle(fontSize: 12)),
+                        const Text('🎉 ', style: TextStyle(fontSize: 12)),
                         Text(
-                          'Goal Reached!',
-                          style: TextStyle(
+                          isPt ? 'Meta Alcançada!' : 'Goal Reached!',
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFFF57F17),
@@ -1102,7 +1138,7 @@ class _SavingsTab extends ConsumerWidget {
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 12,
-                backgroundColor: AppTheme.surfaceVariantLight,
+                backgroundColor: context.surfaceVariant,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   isReached ? AppTheme.successGreen : AppTheme.primaryRose,
                 ),
@@ -1115,7 +1151,9 @@ class _SavingsTab extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'R\$ ${goal.currentAmount.toStringAsFixed(2)} of R\$ ${goal.targetAmount.toStringAsFixed(2)}',
+                  isPt
+                      ? 'R\$ ${goal.currentAmount.toStringAsFixed(2)} de R\$ ${goal.targetAmount.toStringAsFixed(2)}'
+                      : 'R\$ ${goal.currentAmount.toStringAsFixed(2)} of R\$ ${goal.targetAmount.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -1146,8 +1184,10 @@ class _SavingsTab extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     isReached
-                        ? 'Target completely fulfilled! 🥳'
-                        : 'R\$ ${goal.remainingAmount.toStringAsFixed(2)} remaining',
+                        ? (isPt ? 'Meta 100% concluída! 🥳' : 'Target completely fulfilled! 🥳')
+                        : (isPt
+                            ? 'Faltam R\$ ${goal.remainingAmount.toStringAsFixed(2)}'
+                            : 'R\$ ${goal.remainingAmount.toStringAsFixed(2)} remaining'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1181,7 +1221,9 @@ class _SavingsTab extends ConsumerWidget {
                     onPressed: () => _showContributionsHistory(context, goal),
                     icon: const Icon(Icons.history_rounded, size: 16),
                     label: Text(
-                      '${goal.contributions.length} deposit(s)',
+                      isPt
+                          ? '${goal.contributions.length} depósito(s)'
+                          : '${goal.contributions.length} deposit(s)',
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -1197,7 +1239,7 @@ class _SavingsTab extends ConsumerWidget {
                     ),
                   ),
                   icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                  label: const Text('Contribute'),
+                  label: Text(isPt ? 'Depositar' : 'Contribute'),
                 ),
               ],
             ),
@@ -1229,9 +1271,10 @@ class _SavingsTab extends ConsumerWidget {
     BuildContext context,
     SavingsGoalModel goal,
   ) {
+    final isPt = AppStrings.of(context).isPortuguese;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1249,12 +1292,13 @@ class _SavingsTab extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${goal.title} Deposits',
+                      isPt ? 'Depósitos em ${goal.title}' : '${goal.title} Deposits',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
                       ),
                     ),
                   ),
@@ -1268,7 +1312,7 @@ class _SavingsTab extends ConsumerWidget {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final contrib = reversedContribs[index];
-                    final dateStr = DateFormat.yMMMd().format(contrib.date);
+                    final dateStr = DateFormat.yMMMd(isPt ? 'pt_BR' : 'en_US').format(contrib.date);
                     final isMe = contrib.uid == myUid;
                     return ListTile(
                       dense: true,
@@ -1277,7 +1321,7 @@ class _SavingsTab extends ConsumerWidget {
                         backgroundColor: AppTheme.primaryRose.withOpacity(0.12),
                         radius: 16,
                         child: Text(
-                          isMe ? 'Me' : 'P',
+                          isMe ? (isPt ? 'Eu' : 'Me') : '💕',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -1517,19 +1561,29 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
       await ref.read(financeRepositoryProvider).addExpense(widget.coupleId, entry);
 
       if (mounted) {
+        final isPt = AppStrings.of(context).isPortuguese;
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Expense logged successfully! 💸'),
+          SnackBar(
+            content: Text(
+              isPt
+                  ? 'Despesa registrada com sucesso! 💸'
+                  : 'Expense logged successfully! 💸',
+            ),
             backgroundColor: AppTheme.successGreen,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final isPt = AppStrings.of(context).isPortuguese;
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save expense: $e')),
+          SnackBar(
+            content: Text(
+              isPt ? 'Falha ao salvar despesa: $e' : 'Failed to save expense: $e',
+            ),
+          ),
         );
       }
     }
@@ -1538,6 +1592,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -1564,7 +1619,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Log Shared Expense',
+              isPt ? 'Registrar Despesa Compartilhada' : 'Log Shared Expense',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1577,8 +1632,10 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Expense Title',
-                hintText: 'e.g. Dinner at Italian Bistro, Groceries, Movie',
+                labelText: isPt ? 'Título da Despesa' : 'Expense Title',
+                hintText: isPt
+                    ? 'ex: Jantar Italiano, Supermercado, Cinema'
+                    : 'e.g. Dinner at Italian Bistro, Groceries, Movie',
                 filled: true,
                 fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
@@ -1597,7 +1654,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Amount (R\$)',
+                      labelText: isPt ? 'Valor (R\$)' : 'Amount (R\$)',
                       prefixText: 'R\$ ',
                       filled: true,
                       fillColor: context.surfaceVariant,
@@ -1623,7 +1680,12 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                     }
                   },
                   icon: const Icon(Icons.calendar_today_rounded, size: 18),
-                  label: Text(DateFormat('MMM d').format(_expenseDate)),
+                  label: Text(
+                    DateFormat(
+                      isPt ? "d 'de' MMM" : 'MMM d',
+                      isPt ? 'pt_BR' : 'en_US',
+                    ).format(_expenseDate),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
@@ -1638,9 +1700,9 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
             const SizedBox(height: 16),
 
             // Category Chips
-            const Text(
-              'Category',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            Text(
+              isPt ? 'Categoria' : 'Category',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -1648,8 +1710,17 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
               runSpacing: 8,
               children: FinanceEntry.categories.map((cat) {
                 final isSelected = cat == _selectedCategory;
+                final catLabel = switch (cat) {
+                  'Dining' => strings.categoryDining,
+                  'Groceries' => strings.categoryGroceries,
+                  'Travel' => strings.categoryTravelFinance,
+                  'Home' => strings.categoryHomeFinance,
+                  'Entertainment' => strings.categoryEntertainment,
+                  'Utilities' || 'Bills' => strings.categoryBills,
+                  _ => strings.categoryOther,
+                };
                 return ChoiceChip(
-                  label: Text(cat),
+                  label: Text(catLabel),
                   selected: isSelected,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
@@ -1696,16 +1767,16 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
             const SizedBox(height: 16),
 
             // Split Ratio
-            const Text(
-              'Split Ratio',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            Text(
+              isPt ? 'Divisão da Despesa' : 'Split Ratio',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [
                 ChoiceChip(
-                  label: const Text('50/50 Equal'),
+                  label: Text(isPt ? '50/50 Igual' : '50/50 Equal'),
                   selected: _splitRatio == SplitRatio.half,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
@@ -1722,8 +1793,10 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                 ),
                 ChoiceChip(
                   label: Text(_paidByUid == widget.myUid
-                      ? '100% ${widget.partnerName} owes'
-                      : '100% You owe'),
+                      ? (isPt
+                          ? '100% ${widget.partnerName} deve'
+                          : '100% ${widget.partnerName} owes')
+                      : (isPt ? '100% Você deve' : '100% You owe')),
                   selected: _splitRatio == SplitRatio.paidByOther,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
@@ -1739,7 +1812,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                   },
                 ),
                 ChoiceChip(
-                  label: const Text('Custom %'),
+                  label: Text(isPt ? 'Personalizado %' : 'Custom %'),
                   selected: _splitRatio == SplitRatio.custom,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
@@ -1763,11 +1836,15 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Payer covers: ${_customPayerPercent.round()}%',
+                    isPt
+                        ? 'Quem pagou cobre: ${_customPayerPercent.round()}%'
+                        : 'Payer covers: ${_customPayerPercent.round()}%',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Partner covers: ${(100 - _customPayerPercent).round()}%',
+                    isPt
+                        ? 'Parceiro(a) cobre: ${(100 - _customPayerPercent).round()}%'
+                        : 'Partner covers: ${(100 - _customPayerPercent).round()}%',
                     style: TextStyle(color: context.textSecondary),
                   ),
                 ],
@@ -1808,9 +1885,9 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        'Save Expense',
-                        style: TextStyle(
+                    : Text(
+                        isPt ? 'Salvar Despesa 💸' : 'Save Expense',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1894,7 +1971,13 @@ class _CreateSavingsGoalModalState
 
     if (initialDeposit < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Initial deposit cannot be negative')),
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'O depósito inicial não pode ser negativo'
+                : 'Initial deposit cannot be negative',
+          ),
+        ),
       );
       return;
     }
@@ -1909,7 +1992,7 @@ class _CreateSavingsGoalModalState
             id: 'c_${DateTime.now().millisecondsSinceEpoch}',
             uid: widget.myUid,
             amount: (initialDeposit * 100).roundToDouble() / 100.0,
-            note: 'Initial deposit 💖',
+            note: strings.isPortuguese ? 'Depósito inicial 💖' : 'Initial deposit 💖',
           ),
         );
       }
@@ -1933,8 +2016,12 @@ class _CreateSavingsGoalModalState
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Joint savings goal created! 🐷✨'),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Meta do cofrinho criada com sucesso! 🐷✨'
+                  : 'Joint savings goal created! 🐷✨',
+            ),
             backgroundColor: AppTheme.successGreen,
           ),
         );
@@ -1943,7 +2030,13 @@ class _CreateSavingsGoalModalState
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create goal: $e')),
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Falha ao criar meta: $e'
+                  : 'Failed to create goal: $e',
+            ),
+          ),
         );
       }
     }
@@ -1952,6 +2045,7 @@ class _CreateSavingsGoalModalState
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -1978,7 +2072,7 @@ class _CreateSavingsGoalModalState
             ),
             const SizedBox(height: 16),
             Text(
-              'New Joint Savings Goal',
+              isPt ? 'Nova Meta no Cofrinho do Casal' : 'New Joint Savings Goal',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1991,8 +2085,10 @@ class _CreateSavingsGoalModalState
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Goal Title',
-                hintText: 'e.g. Trip to Paris 🗼, Wedding Fund 💍',
+                labelText: isPt ? 'Nome do Sonho / Meta' : 'Goal Title',
+                hintText: isPt
+                    ? 'ex: Viagem para Paris 🗼, Casamento 💍'
+                    : 'e.g. Trip to Paris 🗼, Wedding Fund 💍',
                 filled: true,
                 fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
@@ -2011,7 +2107,7 @@ class _CreateSavingsGoalModalState
                     controller: _targetController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Target Amount (R\$)',
+                      labelText: isPt ? 'Valor Alvo (R\$)' : 'Target Amount (R\$)',
                       prefixText: 'R\$ ',
                       filled: true,
                       fillColor: context.surfaceVariant,
@@ -2029,7 +2125,7 @@ class _CreateSavingsGoalModalState
                     controller: _initialDepositController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Starting (R\$)',
+                      labelText: isPt ? 'Depósito Inicial (R\$)' : 'Starting (R\$)',
                       prefixText: 'R\$ ',
                       hintText: '0.00',
                       filled: true,
@@ -2062,8 +2158,12 @@ class _CreateSavingsGoalModalState
               icon: const Icon(Icons.event_rounded, size: 18),
               label: Text(
                 _targetDate == null
-                    ? 'Pick Target Date (Optional)'
-                    : 'Target Date: ${DateFormat.yMMMd().format(_targetDate!)}',
+                    ? (isPt
+                        ? 'Escolher Data Alvo (Opcional)'
+                        : 'Pick Target Date (Optional)')
+                    : (isPt
+                        ? 'Data Alvo: ${DateFormat.yMMMd('pt_BR').format(_targetDate!)}'
+                        : 'Target Date: ${DateFormat.yMMMd().format(_targetDate!)}'),
               ),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
@@ -2075,9 +2175,9 @@ class _CreateSavingsGoalModalState
             const SizedBox(height: 16),
 
             // Category selector
-            const Text(
-              'Category',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            Text(
+              isPt ? 'Categoria' : 'Category',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -2085,8 +2185,16 @@ class _CreateSavingsGoalModalState
               runSpacing: 8,
               children: SavingsGoalModel.categories.map((cat) {
                 final isSelected = cat == _selectedCategory;
+                final catLabel = switch (cat) {
+                  'Vacation' => isPt ? 'Viagem & Férias' : 'Vacation',
+                  'Wedding' => isPt ? 'Casamento' : 'Wedding',
+                  'Home' => isPt ? 'Casa & Reforma' : 'Home',
+                  'Date Night' => isPt ? 'Encontros Especiais' : 'Date Night',
+                  'Emergency' => isPt ? 'Reserva de Emergência' : 'Emergency',
+                  _ => isPt ? 'Outros Sonhos' : cat,
+                };
                 return ChoiceChip(
-                  label: Text(cat),
+                  label: Text(catLabel),
                   selected: isSelected,
                   selectedColor: AppTheme.primaryRose,
                   labelStyle: TextStyle(
@@ -2124,9 +2232,9 @@ class _CreateSavingsGoalModalState
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        'Create Piggy Bank',
-                        style: TextStyle(
+                    : Text(
+                        isPt ? 'Criar Cofrinho 🐷✨' : 'Create Piggy Bank',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -2179,6 +2287,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
 
   Future<void> _submitContribution() async {
     final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final amount = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2220,8 +2329,12 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
           SnackBar(
             content: Text(
               willReachTarget
-                  ? '🎉 GOAL REACHED! You hit the target for "${widget.goal.title}"! 🍾'
-                  : 'Added R\$ ${amount.toStringAsFixed(2)} to "${widget.goal.title}"! 🐷',
+                  ? (isPt
+                      ? '🎉 META ALCANÇADA! Vocês atingiram o objetivo "${widget.goal.title}"! 🍾'
+                      : '🎉 GOAL REACHED! You hit the target for "${widget.goal.title}"! 🍾')
+                  : (isPt
+                      ? 'Adicionado R\$ ${amount.toStringAsFixed(2)} em "${widget.goal.title}"! 🐷'
+                      : 'Added R\$ ${amount.toStringAsFixed(2)} to "${widget.goal.title}"! 🐷'),
             ),
             backgroundColor: AppTheme.successGreen,
             duration: const Duration(seconds: 4),
@@ -2232,7 +2345,11 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to deposit: $e')),
+          SnackBar(
+            content: Text(
+              isPt ? 'Falha ao depositar: $e' : 'Failed to deposit: $e',
+            ),
+          ),
         );
       }
     }
@@ -2241,6 +2358,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    final isPt = strings.isPortuguese;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -2272,7 +2390,9 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Deposit to "${widget.goal.title}"',
+                    isPt
+                        ? 'Depositar em "${widget.goal.title}"'
+                        : 'Deposit to "${widget.goal.title}"',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -2284,7 +2404,9 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Remaining needed: R\$ ${widget.goal.remainingAmount.toStringAsFixed(2)}',
+              isPt
+                  ? 'Faltam para a meta: R\$ ${widget.goal.remainingAmount.toStringAsFixed(2)}'
+                  : 'Remaining needed: R\$ ${widget.goal.remainingAmount.toStringAsFixed(2)}',
               style: TextStyle(
                 fontSize: 13,
                 color: context.textSecondary,
@@ -2298,7 +2420,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
               children: [10.0, 25.0, 50.0, 100.0].map((amt) {
                 return ActionChip(
                   label: Text('+R\$ ${amt.toInt()}'),
-                  backgroundColor: AppTheme.surfaceVariantLight,
+                  backgroundColor: context.surfaceVariant,
                   onPressed: () => _setAmount(amt),
                 );
               }).toList(),
@@ -2311,7 +2433,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               autofocus: true,
               decoration: InputDecoration(
-                labelText: 'Deposit Amount (R\$)',
+                labelText: isPt ? 'Valor do Depósito (R\$)' : 'Deposit Amount (R\$)',
                 prefixText: 'R\$ ',
                 filled: true,
                 fillColor: context.surfaceVariant,
@@ -2327,8 +2449,10 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
             TextField(
               controller: _noteController,
               decoration: InputDecoration(
-                labelText: 'Cheer note (optional)',
-                hintText: 'e.g. Skipped takeout dinner! 🍕',
+                labelText: isPt ? 'Recadinho de incentivo (opcional)' : 'Cheer note (optional)',
+                hintText: isPt
+                    ? 'ex: Economizamos no delivery de hoje! 🍕'
+                    : 'e.g. Skipped takeout dinner! 🍕',
                 filled: true,
                 fillColor: context.surfaceVariant,
                 border: OutlineInputBorder(
@@ -2361,9 +2485,11 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        'Deposit into Piggy Bank',
-                        style: TextStyle(
+                    : Text(
+                        isPt
+                            ? 'Guardar no Cofrinho 🐷💖'
+                            : 'Deposit into Piggy Bank',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
