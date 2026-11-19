@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/current_date_provider.dart';
 import '../domain/daily_question_model.dart';
 
 /// Repository managing daily question prompts and dual-answer reveal logic.
@@ -132,12 +133,23 @@ class DailyQuestionRepository {
   /// Today's date string in `YYYY-MM-DD` format.
   static String get todayDateString => formatDate(DateTime.now());
 
-  /// Deterministically picks a prompt from the question bank for a given date.
-  /// If [languageCode] is 'pt', returns the Brazilian Portuguese prompt.
+  /// Deterministically picks a prompt from the question bank for a given date
+  /// using an epoch-day coprime permutation (`gcd(17, 50) == 1`) so every
+  /// prompt in the bank appears once before any repetition.
   static String getPromptForDate(String dateString, {String? languageCode}) {
-    final hash = dateString.codeUnits.fold<int>(0, (prev, elem) => prev + elem);
     final bank = languageCode == 'pt' ? defaultQuestionBankPt : defaultQuestionBank;
-    final index = hash.abs() % bank.length;
+    final parsed = DateTime.tryParse(dateString);
+    int index;
+    if (parsed != null) {
+      final utcDate = DateTime.utc(parsed.year, parsed.month, parsed.day);
+      final epoch = DateTime.utc(2025, 1, 1);
+      final days = utcDate.difference(epoch).inDays;
+      final raw = (days * 17 + 7) % bank.length;
+      index = (raw + bank.length) % bank.length;
+    } else {
+      final hash = dateString.codeUnits.fold<int>(0, (prev, elem) => (prev * 31 + elem) & 0x7fffffff);
+      index = hash % bank.length;
+    }
     return bank[index];
   }
 
@@ -202,8 +214,9 @@ class DailyQuestionRepository {
   Stream<DailyQuestionModel> watchTodayQuestion(
     String coupleId, {
     DateTime? date,
+    String? dateKeyOverride,
   }) {
-    final dateStr = date != null ? formatDate(date) : todayDateString;
+    final dateStr = dateKeyOverride ?? (date != null ? formatDate(date) : todayDateString);
     final docRef = _firestore
         .collection('couples')
         .doc(coupleId)
@@ -215,12 +228,15 @@ class DailyQuestionRepository {
         return DailyQuestionModel.fromMap(snapshot.id, snapshot.data()!);
       } else {
         try {
-          return await ensureTodayQuestion(coupleId, date: date);
+          return await ensureTodayQuestion(
+            coupleId,
+            date: DateTime.tryParse(dateStr) ?? date,
+          );
         } catch (_) {
           return DailyQuestionModel(
             id: dateStr,
             date: dateStr,
-            prompt: getPromptForDate(dateStr),
+            prompt: getPromptForDate(dateStr, languageCode: 'pt'),
             answers: const {},
             isRevealed: false,
           );
@@ -261,7 +277,7 @@ class DailyQuestionRepository {
         );
 
         if (!snapshot.exists || snapshot.data() == null) {
-          final prompt = getPromptForDate(questionId);
+          final prompt = getPromptForDate(questionId, languageCode: 'pt');
           final newQuestion = DailyQuestionModel(
             id: questionId,
             date: questionId,
@@ -287,29 +303,48 @@ class DailyQuestionRepository {
       });
     } catch (_) {
       // Offline fallback: transactions fail without active network connection.
-      // Using set with merge: true persists immediately into local Firestore cache
-      // and synchronizes to cloud once reconnected.
-      final prompt = getPromptForDate(questionId);
+      // Preserve cached prompt & compute reveal state when partner already answered.
       final fallbackAnswer = DailyQuestionAnswer(
         uid: uid,
         text: trimmedText,
         answeredAt: DateTime.now(),
       );
-      await docRef.set({
-        'id': questionId,
-        'date': questionId,
-        'prompt': prompt,
+      bool hasCachedDoc = false;
+      bool shouldReveal = false;
+      try {
+        final cached = await docRef.get(const GetOptions(source: Source.cache));
+        if (cached.exists && cached.data() != null) {
+          hasCachedDoc = true;
+          final rawAnswers = cached.data()!['answers'];
+          if (rawAnswers is Map) {
+            final keys = rawAnswers.keys.map((e) => e.toString()).toSet()..add(uid);
+            shouldReveal = keys.length >= 2;
+          }
+        }
+      } catch (_) {}
+
+      final payload = <String, dynamic>{
         'answers': {
           uid: fallbackAnswer.toMap(),
         },
-      }, SetOptions(merge: true));
+        if (shouldReveal) 'isRevealed': true,
+      };
+      if (!hasCachedDoc) {
+        payload['id'] = questionId;
+        payload['date'] = questionId;
+        payload['prompt'] = getPromptForDate(questionId, languageCode: 'pt');
+      }
+      await docRef.set(payload, SetOptions(merge: true));
     }
   }
 
   /// Watches all historical daily questions for [coupleId], ordered by date descending.
   /// Filters out today's active question and unseeded or empty entries.
-  Stream<List<DailyQuestionModel>> watchPastQuestions(String coupleId) {
-    final today = todayDateString;
+  Stream<List<DailyQuestionModel>> watchPastQuestions(
+    String coupleId, {
+    String? todayKeyOverride,
+  }) {
+    final today = todayKeyOverride ?? todayDateString;
     return _firestore
         .collection('couples')
         .doc(coupleId)
@@ -331,15 +366,18 @@ final dailyQuestionRepositoryProvider = Provider<DailyQuestionRepository>((ref) 
 });
 
 /// Riverpod stream provider for today's [DailyQuestionModel] keyed by coupleId.
+/// Automatically re-subscribes when [currentDateKeyProvider] rolls past midnight.
 final todayDailyQuestionProvider =
     StreamProvider.family<DailyQuestionModel, String>((ref, coupleId) {
   final repository = ref.watch(dailyQuestionRepositoryProvider);
-  return repository.watchTodayQuestion(coupleId);
+  final dateKey = ref.watch(currentDateKeyProvider);
+  return repository.watchTodayQuestion(coupleId, dateKeyOverride: dateKey);
 });
 
 /// Riverpod stream provider for the list of past [DailyQuestionModel]s keyed by coupleId.
 final pastDailyQuestionsProvider =
     StreamProvider.family<List<DailyQuestionModel>, String>((ref, coupleId) {
   final repository = ref.watch(dailyQuestionRepositoryProvider);
-  return repository.watchPastQuestions(coupleId);
+  final dateKey = ref.watch(currentDateKeyProvider);
+  return repository.watchPastQuestions(coupleId, todayKeyOverride: dateKey);
 });

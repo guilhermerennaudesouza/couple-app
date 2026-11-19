@@ -57,8 +57,15 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? 'guest_uid';
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) {
+      return providerUid;
+    }
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   @override
@@ -1025,7 +1032,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           itemCount: questions.length,
           itemBuilder: (context, index) {
             final q = questions[index];
-            return _buildArchiveQuestionCard(context, q, myUid, couple);
+            return _buildArchiveQuestionCard(context, coupleId, q, myUid, couple);
           },
         );
       },
@@ -1034,6 +1041,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
 
   Widget _buildArchiveQuestionCard(
     BuildContext context,
+    String coupleId,
     DailyQuestionModel q,
     String myUid,
     CoupleModel? couple,
@@ -1119,18 +1127,47 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   color: context.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(Icons.lock_rounded, size: 16, color: context.textSecondary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        strings.isPortuguese
-                            ? 'As respostas permanecem bloqueadas até que ambos enviem.'
-                            : 'Answers remain locked until both partners submit.',
-                        style: TextStyle(fontSize: 12.5, color: context.textSecondary),
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.lock_rounded, size: 16, color: context.textSecondary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            q.hasUserAnswered(myUid)
+                                ? (strings.isPortuguese
+                                    ? 'Você já respondeu! Aguardando seu amor responder para desbloquear.'
+                                    : 'You answered! Waiting for your partner to unlock.')
+                                : (strings.isPortuguese
+                                    ? 'Seu amor já respondeu! Envie sua resposta para desbloquear.'
+                                    : 'Your partner already answered! Submit yours to unlock.'),
+                            style: TextStyle(fontSize: 12.5, color: context.textSecondary),
+                          ),
+                        ),
+                      ],
                     ),
+                    if (!q.hasUserAnswered(myUid) && myUid.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.primaryRose,
+                        ),
+                        onPressed: () => _showPastAnswerSheet(
+                          context,
+                          coupleId: coupleId,
+                          question: q,
+                          myUid: myUid,
+                        ),
+                        icon: const Icon(Icons.edit_rounded, size: 16),
+                        label: Text(
+                          strings.isPortuguese
+                              ? 'Responder esta pergunta'
+                              : 'Answer this question',
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1248,5 +1285,110 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _showPastAnswerSheet(
+    BuildContext context, {
+    required String coupleId,
+    required DailyQuestionModel question,
+    required String myUid,
+  }) async {
+    final strings = AppStrings.of(context);
+    final controller = TextEditingController();
+    bool submitting = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    DailyQuestionRepository.translatePrompt(
+                      question.prompt,
+                      languageCode: ref.read(localeProvider).languageCode,
+                    ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: strings.isPortuguese
+                          ? 'Escreva sua resposta para desbloquear...'
+                          : 'Write your answer to unlock...',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryRose,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final text = controller.text.trim();
+                            if (text.isEmpty) return;
+                            setSheetState(() => submitting = true);
+                            try {
+                              await ref
+                                  .read(dailyQuestionRepositoryProvider)
+                                  .submitAnswer(coupleId, question.id, myUid, text);
+                              if (sheetCtx.mounted) {
+                                Navigator.of(sheetCtx).pop();
+                              }
+                            } catch (e) {
+                              if (sheetCtx.mounted) {
+                                setSheetState(() => submitting = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('$e')),
+                                );
+                              }
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            strings.isPortuguese
+                                ? 'Enviar & Revelar 💕'
+                                : 'Submit & Reveal 💕',
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(controller.dispose);
   }
 }

@@ -192,5 +192,23 @@ void main() {
       expect(updated.id, equals('q1'));
       expect(updated.isRevealed, isTrue);
     });
+
+    test('getPromptForDate yields 50 distinct prompts over 50 consecutive days with no 9-day collisions', () {
+      final start = DateTime.utc(2026, 11, 1);
+      final seen = <String>{};
+      for (int i = 0; i < 50; i++) {
+        final key = DailyQuestionRepository.formatDate(start.add(Duration(days: i)));
+        seen.add(DailyQuestionRepository.getPromptForDate(key, languageCode: 'pt'));
+      }
+      expect(seen.length, equals(50));
+      expect(
+        DailyQuestionRepository.getPromptForDate('2026-11-03', languageCode: 'pt'),
+        isNot(equals(DailyQuestionRepository.getPromptForDate('2026-11-12', languageCode: 'pt'))),
+      );
+      expect(
+        DailyQuestionRepository.getPromptForDate('2026-11-12', languageCode: 'pt'),
+        isNot(equals(DailyQuestionRepository.getPromptForDate('2026-11-21', languageCode: 'pt'))),
+      );
+    });
   });
 }
