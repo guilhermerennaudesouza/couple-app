@@ -98,6 +98,25 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("partner_name", null)
             ?: ""
 
+        val dailyStreak = try {
+            val fStreak = prefs.getInt("flutter.daily_streak", -1)
+            if (fStreak != -1) fStreak else {
+                val pStreak = prefs.getInt("daily_streak", -1)
+                if (pStreak != -1) pStreak else {
+                    prefs.getString("flutter.daily_streak", null)?.toIntOrNull()
+                        ?: prefs.getString("daily_streak", null)?.toIntOrNull()
+                        ?: 0
+                }
+            }
+        } catch (_: Throwable) {
+            try {
+                val fLong = prefs.getLong("flutter.daily_streak", -1L)
+                if (fLong != -1L) fLong.toInt() else prefs.getLong("daily_streak", 0L).toInt()
+            } catch (_: Throwable) {
+                0
+            }
+        }
+
         val savedLocale = prefs.getString("flutter.app_locale", null)
             ?: prefs.getString("app_locale", null)
             ?: prefs.getString("flutter.language", null)
@@ -127,6 +146,7 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                         daysTogether = daysTogether,
                         partnerName = partnerName,
                         formattedDays = formattedDays,
+                        dailyStreak = dailyStreak,
                         isPt = isPt
                     )
                 } else {
@@ -141,6 +161,7 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
         daysTogether: Int,
         partnerName: String,
         formattedDays: String,
+        dailyStreak: Int,
         isPt: Boolean
     ) {
         Box(
@@ -230,6 +251,23 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = ColorProvider(Color(0xFF6B1D2F))
+                        ),
+                        maxLines = 1
+                    )
+                }
+
+                if (dailyStreak > 0) {
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    Text(
+                        text = if (isPt) {
+                            "🔥 $dailyStreak ${if (dailyStreak == 1) "dia seguido" else "dias seguidos"}"
+                        } else {
+                            "🔥 $dailyStreak-day streak"
+                        },
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorProvider(Color(0xFFD84315))
                         ),
                         maxLines = 1
                     )

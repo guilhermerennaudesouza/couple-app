@@ -9,6 +9,7 @@ import '../auth/data/pairing_repository.dart';
 import '../auth/domain/couple_model.dart';
 import '../daily_question/data/daily_question_repository.dart';
 import '../daily_question/domain/daily_question_model.dart';
+import '../home/data/activity_state_repository.dart';
 import '../notes/data/note_repository.dart';
 import '../notes/domain/note_model.dart';
 import '../tasks/data/task_repository.dart';
@@ -23,6 +24,7 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
   final todayAsync = ref.watch(todayDailyQuestionProvider(coupleId));
   final tasksAsync = ref.watch(tasksStreamProvider(coupleId));
   final notesAsync = ref.watch(notesStreamProvider(coupleId));
+  final dailyStreak = ref.watch(dailyStreakProvider(coupleId));
   final locale = ref.watch(localeProvider);
   final authUid = ref.watch(currentUserUidProvider).valueOrNull;
 
@@ -38,15 +40,32 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
     } catch (_) {}
   }
 
+  final isPt = locale.languageCode == 'pt';
   final timer = Timer(const Duration(milliseconds: 400), () {
     WidgetSyncService.syncAllWidgets(
       couple: couple,
       pinnedNote: pinnedNote,
       todayQuestion: todayQuestion,
       tasks: tasks,
+      dailyStreak: dailyStreak,
       myUid: myUid,
-      isPortuguese: locale.languageCode == 'pt',
+      isPortuguese: isPt,
     );
+
+    final snapshot = WidgetSyncService.buildCompactWidgetSnapshot(
+      couple: couple,
+      pinnedNote: pinnedNote,
+      todayQuestion: todayQuestion,
+      tasks: tasks,
+      dailyStreak: dailyStreak,
+      isPortuguese: isPt,
+    );
+    if (snapshot.isNotEmpty) {
+      ref.read(activityStateRepositoryProvider).syncWidgetSnapshot(
+            coupleId,
+            snapshot: snapshot,
+          );
+    }
   });
 
   ref.onDispose(timer.cancel);
@@ -170,6 +189,7 @@ class WidgetSyncService {
   static Future<void> syncCoupleStats({
     required DateTime anniversary,
     required String partnerName,
+    int dailyStreak = 0,
     DateTime? today,
     bool isPortuguese = false,
   }) async {
@@ -194,6 +214,7 @@ class WidgetSyncService {
         'anniversary',
         stats['anniversary'] as String,
       );
+      await HomeWidget.saveWidgetData<int>('daily_streak', dailyStreak);
 
       await HomeWidget.updateWidget(
         name: coupleWidgetName,
@@ -389,12 +410,68 @@ class WidgetSyncService {
     }
   }
 
+  /// Builds a compact `< 1 KB` snapshot stored inside `activity_state/latest`
+  /// so background `WorkManager` can refresh all 4 Glance widgets in 1 read.
+  static Map<String, dynamic> buildCompactWidgetSnapshot({
+    required CoupleModel? couple,
+    required NoteModel? pinnedNote,
+    required DailyQuestionModel? todayQuestion,
+    required List<TaskModel> tasks,
+    int dailyStreak = 0,
+    bool isPortuguese = true,
+  }) {
+    final snapshot = <String, dynamic>{
+      'dailyStreak': dailyStreak,
+    };
+    if (couple != null) {
+      snapshot['anniversaryIso'] = couple.anniversaryDate.toIso8601String();
+      snapshot['partnerNames'] = couple.partnerProfiles.map(
+        (uid, profile) => MapEntry(uid, profile.displayName),
+      );
+    }
+    if (pinnedNote != null) {
+      final formatted = formatNoteForWidget(pinnedNote, isPortuguese: isPortuguese);
+      snapshot['pinnedNote'] = {
+        'id': formatted['note_id'],
+        'title': formatted['note_title'],
+        'content': formatted['note_content'],
+        'author': formatted['note_author'],
+        'color': formatted['note_color'],
+        'updatedAt': formatted['note_updated_at'],
+      };
+    } else {
+      snapshot['pinnedNote'] = null;
+    }
+    if (todayQuestion != null) {
+      snapshot['todayPrompt'] = {
+        'prompt': DailyQuestionRepository.translatePrompt(
+          todayQuestion.prompt,
+          languageCode: isPortuguese ? 'pt' : 'en',
+        ),
+        'isRevealed': todayQuestion.isRevealed,
+        'answeredUids': todayQuestion.answers.keys.toList(),
+      };
+    }
+    final formattedTasks = formatTopTasks(tasks: tasks);
+    snapshot['tasks'] = {
+      'task_1_title': formattedTasks['task_1_title'],
+      'task_1_done': formattedTasks['task_1_done'],
+      'task_2_title': formattedTasks['task_2_title'],
+      'task_2_done': formattedTasks['task_2_done'],
+      'task_3_title': formattedTasks['task_3_title'],
+      'task_3_done': formattedTasks['task_3_done'],
+      'remaining_tasks_count': formattedTasks['remaining_tasks_count'],
+    };
+    return snapshot;
+  }
+
   /// Synchronizes all couple widgets simultaneously.
   static Future<void> syncAllWidgets({
     required CoupleModel? couple,
     required NoteModel? pinnedNote,
     required DailyQuestionModel? todayQuestion,
     required List<TaskModel> tasks,
+    int dailyStreak = 0,
     String? myUid,
     bool isPortuguese = true,
   }) async {
@@ -419,6 +496,7 @@ class WidgetSyncService {
       await syncCoupleStats(
         anniversary: couple.anniversaryDate,
         partnerName: partnerName,
+        dailyStreak: dailyStreak,
         isPortuguese: isPortuguese,
       );
     }
@@ -457,6 +535,7 @@ class WidgetSyncService {
   static Future<void> clearAllWidgets() async {
     try {
       await HomeWidget.saveWidgetData<int>('days_together', 0);
+      await HomeWidget.saveWidgetData<int>('daily_streak', 0);
       await HomeWidget.saveWidgetData<String>('partner_name', '');
       await HomeWidget.saveWidgetData<String>('formatted_days', '');
       await HomeWidget.saveWidgetData<String>('anniversary', '');

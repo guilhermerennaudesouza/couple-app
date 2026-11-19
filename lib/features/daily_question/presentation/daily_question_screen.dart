@@ -117,6 +117,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     // Watch live couple data if possible for partner profile details
     final coupleAsync = ref.watch(coupleStreamProvider(activeCoupleId));
     final couple = coupleAsync.valueOrNull ?? widget.initialCouple;
+    final streak = ref.watch(dailyStreakProvider(activeCoupleId));
 
     return Scaffold(
       appBar: AppBar(
@@ -129,7 +130,33 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
               size: 22,
             ),
             const SizedBox(width: 8),
-            Text(strings.dailyConnectionTitle),
+            Flexible(
+              child: Text(
+                strings.dailyConnectionTitle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (streak > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.45),
+                  ),
+                ),
+                child: Text(
+                  '🔥 $streak',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFE65100),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         bottom: TabBar(

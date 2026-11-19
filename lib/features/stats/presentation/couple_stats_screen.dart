@@ -9,6 +9,7 @@ import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/daily_question/data/daily_question_repository.dart';
 import 'package:couple_app/features/date_ideas/data/date_ideas_repository.dart';
 import 'package:couple_app/features/finance/data/finance_repository.dart';
+import 'package:couple_app/features/home/data/activity_state_repository.dart';
 import 'package:couple_app/features/loyalty/data/loyalty_repository.dart';
 import 'package:couple_app/features/memories/data/memories_repository.dart';
 import 'package:couple_app/features/notes/data/note_repository.dart';
@@ -27,6 +28,8 @@ class CoupleStatsSummary {
   final int notesCount;
   final int couponsRedeemed;
   final double totalSavedInPiggyBank;
+  final int dailyStreak;
+  final int totalPulsesCount;
 
   const CoupleStatsSummary({
     required this.daysTogether,
@@ -39,6 +42,8 @@ class CoupleStatsSummary {
     required this.notesCount,
     required this.couponsRedeemed,
     required this.totalSavedInPiggyBank,
+    this.dailyStreak = 0,
+    this.totalPulsesCount = 0,
   });
 
   int get totalXp {
@@ -50,7 +55,9 @@ class CoupleStatsSummary {
         (capsulesCount * 50) +
         (wishesFulfilled * 70) +
         (notesCount * 20) +
-        (couponsRedeemed * 35);
+        (couponsRedeemed * 35) +
+        (dailyStreak * 15) +
+        (totalPulsesCount * 5);
   }
 
   int get level => (totalXp ~/ 500) + 1;
@@ -102,6 +109,9 @@ class CoupleStatsScreen extends ConsumerWidget {
             const [];
     final goals =
         ref.watch(savingsGoalsStreamProvider(coupleId)).valueOrNull ?? const [];
+    final dailyStreak = ref.watch(dailyStreakProvider(coupleId));
+    final activityState =
+        ref.watch(activityStateStreamProvider(coupleId)).valueOrNull;
 
     final daysTogether = couple != null
         ? CoupleDateUtils.daysTogether(couple.anniversaryDate)
@@ -124,6 +134,8 @@ class CoupleStatsScreen extends ConsumerWidget {
           coupons.fold<int>(0, (sum, c) => sum + c.usedCount),
       totalSavedInPiggyBank:
           goals.fold<double>(0.0, (sum, g) => sum + g.currentAmount),
+      dailyStreak: dailyStreak,
+      totalPulsesCount: activityState?.totalPulsesCount ?? 0,
     );
 
     final profiles = couple?.partnerProfiles.values.toList() ?? const [];
@@ -302,6 +314,20 @@ class CoupleStatsScreen extends ConsumerWidget {
                 value: '${summary.wishesFulfilled}',
                 label: 'Desejos Realizados',
                 accent: const Color(0xFFE11D48),
+              ),
+              _buildStatTile(
+                context,
+                emoji: '🔥',
+                value: '${summary.dailyStreak}',
+                label: 'Ofensiva Diária (Dias)',
+                accent: const Color(0xFFEA580C),
+              ),
+              _buildStatTile(
+                context,
+                emoji: '💓',
+                value: '${summary.totalPulsesCount}',
+                label: 'Carinhos Enviados',
+                accent: AppTheme.primaryRose,
               ),
             ],
           ),

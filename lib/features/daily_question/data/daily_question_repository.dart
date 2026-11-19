@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/couple_streak_utils.dart';
 import '../../../core/utils/current_date_provider.dart';
 import '../domain/daily_question_model.dart';
 
@@ -380,4 +381,17 @@ final pastDailyQuestionsProvider =
   final repository = ref.watch(dailyQuestionRepositoryProvider);
   final dateKey = ref.watch(currentDateKeyProvider);
   return repository.watchPastQuestions(coupleId, todayKeyOverride: dateKey);
+});
+
+/// Consecutive daily revealed-question streak ending today or yesterday.
+final dailyStreakProvider = Provider.family<int, String>((ref, coupleId) {
+  if (coupleId.trim().isEmpty) return 0;
+  final today = ref.watch(todayDailyQuestionProvider(coupleId)).valueOrNull;
+  final past =
+      ref.watch(pastDailyQuestionsProvider(coupleId)).valueOrNull ?? const [];
+  final combined = <DailyQuestionModel>[
+    if (today != null) today,
+    ...past,
+  ];
+  return CoupleStreakUtils.calculateDailyStreak(combined);
 });
