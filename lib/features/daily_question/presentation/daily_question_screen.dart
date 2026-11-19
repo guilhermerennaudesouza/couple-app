@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/widgets/partner_avatar_widget.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../home/data/activity_state_repository.dart';
@@ -995,24 +996,11 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   }
 
   Widget _buildAvatar(String? avatarUrl, String name, bool isMe) {
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 18,
-        backgroundImage: NetworkImage(avatarUrl),
-      );
-    }
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '♥';
-    return CircleAvatar(
+    return PartnerAvatarWidget(
+      name: name,
+      avatarUrl: avatarUrl,
       radius: 18,
-      backgroundColor: isMe ? AppTheme.primaryRose : AppTheme.tertiaryMauve,
-      child: Text(
-        initial,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      accentColor: isMe ? AppTheme.primaryRose : AppTheme.tertiaryMauve,
     );
   }
 

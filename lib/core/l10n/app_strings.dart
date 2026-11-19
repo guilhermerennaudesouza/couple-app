@@ -441,4 +441,62 @@ class AppStrings {
   String get hubStatsSub => hubStatsSubtitle;
   String get unableToLoadSpace => isPortuguese ? 'Não foi possível carregar o espaço do casal' : 'Unable to load couple space';
   String copyLabelTooltip(String label) => isPortuguese ? 'Copiar $label' : 'Copy $label';
+
+  // ---------------------------------------------------------------------------
+  // Phase 2: Nosso Dia Home, Profile/Avatar, Presence & Samsung Reliability
+  // ---------------------------------------------------------------------------
+  String get homeTitle => isPortuguese ? 'Nosso Dia' : 'Our Day';
+  String get editCoupleProfileTitle => isPortuguese ? 'Editar Perfil do Casal' : 'Edit Couple Profile';
+  String get editProfileTooltip => isPortuguese ? 'Editar perfil e foto' : 'Edit profile & photo';
+  String get choosePhotoBtn => isPortuguese ? 'Escolher foto' : 'Choose photo';
+  String get removePhotoBtn => isPortuguese ? 'Remover foto' : 'Remove photo';
+  String get myDisplayNameLabel => isPortuguese ? 'Meu nome ou apelido' : 'My name or nickname';
+  String get saveProfileBtn => isPortuguese ? 'Salvar Alterações' : 'Save Changes';
+  String get profileNameRequired => isPortuguese ? 'Digite seu nome ou apelido.' : 'Please enter your name.';
+  String get profileUpdatedSuccess => isPortuguese ? 'Perfil atualizado com sucesso 💕' : 'Profile updated 💕';
+  String get avatarTooLargeError => isPortuguese
+      ? 'A foto escolhida ficou muito grande. Tente outra imagem.'
+      : 'Selected photo is too large. Please pick another image.';
+  String streakDaysBadge(int days) => isPortuguese
+      ? '🔥 $days ${days == 1 ? 'dia seguido' : 'dias seguidos'}'
+      : '🔥 $days-day streak';
+  String get howAreWeTodayTitle => isPortuguese ? 'Como estamos hoje' : 'How we feel today';
+  String get tapToSetMoodHint => isPortuguese ? 'Toque para registrar seu humor' : 'Tap to set your mood';
+  String get addMoodNoteTitle => isPortuguese ? 'Adicionar recadinho (opcional)' : 'Add a short note (optional)';
+  String get addMoodNoteHint => isPortuguese ? 'Até 40 caracteres...' : 'Up to 40 characters...';
+  String get sendLovePulseBtn => isPortuguese ? 'Enviar Carinho • Tô com Saudade 💓' : 'Send Love • Thinking of You 💓';
+  String get lovePulseSentToast => isPortuguese ? 'Carinho enviado para o seu amor! 💓' : 'Love pulse sent to your partner! 💓';
+  String totalPulsesLabel(int count) => isPortuguese
+      ? '$count ${count == 1 ? 'carinho enviado' : 'carinhos enviados'}'
+      : '$count love ${count == 1 ? 'pulse' : 'pulses'} sent';
+  String get recentPulsesTitle => isPortuguese ? 'Últimos carinhos' : 'Recent love pulses';
+  String get nudgePartnerBtn => isPortuguese ? 'Cutucar 💌' : 'Nudge 💌';
+  String nudgeSentSuccess(String partnerName) => isPortuguese
+      ? 'Cutucada enviada para $partnerName! 💕'
+      : 'Nudge sent to $partnerName! 💕';
+  String nudgeCooldownMessage(int minutes) => isPortuguese
+      ? 'Aguarde $minutes min para cutucar novamente 💕'
+      : 'Please wait $minutes min before nudging again 💕';
+  String get sosBannerAction => isPortuguese ? 'Estou indo cuidar 💕' : 'On my way to care 💕';
+  String get spicyBannerOpen => isPortuguese ? 'Abrir jogo 🔥' : 'Open game 🔥';
+  String get dismissLabel => isPortuguese ? 'Dispensar' : 'Dismiss';
+  String openBallotsBanner(int count) => isPortuguese
+      ? '$count ${count == 1 ? 'votação aberta' : 'votações abertas'} esperando seu voto!'
+      : '$count open ${count == 1 ? 'ballot' : 'ballots'} waiting for your vote!';
+  String get voteNowBtn => isPortuguese ? 'Votar agora' : 'Vote now';
+  String get couponRedeemedBannerTitle => isPortuguese ? 'Cupom de Amor resgatado 🎟️' : 'Love Coupon redeemed 🎟️';
+  String get pinnedNoteCardTitle => isPortuguese ? 'Recado Fixado' : 'Pinned Note';
+  String get noPinnedNoteYet => isPortuguese ? 'Nenhum recado fixado ainda. Toque para escrever 💌' : 'No pinned note yet. Tap to write one 💌';
+  String get upcomingTasksCardTitle => isPortuguese ? 'Próximas Tarefas' : 'Upcoming Tasks';
+  String get allTasksDoneToday => isPortuguese ? 'Tudo em dia por aqui! 🎉' : 'All caught up! 🎉';
+  String get nextEventCardTitle => isPortuguese ? 'Próximo Evento' : 'Next Event';
+  String get noUpcomingEventsYet => isPortuguese ? 'Nenhum evento próximo no calendário' : 'No upcoming events yet';
+  String get samsungReliabilityTitle => isPortuguese ? 'Garantir alertas no Samsung' : 'Keep alerts reliable on Samsung';
+  String get samsungReliabilityDesc => isPortuguese
+      ? 'Para receber avisos e atualizar widgets com o app fechado no One UI, libere o uso de bateria em segundo plano e alarmes exatos.'
+      : 'To receive partner alerts and widget updates in the background on One UI, allow unrestricted battery and exact alarms.';
+  String get samsungBatteryBtn => isPortuguese ? 'Bateria sem restrição' : 'Unrestricted battery';
+  String get samsungBatteryAlreadyOk => isPortuguese ? 'Bateria liberada ✓' : 'Battery unrestricted ✓';
+  String get samsungExactAlarmsBtn => isPortuguese ? 'Alarmes exatos' : 'Exact alarms';
+  String get openAlertAction => isPortuguese ? 'Abrir' : 'Open';
 }

@@ -17,7 +17,9 @@ import 'package:couple_app/core/services/app_update_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/core/theme/theme_provider.dart';
 import 'package:couple_app/core/utils/couple_date_utils.dart';
+import 'package:couple_app/core/widgets/partner_avatar_widget.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
+import 'package:couple_app/features/auth/presentation/edit_couple_profile_sheet.dart';
 import 'package:couple_app/features/auth/presentation/pairing_screen.dart';
 import 'package:couple_app/features/calendar/presentation/calendar_screen.dart';
 import 'package:couple_app/features/daily_question/presentation/daily_question_screen.dart';
@@ -628,48 +630,105 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.primaryRose.withOpacity(0.12),
-                    AppTheme.secondaryBlush.withOpacity(0.18),
+                    AppTheme.primaryRose.withValues(alpha: 0.12),
+                    AppTheme.secondaryBlush.withValues(alpha: 0.18),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
                 border: Border.all(
-                  color: AppTheme.primaryRose.withOpacity(0.25),
+                  color: AppTheme.primaryRose.withValues(alpha: 0.25),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    strings.spaceHeroTag,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                      color: AppTheme.primaryRose,
+                  if (couple != null && couple.partnerProfiles.isNotEmpty) ...[
+                    SizedBox(
+                      width: couple.partnerProfiles.length >= 2 ? 70 : 46,
+                      height: 46,
+                      child: Stack(
+                        children: [
+                          for (var i = 0;
+                              i < couple.partnerProfiles.values.take(2).length;
+                              i++)
+                            Positioned(
+                              left: i * 24.0,
+                              child: PartnerAvatarWidget(
+                                name: couple.partnerProfiles.values
+                                    .elementAt(i)
+                                    .name,
+                                avatarUrl: couple.partnerProfiles.values
+                                    .elementAt(i)
+                                    .avatarUrl,
+                                radius: 21,
+                                accentColor: i == 0
+                                    ? AppTheme.primaryRose
+                                    : AppTheme.tertiaryMauve,
+                                showBorder: true,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.spaceHeroTag,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.4,
+                            color: AppTheme.primaryRose,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          partnerNames,
+                          style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          daysTogether != null && daysTogether >= 0
+                              ? strings.daysTogetherCount(daysTogether)
+                              : '${strings.anniversary}: $anniversaryText',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    partnerNames,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimary,
+                  if (couple != null)
+                    IconButton(
+                      tooltip: strings.editProfileTooltip,
+                      icon: const Icon(
+                        Icons.edit_rounded,
+                        color: AppTheme.primaryRose,
+                      ),
+                      onPressed: () {
+                        final uid =
+                            ref.read(currentUserUidProvider).valueOrNull ??
+                                ref.read(pairingRepositoryProvider).currentUserUid ??
+                                '';
+                        if (uid.isEmpty) return;
+                        showEditCoupleProfileSheet(
+                          context,
+                          coupleId: coupleId,
+                          couple: couple,
+                          myUid: uid,
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    daysTogether != null && daysTogether >= 0
-                        ? strings.daysTogetherCount(daysTogether)
-                        : '${strings.anniversary}: $anniversaryText',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.textSecondary,
-                    ),
-                  ),
                 ],
               ),
             ),

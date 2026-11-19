@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/notifications/local_notification_service.dart';
+import '../../calendar/domain/calendar_event_model.dart';
 import '../domain/couple_model.dart';
 import '../domain/partner_profile.dart';
 
@@ -19,6 +21,18 @@ class PairingException implements Exception {
 class PairingRepository {
   static const String currentCoupleIdKey = 'current_couple_id';
   static const String couplesCollection = 'couples';
+
+  /// Safe cap for compressed `256x256` JPEG Base64 avatar Data URIs (~80 KB).
+  static const int maxAvatarDataUriBytes = 80 * 1024;
+
+  /// Validates that [dataUri] is an image Base64 Data URI within [maxAvatarDataUriBytes].
+  static bool isValidAvatarDataUri(String dataUri) {
+    final trimmed = dataUri.trim();
+    if (!trimmed.startsWith('data:image/') || !trimmed.contains(';base64,')) {
+      return false;
+    }
+    return utf8.encode(trimmed).length <= maxAvatarDataUriBytes;
+  }
 
   final FirebaseFirestore _firestore;
   final FlutterSecureStorage _storage;
@@ -394,6 +408,96 @@ class PairingRepository {
       return null;
     }
     return CoupleModel.fromMap(doc.id, doc.data()!);
+  }
+
+  /// Updates only the current partner's profile (`name` and/or `avatarUrl`)
+  /// inside `/couples/{coupleId}` without touching the other partner's entry.
+  Future<void> updatePartnerProfile(
+    String coupleId,
+    String uid, {
+    String? name,
+    String? avatarUrl,
+    bool clearAvatar = false,
+  }) async {
+    if (coupleId.trim().isEmpty || uid.trim().isEmpty) return;
+    if (!clearAvatar &&
+        avatarUrl != null &&
+        avatarUrl.startsWith('data:image/') &&
+        !isValidAvatarDataUri(avatarUrl)) {
+      throw const PairingException('Avatar image exceeds 80 KB Spark limit.');
+    }
+
+    final docRef = _firestore.collection(couplesCollection).doc(coupleId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists || snap.data() == null) return;
+      final couple = CoupleModel.fromMap(snap.id, snap.data()!);
+      final existing = couple.partnerProfiles[uid] ??
+          PartnerProfile(uid: uid, name: name?.trim() ?? '');
+
+      final updatedProfile = PartnerProfile(
+        uid: uid,
+        name: (name != null && name.trim().isNotEmpty)
+            ? name.trim()
+            : existing.name,
+        avatarUrl: clearAvatar ? null : (avatarUrl ?? existing.avatarUrl),
+        fcmToken: existing.fcmToken,
+        joinedAt: existing.joinedAt,
+      );
+
+      final updatedProfiles =
+          Map<String, PartnerProfile>.from(couple.partnerProfiles)
+            ..[uid] = updatedProfile;
+
+      tx.update(docRef, {
+        'partnerProfiles':
+            updatedProfiles.map((k, v) => MapEntry(k, v.toMap())),
+      });
+    });
+  }
+
+  /// Updates the couple's `anniversaryDate` and syncs the matching recurring
+  /// `anniversary` event in `/couples/{coupleId}/calendar_events`.
+  Future<void> updateAnniversaryDate(
+    String coupleId,
+    DateTime anniversaryDate, {
+    bool isPortuguese = true,
+  }) async {
+    if (coupleId.trim().isEmpty) return;
+    final normalized =
+        DateTime(anniversaryDate.year, anniversaryDate.month, anniversaryDate.day);
+    final coupleRef = _firestore.collection(couplesCollection).doc(coupleId);
+    await coupleRef.set(
+      {'anniversaryDate': normalized.toIso8601String()},
+      SetOptions(merge: true),
+    );
+
+    try {
+      final eventsCol = coupleRef.collection('calendar_events');
+      final existingSnap = await eventsCol
+          .where('category', isEqualTo: CalendarEventModel.categoryAnniversary)
+          .limit(1)
+          .get();
+
+      if (existingSnap.docs.isNotEmpty) {
+        await existingSnap.docs.first.reference.update({
+          'date': normalized.toIso8601String(),
+          'isAnnual': true,
+        });
+      } else {
+        final newEvent = CalendarEventModel(
+          id: 'anniversary_${coupleId.substring(0, coupleId.length.clamp(0, 8))}',
+          title: isPortuguese ? 'Nosso Aniversário de Namoro 💕' : 'Our Anniversary 💕',
+          date: normalized,
+          isAnnual: true,
+          category: CalendarEventModel.categoryAnniversary,
+          reminderDaysBefore: 1,
+        );
+        await eventsCol.doc(newEvent.id).set(newEvent.toMap());
+      }
+    } catch (e) {
+      debugPrint('PairingRepository.updateAnniversaryDate calendar sync warning: $e');
+    }
   }
 
   Future<String?> getCurrentCoupleId() async {
