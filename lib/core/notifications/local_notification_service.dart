@@ -75,6 +75,7 @@ class LocalNotificationService {
   /// `America/Sao_Paulo` fallback), and high-importance Android channel.
   static Future<void> initialize({
     void Function(String payload)? onNotificationTap,
+    bool requestPermission = true,
   }) async {
     if (onNotificationTap != null) {
       _onNotificationTap = onNotificationTap;
@@ -147,7 +148,9 @@ class LocalNotificationService {
         );
         await androidImplementation.createNotificationChannel(routineChannel);
         await androidImplementation.createNotificationChannel(urgentChannel);
-        await androidImplementation.requestNotificationsPermission();
+        if (requestPermission) {
+          await androidImplementation.requestNotificationsPermission();
+        }
       }
     } catch (e) {
       debugPrint('LocalNotificationService.initialize error: $e');

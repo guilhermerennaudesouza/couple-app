@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -41,6 +42,15 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
   }
 
   final isPt = locale.languageCode == 'pt';
+  final allStreamsReady = WidgetSyncService.canSyncWidgetSnapshot(
+    hasCouple: coupleAsync.hasValue,
+    hasTodayQuestion: todayAsync.hasValue,
+    hasTasks: tasksAsync.hasValue,
+    hasNotes: notesAsync.hasValue,
+  );
+  final existingSnapshot =
+      ref.read(activityStateStreamProvider(coupleId)).valueOrNull?.widgetSnapshot;
+
   final timer = Timer(const Duration(milliseconds: 400), () {
     WidgetSyncService.syncAllWidgets(
       couple: couple,
@@ -52,6 +62,7 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
       isPortuguese: isPt,
     );
 
+    if (!allStreamsReady) return;
     final snapshot = WidgetSyncService.buildCompactWidgetSnapshot(
       couple: couple,
       pinnedNote: pinnedNote,
@@ -60,12 +71,24 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
       dailyStreak: dailyStreak,
       isPortuguese: isPt,
     );
-    if (snapshot.isNotEmpty) {
-      ref.read(activityStateRepositoryProvider).syncWidgetSnapshot(
-            coupleId,
-            snapshot: snapshot,
-          );
+    if (snapshot.isEmpty) return;
+
+    final nextSig = WidgetSyncService.computeSnapshotSignature(snapshot);
+    final remoteSig = existingSnapshot != null && existingSnapshot.isNotEmpty
+        ? WidgetSyncService.computeSnapshotSignature(existingSnapshot)
+        : null;
+    if (WidgetSyncService._lastSyncedSnapshotSignatureByCouple[coupleId] ==
+            nextSig ||
+        remoteSig == nextSig) {
+      WidgetSyncService._lastSyncedSnapshotSignatureByCouple[coupleId] = nextSig;
+      return;
     }
+
+    WidgetSyncService._lastSyncedSnapshotSignatureByCouple[coupleId] = nextSig;
+    ref.read(activityStateRepositoryProvider).syncWidgetSnapshot(
+          coupleId,
+          snapshot: snapshot,
+        );
   });
 
   ref.onDispose(timer.cancel);
@@ -80,6 +103,29 @@ class WidgetSyncService {
   static const String dailyPromptWidgetName = 'DailyPromptGlanceWidget';
   static const String tasksWidgetName = 'TasksGlanceWidget';
   static const String appGroupId = 'group.com.personal.couple_app';
+  static final Map<String, String> _lastSyncedSnapshotSignatureByCouple = {};
+
+  /// Guards against overwriting the shared `activity_state/latest` snapshot
+  /// with partial empty defaults while Firestore streams are still loading.
+  static bool canSyncWidgetSnapshot({
+    required bool hasCouple,
+    required bool hasTodayQuestion,
+    required bool hasTasks,
+    required bool hasNotes,
+  }) {
+    return hasCouple && hasTodayQuestion && hasTasks && hasNotes;
+  }
+
+  /// Deterministic JSON signature used to skip redundant Firestore writes.
+  static String computeSnapshotSignature(Map<String, dynamic> snapshot) {
+    return jsonEncode(snapshot);
+  }
+
+  static String _truncateText(String raw, int maxChars) {
+    final trimmed = raw.trim();
+    if (trimmed.length <= maxChars) return trimmed;
+    return '${trimmed.substring(0, (maxChars - 3).clamp(1, maxChars)).trimRight()}...';
+  }
 
   /// Initializes widget configuration and app group settings if applicable.
   static Future<void> initialize() async {
@@ -433,9 +479,9 @@ class WidgetSyncService {
       final formatted = formatNoteForWidget(pinnedNote, isPortuguese: isPortuguese);
       snapshot['pinnedNote'] = {
         'id': formatted['note_id'],
-        'title': formatted['note_title'],
-        'content': formatted['note_content'],
-        'author': formatted['note_author'],
+        'title': _truncateText(formatted['note_title'] ?? '', 80),
+        'content': _truncateText(formatted['note_content'] ?? '', 280),
+        'author': _truncateText(formatted['note_author'] ?? '', 40),
         'color': formatted['note_color'],
         'updatedAt': formatted['note_updated_at'],
       };
@@ -444,9 +490,12 @@ class WidgetSyncService {
     }
     if (todayQuestion != null) {
       snapshot['todayPrompt'] = {
-        'prompt': DailyQuestionRepository.translatePrompt(
-          todayQuestion.prompt,
-          languageCode: isPortuguese ? 'pt' : 'en',
+        'prompt': _truncateText(
+          DailyQuestionRepository.translatePrompt(
+            todayQuestion.prompt,
+            languageCode: isPortuguese ? 'pt' : 'en',
+          ),
+          200,
         ),
         'isRevealed': todayQuestion.isRevealed,
         'answeredUids': todayQuestion.answers.keys.toList(),
@@ -454,11 +503,11 @@ class WidgetSyncService {
     }
     final formattedTasks = formatTopTasks(tasks: tasks);
     snapshot['tasks'] = {
-      'task_1_title': formattedTasks['task_1_title'],
+      'task_1_title': _truncateText(formattedTasks['task_1_title']?.toString() ?? '', 80),
       'task_1_done': formattedTasks['task_1_done'],
-      'task_2_title': formattedTasks['task_2_title'],
+      'task_2_title': _truncateText(formattedTasks['task_2_title']?.toString() ?? '', 80),
       'task_2_done': formattedTasks['task_2_done'],
-      'task_3_title': formattedTasks['task_3_title'],
+      'task_3_title': _truncateText(formattedTasks['task_3_title']?.toString() ?? '', 80),
       'task_3_done': formattedTasks['task_3_done'],
       'remaining_tasks_count': formattedTasks['remaining_tasks_count'],
     };

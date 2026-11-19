@@ -1028,11 +1028,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             ref.read(activityStateRepositoryProvider).recordActivity(
                                   coupleId,
                                   eventType: ActivityStateModel.typeNote,
-                                  actorUid: note.authorUid,
-                                  actorName: note.authorName,
+                                  actorUid: authorUid,
+                                  actorName: authorName,
                                   title: note.isScratchCard && !note.isScratched
                                       ? 'Raspadinha Secreta ✨'
-                                      : 'Novo Recado de ${note.authorName} 💌',
+                                      : 'Novo Recado de $authorName 💌',
                                   body: safeBody,
                                   route: 'notes',
                                 );

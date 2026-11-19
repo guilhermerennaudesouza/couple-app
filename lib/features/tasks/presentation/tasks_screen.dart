@@ -1171,18 +1171,25 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           );
 
                           ref.read(taskRepositoryProvider).addTask(coupleId, task);
-                          final couple = ref.read(coupleStreamProvider(coupleId)).valueOrNull ??
-                              widget.initialCouple;
-                          final myName = couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
-                          ref.read(activityStateRepositoryProvider).recordActivity(
-                                coupleId,
-                                eventType: ActivityStateModel.typeTask,
-                                actorUid: myUid,
-                                actorName: myName,
-                                title: 'Nova tarefa do casal ☑️',
-                                body: '$myName adicionou: "$title"',
-                                route: 'tasks',
-                              );
+                          if (ActivityStateModel.shouldNotifyTaskCreation(
+                            assignedTo: assignedTo,
+                            myUid: myUid,
+                          )) {
+                            final couple =
+                                ref.read(coupleStreamProvider(coupleId)).valueOrNull ??
+                                    widget.initialCouple;
+                            final myName =
+                                couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
+                            ref.read(activityStateRepositoryProvider).recordActivity(
+                                  coupleId,
+                                  eventType: ActivityStateModel.typeTask,
+                                  actorUid: myUid,
+                                  actorName: myName,
+                                  title: 'Nova tarefa do casal ☑️',
+                                  body: '$myName adicionou: "$title"',
+                                  route: 'tasks',
+                                );
+                          }
                           Navigator.pop(ctx);
                         },
                         child: Text(

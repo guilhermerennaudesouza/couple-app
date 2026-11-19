@@ -50,6 +50,9 @@ class BackgroundSyncService {
   static const String prefIsPt = 'bg_is_pt';
   static const String prefLastNotifiedEventId = 'last_notified_event_id';
 
+  /// Bounded timeout so background WorkManager jobs never hang on stalled networks.
+  static const Duration firestoreReadTimeout = Duration(seconds: 20);
+
   static bool _initialized = false;
 
   /// Initializes Android WorkManager with [backgroundSyncCallbackDispatcher].
@@ -172,6 +175,9 @@ class BackgroundSyncService {
   /// Executes a single background sync cycle (1 Firestore read).
   static Future<void> runBackgroundSyncOnce() async {
     final prefs = await SharedPreferences.getInstance();
+    // Reload cross-isolate prefs so foreground markEventSeenInForeground / Unpair
+    // updates are immediately visible inside the WorkManager isolate.
+    await prefs.reload();
     final coupleId = prefs.getString(prefCoupleId)?.trim() ?? '';
     final myUid = prefs.getString(prefMyUid)?.trim() ?? '';
     final isPt = prefs.getBool(prefIsPt) ?? true;
@@ -180,50 +186,56 @@ class BackgroundSyncService {
     // Unpaired device: exit cleanly with 0 network reads
     if (coupleId.isEmpty || myUid.isEmpty) return;
 
-    await FirebaseConfig.initialize();
-    await LocalNotificationService.initialize();
-    await WidgetSyncService.initialize();
+    try {
+      await FirebaseConfig.initialize();
+      await LocalNotificationService.initialize(requestPermission: false);
+      await WidgetSyncService.initialize();
 
-    final doc = await FirebaseFirestore.instance
-        .collection('couples')
-        .doc(coupleId)
-        .collection('activity_state')
-        .doc('latest')
-        .get();
+      final doc = await FirebaseFirestore.instance
+          .collection('couples')
+          .doc(coupleId)
+          .collection('activity_state')
+          .doc('latest')
+          .get(const GetOptions(source: Source.server))
+          .timeout(firestoreReadTimeout);
 
-    if (!doc.exists || doc.data() == null) return;
-    final state = ActivityStateModel.fromMap(doc.data());
+      if (!doc.exists || doc.data() == null) return;
+      final state = ActivityStateModel.fromMap(doc.data());
 
-    await processActivityPayload(
-      state: state,
-      myUid: myUid,
-      lastNotifiedEventId: lastNotifiedId,
-      onNotify: ({
-        required eventId,
-        required eventType,
-        required title,
-        required body,
-        required route,
-      }) async {
-        await LocalNotificationService.showPartnerAlert(
-          eventId: eventId,
-          eventType: eventType,
-          title: title,
-          body: body,
-          route: route,
-        );
-      },
-      onSaveLastNotifiedId: (eventId) async {
-        await prefs.setString(prefLastNotifiedEventId, eventId);
-      },
-      onSyncWidgets: (snapshot) async {
-        await applyCompactWidgetSnapshotToGlance(
-          snapshot: snapshot,
-          myUid: myUid,
-          isPortuguese: isPt,
-        );
-      },
-    );
+      await processActivityPayload(
+        state: state,
+        myUid: myUid,
+        lastNotifiedEventId: lastNotifiedId,
+        onNotify: ({
+          required eventId,
+          required eventType,
+          required title,
+          required body,
+          required route,
+        }) async {
+          await LocalNotificationService.showPartnerAlert(
+            eventId: eventId,
+            eventType: eventType,
+            title: title,
+            body: body,
+            route: route,
+          );
+        },
+        onSaveLastNotifiedId: (eventId) async {
+          await prefs.setString(prefLastNotifiedEventId, eventId);
+        },
+        onSyncWidgets: (snapshot) async {
+          await applyCompactWidgetSnapshotToGlance(
+            snapshot: snapshot,
+            myUid: myUid,
+            isPortuguese: isPt,
+          );
+        },
+      );
+    } catch (e) {
+      // Offline, timeout, or transient network error: exit cleanly without crash/retry storm
+      debugPrint('BackgroundSyncService.runBackgroundSyncOnce skipped (offline/timeout): $e');
+    }
   }
 
   /// Updates all 4 Jetpack Glance widgets directly from `activity_state/latest`'s

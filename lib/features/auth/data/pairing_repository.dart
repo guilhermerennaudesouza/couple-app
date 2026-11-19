@@ -26,12 +26,19 @@ class PairingRepository {
   /// Safe cap for compressed `256x256` JPEG Base64 avatar Data URIs (~80 KB).
   static const int maxAvatarDataUriBytes = 80 * 1024;
 
-  /// Validates that [dataUri] is an image Base64 Data URI within [maxAvatarDataUriBytes].
+  /// Validates that [dataUri] is a non-empty Base64 image URI (`data:image/...;base64,...`
+  /// or `base64:...`) within [maxAvatarDataUriBytes].
   static bool isValidAvatarDataUri(String dataUri) {
     final trimmed = dataUri.trim();
-    if (!trimmed.startsWith('data:image/') || !trimmed.contains(';base64,')) {
+    String payload;
+    if (trimmed.startsWith('data:image/') && trimmed.contains(';base64,')) {
+      payload = trimmed.substring(trimmed.indexOf(';base64,') + 8).trim();
+    } else if (trimmed.startsWith('base64:')) {
+      payload = trimmed.substring(7).trim();
+    } else {
       return false;
     }
+    if (payload.isEmpty) return false;
     return utf8.encode(trimmed).length <= maxAvatarDataUriBytes;
   }
 
@@ -379,9 +386,13 @@ class PairingRepository {
   Future<void> unpairCurrentUser(String coupleId, String? uid) async {
     if (coupleId.isNotEmpty && uid != null && uid.isNotEmpty) {
       try {
-        await _firestore.collection(couplesCollection).doc(coupleId).update({
-          'members': FieldValue.arrayRemove([uid]),
-        });
+        await _firestore
+            .collection(couplesCollection)
+            .doc(coupleId)
+            .update({
+              'members': FieldValue.arrayRemove([uid]),
+            })
+            .timeout(const Duration(seconds: 4));
       } catch (e) {
         debugPrint('PairingRepository.unpairCurrentUser remote warning: $e');
       }
@@ -413,7 +424,8 @@ class PairingRepository {
   }
 
   /// Updates only the current partner's profile (`name` and/or `avatarUrl`)
-  /// inside `/couples/{coupleId}` without touching the other partner's entry.
+  /// using dot-path fields so it works offline and never re-uploads the
+  /// other partner's avatar payload.
   Future<void> updatePartnerProfile(
     String coupleId,
     String uid, {
@@ -422,40 +434,47 @@ class PairingRepository {
     bool clearAvatar = false,
   }) async {
     if (coupleId.trim().isEmpty || uid.trim().isEmpty) return;
+    final trimmedAvatar = avatarUrl?.trim();
     if (!clearAvatar &&
-        avatarUrl != null &&
-        avatarUrl.startsWith('data:image/') &&
-        !isValidAvatarDataUri(avatarUrl)) {
+        trimmedAvatar != null &&
+        (trimmedAvatar.startsWith('data:image/') ||
+            trimmedAvatar.startsWith('base64:')) &&
+        !isValidAvatarDataUri(trimmedAvatar)) {
       throw const PairingException('Avatar image exceeds 80 KB Spark limit.');
     }
 
     final docRef = _firestore.collection(couplesCollection).doc(coupleId);
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(docRef);
-      if (!snap.exists || snap.data() == null) return;
-      final couple = CoupleModel.fromMap(snap.id, snap.data()!);
-      final existing = couple.partnerProfiles[uid] ??
-          PartnerProfile(uid: uid, name: name?.trim() ?? '');
+    final updates = <String, dynamic>{
+      'partnerProfiles.$uid.uid': uid,
+    };
+    if (name != null && name.trim().isNotEmpty) {
+      updates['partnerProfiles.$uid.name'] = name.trim();
+    }
+    if (clearAvatar) {
+      updates['partnerProfiles.$uid.avatarUrl'] = FieldValue.delete();
+    } else if (trimmedAvatar != null && trimmedAvatar.isNotEmpty) {
+      updates['partnerProfiles.$uid.avatarUrl'] = trimmedAvatar;
+    }
 
-      final updatedProfile = PartnerProfile(
-        uid: uid,
-        name: (name != null && name.trim().isNotEmpty)
-            ? name.trim()
-            : existing.name,
-        avatarUrl: clearAvatar ? null : (avatarUrl ?? existing.avatarUrl),
-        fcmToken: existing.fcmToken,
-        joinedAt: existing.joinedAt,
+    try {
+      await docRef.update(updates);
+    } catch (_) {
+      await docRef.set(
+        {
+          'partnerProfiles': {
+            uid: {
+              'uid': uid,
+              if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+              if (!clearAvatar &&
+                  trimmedAvatar != null &&
+                  trimmedAvatar.isNotEmpty)
+                'avatarUrl': trimmedAvatar,
+            },
+          },
+        },
+        SetOptions(merge: true),
       );
-
-      final updatedProfiles =
-          Map<String, PartnerProfile>.from(couple.partnerProfiles)
-            ..[uid] = updatedProfile;
-
-      tx.update(docRef, {
-        'partnerProfiles':
-            updatedProfiles.map((k, v) => MapEntry(k, v.toMap())),
-      });
-    });
+    }
   }
 
   /// Updates the couple's `anniversaryDate` and syncs the matching recurring

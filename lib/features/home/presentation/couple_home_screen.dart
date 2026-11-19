@@ -56,6 +56,7 @@ bool shouldShowLivePartnerBanner({
   required String? lastSeenEventId,
 }) {
   if (!hasSeeded) return false;
+  if (myUid.isEmpty) return false;
   if (state.lastEventId.isEmpty) return false;
   if (state.lastActorUid.isEmpty || state.lastActorUid == myUid) return false;
   if (state.lastEventId == lastSeenEventId) return false;
@@ -120,6 +121,15 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${strings.isPortuguese ? 'Erro ao enviar carinho:' : 'Failed to send pulse:'} $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _sendingPulse = false);
@@ -184,14 +194,25 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
 
     if (submittedNote == null || !mounted) return;
     HapticFeedback.lightImpact();
-    await ref.read(activityStateRepositoryProvider).setMood(
-          widget.coupleId,
-          uid: myUid,
-          actorName: myName,
-          emoji: preset.emoji,
-          label: label,
-          note: submittedNote,
+    try {
+      await ref.read(activityStateRepositoryProvider).setMood(
+            widget.coupleId,
+            uid: myUid,
+            actorName: myName,
+            emoji: preset.emoji,
+            label: label,
+            note: submittedNote,
+          );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${strings.isPortuguese ? 'Erro ao salvar humor:' : 'Failed to save mood:'} $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
         );
+      }
+    }
   }
 
   Future<void> _handleNudgePartner({
@@ -211,18 +232,29 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
     }
 
     HapticFeedback.lightImpact();
-    await ref.read(activityStateRepositoryProvider).sendDailyQuestionNudge(
-          widget.coupleId,
-          senderUid: myUid,
-          senderName: myName,
+    try {
+      await ref.read(activityStateRepositoryProvider).sendDailyQuestionNudge(
+            widget.coupleId,
+            senderUid: myUid,
+            senderName: myName,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(strings.nudgeSentSuccess(partnerName)),
+          backgroundColor: AppTheme.primaryRose,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${strings.isPortuguese ? 'Erro ao cutucar:' : 'Failed to nudge:'} $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
         );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(strings.nudgeSentSuccess(partnerName)),
-        backgroundColor: AppTheme.primaryRose,
-      ),
-    );
+      }
+    }
   }
 
   @override
@@ -626,9 +658,17 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
             ),
             onPressed: () async {
               HapticFeedback.mediumImpact();
-              await ref
-                  .read(cycleRepositoryProvider)
-                  .clearCareRequest(widget.coupleId);
+              try {
+                await ref
+                    .read(cycleRepositoryProvider)
+                    .clearCareRequest(widget.coupleId);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$e'), backgroundColor: AppTheme.errorRed),
+                  );
+                }
+              }
             },
             icon: const Icon(Icons.favorite_rounded, size: 18),
             label: Text(strings.sosBannerAction),
@@ -684,9 +724,17 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: () async {
-                  await ref
-                      .read(adultGamesRepositoryProvider)
-                      .clearNudge(widget.coupleId);
+                  try {
+                    await ref
+                        .read(adultGamesRepositoryProvider)
+                        .clearNudge(widget.coupleId);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$e'), backgroundColor: AppTheme.errorRed),
+                      );
+                    }
+                  }
                 },
                 child: Text(strings.dismissLabel),
               ),
@@ -1358,18 +1406,7 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
     required String localeStr,
     required AppStrings strings,
   }) {
-    final daysUntil = nextEvent != null
-        ? nextEvent
-            .nextOccurrenceDate()
-            .difference(
-              DateTime(
-                DateTime.now().year,
-                DateTime.now().month,
-                DateTime.now().day,
-              ),
-            )
-            .inDays
-        : null;
+    final daysUntil = nextEvent?.daysUntilNext();
 
     final nextOcc = nextEvent?.nextOccurrenceDate();
     String formattedShortDate = '';

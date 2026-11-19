@@ -222,6 +222,17 @@ class ActivityStateModel {
         eventType == typeSpicyNudge;
   }
 
+  /// Returns `true` when creating a task should notify the partner (i.e., the
+  /// task is shared/unassigned or assigned to the partner, not solely to self).
+  static bool shouldNotifyTaskCreation({
+    required String? assignedTo,
+    required String myUid,
+  }) {
+    final trimmed = assignedTo?.trim() ?? '';
+    if (trimmed.isEmpty) return true;
+    return trimmed != myUid;
+  }
+
   /// Ensures unscratched scratch-card content never leaks into activity notifications
   /// or background widget snapshots.
   static String sanitizeNoteBodyForActivity({

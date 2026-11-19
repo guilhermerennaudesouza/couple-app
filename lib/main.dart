@@ -100,12 +100,25 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
       MethodChannel('com.personal.couple_app/widget_route');
 
   int _currentIndex = 0;
+  String? _activeCoupleId;
   String? _scheduledDailyForCoupleId;
   String? _registeredBgSyncSignature;
   bool _hasSeededActivityState = false;
   String? _lastSeenEventId;
   ActivityStateModel? _activePartnerBanner;
   Timer? _bannerDismissTimer;
+
+  void _resetPairedSessionState() {
+    _bannerDismissTimer?.cancel();
+    _bannerDismissTimer = null;
+    _activeCoupleId = null;
+    _scheduledDailyForCoupleId = null;
+    _registeredBgSyncSignature = null;
+    _hasSeededActivityState = false;
+    _lastSeenEventId = null;
+    _activePartnerBanner = null;
+    _currentIndex = 0;
+  }
 
   @override
   void initState() {
@@ -223,11 +236,22 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     return coupleIdAsync.when(
       data: (coupleId) {
         if (coupleId == null || coupleId.trim().isEmpty) {
+          if (_activeCoupleId != null ||
+              _scheduledDailyForCoupleId != null ||
+              _registeredBgSyncSignature != null ||
+              _hasSeededActivityState) {
+            _resetPairedSessionState();
+          }
           return PairingScreen(
             onPairedSuccess: () {
               ref.invalidate(currentCoupleIdProvider);
             },
           );
+        }
+
+        if (_activeCoupleId != coupleId) {
+          _resetPairedSessionState();
+          _activeCoupleId = coupleId;
         }
 
         // Auto-schedule recurring 20:00 Daily Question reminder once per paired session
@@ -282,6 +306,21 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
             if (state == null) return;
             if (!_hasSeededActivityState) {
               _hasSeededActivityState = true;
+              _lastSeenEventId = state.lastEventId;
+              if (state.lastEventId.isNotEmpty) {
+                BackgroundSyncService.markEventSeenInForeground(
+                  state.lastEventId,
+                );
+              }
+              return;
+            }
+            // If we seeded from an empty placeholder before server hydration,
+            // don't pop a stale banner for events older than 2 minutes.
+            final isStaleHydration = (_lastSeenEventId == null ||
+                    _lastSeenEventId!.isEmpty) &&
+                state.updatedAt != null &&
+                DateTime.now().difference(state.updatedAt!).inMinutes > 2;
+            if (isStaleHydration) {
               _lastSeenEventId = state.lastEventId;
               if (state.lastEventId.isNotEmpty) {
                 BackgroundSyncService.markEventSeenInForeground(
@@ -554,7 +593,8 @@ class CoupleHubScreen extends ConsumerStatefulWidget {
   ConsumerState<CoupleHubScreen> createState() => _CoupleHubScreenState();
 }
 
-class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
+class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen>
+    with WidgetsBindingObserver {
   static const MethodChannel _deviceSettingsChannel =
       MethodChannel('com.personal.couple_app/device_settings');
 
@@ -566,8 +606,22 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPackageInfo();
     _refreshBatteryOptimizationStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshBatteryOptimizationStatus();
+    }
   }
 
   Future<void> _refreshBatteryOptimizationStatus() async {
@@ -584,8 +638,6 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
     try {
       await _deviceSettingsChannel
           .invokeMethod<bool>('openBatteryOptimizationSettings');
-      await Future<void>.delayed(const Duration(seconds: 1));
-      await _refreshBatteryOptimizationStatus();
     } catch (_) {}
   }
 

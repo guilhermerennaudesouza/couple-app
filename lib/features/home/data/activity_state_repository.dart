@@ -170,9 +170,17 @@ class ActivityStateRepository {
       });
     } catch (e) {
       debugPrint('ActivityStateRepository.sendThinkingOfYouPulse fallback: $e');
+      ActivityStateModel cached = const ActivityStateModel();
+      try {
+        final cachedSnap = await ref.get(const GetOptions(source: Source.cache));
+        if (cachedSnap.exists && cachedSnap.data() != null) {
+          cached = ActivityStateModel.fromMap(cachedSnap.data());
+        }
+      } catch (_) {}
+      final next = cached.appendPulse(pulse);
       await ref.set(
         {
-          'recentPulses': [pulse.toMap()],
+          'recentPulses': next.recentPulses.map((p) => p.toMap()).toList(),
           'totalPulsesCount': FieldValue.increment(1),
           'lastEventId': eventId,
           'lastEventType': ActivityStateModel.typePulse,
