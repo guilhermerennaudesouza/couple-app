@@ -8,6 +8,8 @@ import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/cycle/data/cycle_repository.dart';
 import 'package:couple_app/features/cycle/domain/cycle_model.dart';
+import 'package:couple_app/features/home/data/activity_state_repository.dart';
+import 'package:couple_app/features/home/domain/activity_state_model.dart';
 
 class CycleScreen extends ConsumerWidget {
   final String coupleId;
@@ -404,6 +406,15 @@ class CycleScreen extends ConsumerWidget {
                             coupleId,
                             requestText: '$emoji $title',
                             senderName: myName,
+                          );
+                      ref.read(activityStateRepositoryProvider).recordActivity(
+                            coupleId,
+                            eventType: ActivityStateModel.typeSos,
+                            actorUid: myUid,
+                            actorName: myName,
+                            title: 'SOS Carinho 💕',
+                            body: '$myName pediu: $emoji $title',
+                            route: 'cycle',
                           );
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(

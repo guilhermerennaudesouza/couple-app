@@ -7,6 +7,8 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/couple_date_utils.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
+import '../../home/data/activity_state_repository.dart';
+import '../../home/domain/activity_state_model.dart';
 import '../domain/task_model.dart';
 import '../domain/checklist_model.dart';
 import '../data/task_repository.dart';
@@ -1169,6 +1171,18 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                           );
 
                           ref.read(taskRepositoryProvider).addTask(coupleId, task);
+                          final couple = ref.read(coupleStreamProvider(coupleId)).valueOrNull ??
+                              widget.initialCouple;
+                          final myName = couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
+                          ref.read(activityStateRepositoryProvider).recordActivity(
+                                coupleId,
+                                eventType: ActivityStateModel.typeTask,
+                                actorUid: myUid,
+                                actorName: myName,
+                                title: 'Nova tarefa do casal ☑️',
+                                body: '$myName adicionou: "$title"',
+                                route: 'tasks',
+                              );
                           Navigator.pop(ctx);
                         },
                         child: Text(

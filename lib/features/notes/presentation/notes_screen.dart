@@ -6,6 +6,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
+import '../../home/data/activity_state_repository.dart';
+import '../../home/domain/activity_state_model.dart';
 import '../domain/note_model.dart';
 import '../data/note_repository.dart';
 import '../../widgets/widget_sync_service.dart';
@@ -1016,6 +1018,24 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                             final repo = ref.read(noteRepositoryProvider);
                             await repo.saveNote(coupleId, note);
+
+                            final safeBody = ActivityStateModel.sanitizeNoteBodyForActivity(
+                              content: note.content,
+                              isScratchCard: note.isScratchCard,
+                              isScratched: note.isScratched,
+                              isPortuguese: strings.isPortuguese,
+                            );
+                            ref.read(activityStateRepositoryProvider).recordActivity(
+                                  coupleId,
+                                  eventType: ActivityStateModel.typeNote,
+                                  actorUid: note.authorUid,
+                                  actorName: note.authorName,
+                                  title: note.isScratchCard && !note.isScratched
+                                      ? 'Raspadinha Secreta ✨'
+                                      : 'Novo Recado de ${note.authorName} 💌',
+                                  body: safeBody,
+                                  route: 'notes',
+                                );
 
                             if (existingNote?.isPinnedToWidget == true && !isPinned) {
                               await WidgetSyncService.clearGlanceNote();

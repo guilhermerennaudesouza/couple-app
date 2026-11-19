@@ -10,6 +10,8 @@ import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/features/adult_games/data/adult_games_repository.dart';
 import 'package:couple_app/features/adult_games/domain/adult_game_model.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
+import 'package:couple_app/features/home/data/activity_state_repository.dart';
+import 'package:couple_app/features/home/domain/activity_state_model.dart';
 
 class AdultGamesScreen extends ConsumerStatefulWidget {
   final String coupleId;
@@ -440,6 +442,15 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
                           senderUid: myUid,
                           senderName: myName,
                           message: msg,
+                        );
+                    ref.read(activityStateRepositoryProvider).recordActivity(
+                          widget.coupleId,
+                          eventType: ActivityStateModel.typeSpicyNudge,
+                          actorUid: myUid,
+                          actorName: myName,
+                          title: 'Convite Picante 🔥',
+                          body: msg,
+                          route: 'adult_games',
                         );
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(

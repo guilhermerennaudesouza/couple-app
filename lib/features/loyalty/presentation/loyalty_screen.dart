@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:couple_app/core/l10n/app_strings.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
+import 'package:couple_app/features/home/data/activity_state_repository.dart';
+import 'package:couple_app/features/home/domain/activity_state_model.dart';
 import 'package:couple_app/features/loyalty/data/loyalty_repository.dart';
 import 'package:couple_app/features/loyalty/domain/loyalty_coupon_model.dart';
 
@@ -416,10 +418,22 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
                   FilledButton.icon(
                     onPressed: () async {
                       HapticFeedback.mediumImpact();
+                      final uid = _currentUid();
                       await ref.read(loyaltyRepositoryProvider).redeemCoupon(
                             widget.coupleId,
                             coupon,
-                            _currentUid(),
+                            uid,
+                          );
+                      final couple = ref.read(coupleStreamProvider(widget.coupleId)).valueOrNull;
+                      final myName = couple?.getMyProfile(uid)?.displayName ?? 'Seu amor';
+                      ref.read(activityStateRepositoryProvider).recordActivity(
+                            widget.coupleId,
+                            eventType: ActivityStateModel.typeCoupon,
+                            actorUid: uid,
+                            actorName: myName,
+                            title: 'Cupom de Amor resgatado 🎟️',
+                            body: '$myName resgatou "${coupon.title}" 💕',
+                            route: 'loyalty',
                           );
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -8,6 +8,8 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
+import '../../home/data/activity_state_repository.dart';
+import '../../home/domain/activity_state_model.dart';
 import '../../notes/presentation/notes_screen.dart';
 import '../data/daily_question_repository.dart';
 import '../domain/daily_question_model.dart';
@@ -532,6 +534,18 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     try {
       final repo = ref.read(dailyQuestionRepositoryProvider);
       await repo.submitAnswer(coupleId, questionId, myUid, text);
+      final couple = ref.read(coupleStreamProvider(coupleId)).valueOrNull ??
+          widget.initialCouple;
+      final myName = couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
+      ref.read(activityStateRepositoryProvider).recordActivity(
+            coupleId,
+            eventType: ActivityStateModel.typeDailyAnswer,
+            actorUid: myUid,
+            actorName: myName,
+            title: 'Pergunta do Dia ✨',
+            body: '$myName respondeu a Pergunta do Dia! 💕',
+            route: 'daily_question',
+          );
       _answerController.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

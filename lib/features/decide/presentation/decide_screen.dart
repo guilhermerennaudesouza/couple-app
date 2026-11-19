@@ -8,6 +8,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
+import '../../home/data/activity_state_repository.dart';
+import '../../home/domain/activity_state_model.dart';
 import '../../date_ideas/data/date_ideas_repository.dart';
 import '../../date_ideas/domain/date_idea_model.dart';
 import '../data/decide_repository.dart';
@@ -1798,6 +1800,17 @@ class _CreateBallotBottomSheetState
 
     try {
       await ref.read(decideRepositoryProvider).createSession(widget.coupleId, session);
+      final couple = ref.read(coupleStreamProvider(widget.coupleId)).valueOrNull;
+      final myName = couple?.getMyProfile(widget.myUid)?.displayName ?? 'Seu amor';
+      ref.read(activityStateRepositoryProvider).recordActivity(
+            widget.coupleId,
+            eventType: ActivityStateModel.typeDecide,
+            actorUid: widget.myUid,
+            actorName: myName,
+            title: 'Nova votação no Decidir Juntos 🗳️',
+            body: '$myName criou: "$title"',
+            route: 'decide',
+          );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
