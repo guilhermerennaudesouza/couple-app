@@ -9,6 +9,10 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.cornerRadius
@@ -28,39 +32,16 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+
+private val CoupleWidgetRouteKey = ActionParameters.Key<String>(MainActivity.EXTRA_WIDGET_ROUTE)
 
 /**
  * Jetpack Glance Widget Receiver for Krivo Days Together milestone counter.
- *
- * Registered as `com.personal.couple_app.CoupleGlanceWidget` to synchronize
- * with Flutter `HomeWidget.updateWidget(name: 'CoupleGlanceWidget', androidName: 'CoupleGlanceWidget')`.
  */
 class CoupleGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CoupleGlanceWidgetContent()
-
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: android.appwidget.AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-        kotlinx.coroutines.runBlocking {
-            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
-            val ids = if (appWidgetIds.isNotEmpty()) {
-                appWidgetIds
-            } else {
-                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, CoupleGlanceWidget::class.java))
-            }
-            ids.forEach { id ->
-                try {
-                    val glanceId = glanceManager.getGlanceIdBy(id)
-                    glanceAppWidget.update(context, glanceId)
-                } catch (e: Throwable) {
-                    android.util.Log.e("CoupleGlanceWidget", "Error updating widget $id: $e")
-                }
-            }
-        }
-    }
 }
 
 /**
@@ -76,8 +57,23 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         }
 
-        // Resilient reading supporting both standard FlutterSharedPreferences prefix and plain keys
-        val daysTogether = try {
+        val anniversaryIso = prefs.getString("flutter.anniversary", null)
+            ?: prefs.getString("anniversary", null)
+            ?: ""
+
+        // Compute days together dynamically from saved anniversary ISO date so counter rolls over at midnight
+        val dynamicDays: Int? = if (anniversaryIso.length >= 10) {
+            try {
+                val annivDate = LocalDate.parse(anniversaryIso.substring(0, 10))
+                ChronoUnit.DAYS.between(annivDate, LocalDate.now()).coerceAtLeast(0L).toInt()
+            } catch (_: Throwable) {
+                null
+            }
+        } else {
+            null
+        }
+
+        val storedDaysTogether = try {
             val fVal = prefs.getInt("flutter.days_together", -1)
             if (fVal != -1) fVal else {
                 val pVal = prefs.getInt("days_together", -1)
@@ -96,6 +92,8 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             }
         }
 
+        val daysTogether = dynamicDays ?: storedDaysTogether
+
         val partnerName = prefs.getString("flutter.partner_name", null)
             ?: prefs.getString("partner_name", null)
             ?: ""
@@ -106,18 +104,19 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("language", null)
         val isPt = savedLocale != "en"
 
-        val formattedDays = prefs.getString("flutter.formatted_days", null)
-            ?: prefs.getString("formatted_days", null)
-            ?: if (daysTogether > 0) {
-                if (isPt) "$daysTogether dias" else "$daysTogether days"
-            } else {
-                if (isPt) "Juntos" else "Together"
-            }
+        val formattedDays = if (dynamicDays != null) {
+            if (isPt) "$dynamicDays dias" else "$dynamicDays days"
+        } else {
+            prefs.getString("flutter.formatted_days", null)
+                ?: prefs.getString("formatted_days", null)
+                ?: if (daysTogether > 0) {
+                    if (isPt) "$daysTogether dias" else "$daysTogether days"
+                } else {
+                    if (isPt) "Juntos" else "Together"
+                }
+        }
 
-        val hasData = prefs.contains("flutter.days_together") ||
-            prefs.contains("days_together") ||
-            prefs.contains("flutter.anniversary") ||
-            prefs.contains("anniversary") ||
+        val hasData = anniversaryIso.isNotBlank() ||
             daysTogether > 0 ||
             partnerName.isNotBlank()
 
@@ -150,6 +149,11 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                 .padding(8.dp)
                 .background(Color(0xFFFFF0F3))
                 .cornerRadius(20.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(CoupleWidgetRouteKey to "couple")
+                    )
+                )
                 .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -242,6 +246,11 @@ class CoupleGlanceWidgetContent : GlanceAppWidget() {
                 .padding(8.dp)
                 .background(Color(0xFFFFF0F3))
                 .cornerRadius(20.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(CoupleWidgetRouteKey to "couple")
+                    )
+                )
                 .padding(14.dp),
             contentAlignment = Alignment.Center
         ) {

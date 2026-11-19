@@ -393,5 +393,77 @@ void main() {
         isTrue,
       );
     });
+
+    test('formatNoteForWidget masks un-scratched scratch cards to prevent home-screen spoilers', () {
+      final secretNote = NoteModel(
+        id: 'n_secret',
+        title: 'Segredo',
+        content: 'Comprei sua aliança!',
+        authorUid: 'u1',
+        authorName: 'Gui',
+        isScratchCard: true,
+        isScratched: false,
+      );
+      final payload = WidgetSyncService.formatNoteForWidget(secretNote, isPortuguese: true);
+      expect(payload['note_content'], isNot(contains('aliança')));
+      expect(payload['note_content'], contains('raspar'));
+
+      final revealedNote = secretNote.copyWith(isScratched: true);
+      final revealedPayload = WidgetSyncService.formatNoteForWidget(revealedNote, isPortuguese: true);
+      expect(revealedPayload['note_content'], equals('Comprei sua aliança!'));
+    });
+
+    test('syncAllWidgets saves language before updating widgets and clears all on clearAllWidgets', () async {
+      final couple = CoupleModel(
+        id: 'c1',
+        members: const ['u1', 'u2'],
+        anniversaryDate: DateTime(2024, 6, 1),
+        inviteCode: '123456',
+      );
+      final q = DailyQuestionModel(
+        id: 'q_en',
+        date: '2026-11-19',
+        prompt: 'What was your favorite memory together this week?',
+      );
+      await WidgetSyncService.syncAllWidgets(
+        couple: couple,
+        pinnedNote: null,
+        todayQuestion: q,
+        tasks: const [],
+        myUid: 'u1',
+        isPortuguese: true,
+      );
+      final langSaveIdx = channelCalls.indexWhere(
+        (c) => c.method == 'saveWidgetData' && c.arguments['id'] == 'language',
+      );
+      final firstUpdateIdx = channelCalls.indexWhere((c) => c.method == 'updateWidget');
+      expect(langSaveIdx, greaterThanOrEqualTo(0));
+      expect(langSaveIdx, lessThan(firstUpdateIdx));
+      expect(
+        channelCalls.any(
+          (c) =>
+              c.method == 'saveWidgetData' &&
+              c.arguments['id'] == 'prompt_text' &&
+              (c.arguments['data'] as String).contains('lembrança favorita'),
+        ),
+        isTrue,
+      );
+
+      channelCalls.clear();
+      await WidgetSyncService.clearAllWidgets();
+      final clearedWidgets = channelCalls
+          .where((c) => c.method == 'updateWidget')
+          .map((c) => c.arguments['name'])
+          .toSet();
+      expect(
+        clearedWidgets,
+        containsAll([
+          'CoupleGlanceWidget',
+          'NoteGlanceWidget',
+          'DailyPromptGlanceWidget',
+          'TasksGlanceWidget',
+        ]),
+      );
+    });
   });
 }

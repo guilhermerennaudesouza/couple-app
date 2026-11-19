@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
 import '../../core/l10n/locale_provider.dart';
+import '../../core/utils/couple_date_utils.dart';
 import '../auth/data/pairing_repository.dart';
 import '../auth/domain/couple_model.dart';
 import '../daily_question/data/daily_question_repository.dart';
@@ -13,7 +15,7 @@ import '../tasks/data/task_repository.dart';
 import '../tasks/domain/task_model.dart';
 
 /// Riverpod listener provider that automatically keeps Android home widgets synchronized
-/// with Firestore state (couple milestones, today's prompt, top tasks, pinned note).
+/// with Firestore state (debounced 400ms to prevent multi-stream broadcast bursts).
 final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
   if (coupleId.isEmpty) return;
 
@@ -28,16 +30,23 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
   final tasks = tasksAsync.valueOrNull ?? const [];
   final notes = notesAsync.valueOrNull ?? const [];
   final pinnedNote = notes.where((n) => n.isPinnedToWidget).firstOrNull;
-  final myUid = FirebaseAuth.instance.currentUser?.uid;
+  String? myUid;
+  try {
+    myUid = FirebaseAuth.instance.currentUser?.uid;
+  } catch (_) {}
 
-  WidgetSyncService.syncAllWidgets(
-    couple: couple,
-    pinnedNote: pinnedNote,
-    todayQuestion: todayQuestion,
-    tasks: tasks,
-    myUid: myUid,
-    isPortuguese: locale.languageCode == 'pt',
-  );
+  final timer = Timer(const Duration(milliseconds: 400), () {
+    WidgetSyncService.syncAllWidgets(
+      couple: couple,
+      pinnedNote: pinnedNote,
+      todayQuestion: todayQuestion,
+      tasks: tasks,
+      myUid: myUid,
+      isPortuguese: locale.languageCode == 'pt',
+    );
+  });
+
+  ref.onDispose(timer.cancel);
 });
 
 /// Service orchestrating bidirectional synchronization between Krivo's
@@ -59,17 +68,50 @@ class WidgetSyncService {
     }
   }
 
+  /// Formats a [NoteModel] for safe home-screen Glance display.
+  /// Un-scratched scratch cards are masked so secret text never leaks on the home screen.
+  static Map<String, String> formatNoteForWidget(
+    NoteModel note, {
+    bool isPortuguese = true,
+  }) {
+    final isConcealedScratch = note.isScratchCard && !note.isScratched;
+    if (isConcealedScratch) {
+      return {
+        'note_id': note.id,
+        'note_title': isPortuguese ? 'Raspadinha Secreta ✨' : 'Secret Scratch Card ✨',
+        'note_content': isPortuguese
+            ? '🎁 Recado surpresa! Toque para raspar ✨'
+            : '🎁 Surprise note! Tap to scratch ✨',
+        'note_author': note.authorName,
+        'note_color': note.colorHex,
+        'note_updated_at': note.updatedAt.toIso8601String(),
+      };
+    }
+    return {
+      'note_id': note.id,
+      'note_title': note.title,
+      'note_content': note.content,
+      'note_author': note.authorName,
+      'note_color': note.colorHex,
+      'note_updated_at': note.updatedAt.toIso8601String(),
+    };
+  }
+
   /// Updates the home screen Glance sticky note widget with the latest pinned note.
-  static Future<void> updateGlanceNote(NoteModel note) async {
+  static Future<void> updateGlanceNote(
+    NoteModel note, {
+    bool isPortuguese = true,
+  }) async {
     try {
-      await HomeWidget.saveWidgetData<String>('note_id', note.id);
-      await HomeWidget.saveWidgetData<String>('note_title', note.title);
-      await HomeWidget.saveWidgetData<String>('note_content', note.content);
-      await HomeWidget.saveWidgetData<String>('note_author', note.authorName);
-      await HomeWidget.saveWidgetData<String>('note_color', note.colorHex);
+      final payload = formatNoteForWidget(note, isPortuguese: isPortuguese);
+      await HomeWidget.saveWidgetData<String>('note_id', payload['note_id']!);
+      await HomeWidget.saveWidgetData<String>('note_title', payload['note_title']!);
+      await HomeWidget.saveWidgetData<String>('note_content', payload['note_content']!);
+      await HomeWidget.saveWidgetData<String>('note_author', payload['note_author']!);
+      await HomeWidget.saveWidgetData<String>('note_color', payload['note_color']!);
       await HomeWidget.saveWidgetData<String>(
         'note_updated_at',
-        note.updatedAt.toIso8601String(),
+        payload['note_updated_at']!,
       );
 
       await HomeWidget.updateWidget(
@@ -107,11 +149,7 @@ class WidgetSyncService {
     required String partnerName,
     bool isPortuguese = false,
   }) {
-    final current = today ?? DateTime.now();
-    // Normalize to UTC date boundaries (midnight) to prevent timezone and DST drift
-    final d1 = DateTime.utc(anniversary.year, anniversary.month, anniversary.day);
-    final d2 = DateTime.utc(current.year, current.month, current.day);
-    final daysTogether = d2.difference(d1).inDays;
+    final daysTogether = CoupleDateUtils.daysTogether(anniversary, now: today);
     final formattedDays = isPortuguese ? '$daysTogether dias' : '$daysTogether days';
 
     return {
@@ -357,6 +395,15 @@ class WidgetSyncService {
     String? myUid,
     bool isPortuguese = true,
   }) async {
+    // Persist language first so all 4 Glance widgets render in the active locale immediately
+    try {
+      final lang = isPortuguese ? 'pt' : 'en';
+      await HomeWidget.saveWidgetData<String>('language', lang);
+      await HomeWidget.saveWidgetData<String>('app_locale', lang);
+    } catch (e) {
+      debugPrint('WidgetSyncService.syncAllWidgets language save error: $e');
+    }
+
     if (couple != null) {
       String partnerName = isPortuguese ? 'Seu Amor' : 'Partner';
       if (myUid != null) {
@@ -374,7 +421,7 @@ class WidgetSyncService {
     }
 
     if (pinnedNote != null) {
-      await updateGlanceNote(pinnedNote);
+      await updateGlanceNote(pinnedNote, isPortuguese: isPortuguese);
     } else {
       await clearGlanceNote();
     }
@@ -386,9 +433,13 @@ class WidgetSyncService {
       final bool isAnsweredByPartner = myUid != null
           ? todayQuestion.getPartnerAnswer(myUid) != null
           : todayQuestion.answers.length >= 2;
+      final translatedPrompt = DailyQuestionRepository.translatePrompt(
+        todayQuestion.prompt,
+        languageCode: isPortuguese ? 'pt' : 'en',
+      );
 
       await syncDailyPrompt(
-        prompt: todayQuestion.prompt,
+        prompt: translatedPrompt,
         isAnsweredByMe: isAnsweredByMe,
         isRevealed: todayQuestion.isRevealed,
         isAnsweredByPartner: isAnsweredByPartner,
@@ -396,7 +447,36 @@ class WidgetSyncService {
       );
     }
 
-    await HomeWidget.saveWidgetData<String>('language', isPortuguese ? 'pt' : 'en');
     await syncTopTasks(tasks: tasks);
+  }
+
+  /// Clears all cached data for all 4 Android Glance widgets (e.g. on Unpair).
+  static Future<void> clearAllWidgets() async {
+    try {
+      await HomeWidget.saveWidgetData<int>('days_together', 0);
+      await HomeWidget.saveWidgetData<String>('partner_name', '');
+      await HomeWidget.saveWidgetData<String>('formatted_days', '');
+      await HomeWidget.saveWidgetData<String>('anniversary', '');
+      await HomeWidget.updateWidget(
+        name: coupleWidgetName,
+        androidName: coupleWidgetName,
+      );
+
+      await clearGlanceNote();
+
+      await HomeWidget.saveWidgetData<String>('prompt_text', '');
+      await HomeWidget.saveWidgetData<String>('prompt_status', '');
+      await HomeWidget.saveWidgetData<bool>('is_answered_by_me', false);
+      await HomeWidget.saveWidgetData<bool>('is_revealed', false);
+      await HomeWidget.saveWidgetData<bool>('is_answered_by_partner', false);
+      await HomeWidget.updateWidget(
+        name: dailyPromptWidgetName,
+        androidName: dailyPromptWidgetName,
+      );
+
+      await syncTopTasks(tasks: const []);
+    } catch (e) {
+      debugPrint('WidgetSyncService.clearAllWidgets error: $e');
+    }
   }
 }

@@ -9,6 +9,10 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.cornerRadius
@@ -29,38 +33,13 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
+private val PromptWidgetRouteKey = ActionParameters.Key<String>(MainActivity.EXTRA_WIDGET_ROUTE)
+
 /**
  * Jetpack Glance Widget Receiver for Krivo Daily Question prompt.
- *
- * Registered as `com.personal.couple_app.DailyPromptGlanceWidget` to synchronize
- * with Flutter `HomeWidget.updateWidget(name: 'DailyPromptGlanceWidget', androidName: 'DailyPromptGlanceWidget')`.
  */
 class DailyPromptGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DailyPromptGlanceWidgetContent()
-
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: android.appwidget.AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-        kotlinx.coroutines.runBlocking {
-            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
-            val ids = if (appWidgetIds.isNotEmpty()) {
-                appWidgetIds
-            } else {
-                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, DailyPromptGlanceWidget::class.java))
-            }
-            ids.forEach { id ->
-                try {
-                    val glanceId = glanceManager.getGlanceIdBy(id)
-                    glanceAppWidget.update(context, glanceId)
-                } catch (e: Throwable) {
-                    android.util.Log.e("DailyPromptGlanceWidget", "Error updating widget $id: $e")
-                }
-            }
-        }
-    }
 }
 
 /**
@@ -147,6 +126,11 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
                 .padding(8.dp)
                 .background(Color(0xFFFAF5FF))
                 .cornerRadius(20.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(PromptWidgetRouteKey to "daily_question")
+                    )
+                )
                 .padding(12.dp)
         ) {
             Column(
@@ -224,6 +208,11 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
                 .padding(8.dp)
                 .background(Color(0xFFFAF5FF))
                 .cornerRadius(20.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(PromptWidgetRouteKey to "daily_question")
+                    )
+                )
                 .padding(14.dp),
             contentAlignment = Alignment.Center
         ) {

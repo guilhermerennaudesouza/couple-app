@@ -10,6 +10,10 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.cornerRadius
@@ -30,38 +34,13 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 
+private val NoteWidgetRouteKey = ActionParameters.Key<String>(MainActivity.EXTRA_WIDGET_ROUTE)
+
 /**
  * Jetpack Glance Widget Receiver for Krivo shared sticky notes.
- *
- * Registered as `com.personal.couple_app.NoteGlanceWidget` to synchronize
- * with Flutter `HomeWidget.updateWidget(name: 'NoteGlanceWidget', androidName: 'NoteGlanceWidget')`.
  */
 class NoteGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NoteGlanceWidgetContent()
-
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: android.appwidget.AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-        kotlinx.coroutines.runBlocking {
-            val glanceManager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
-            val ids = if (appWidgetIds.isNotEmpty()) {
-                appWidgetIds
-            } else {
-                appWidgetManager.getAppWidgetIds(android.content.ComponentName(context, NoteGlanceWidget::class.java))
-            }
-            ids.forEach { id ->
-                try {
-                    val glanceId = glanceManager.getGlanceIdBy(id)
-                    glanceAppWidget.update(context, glanceId)
-                } catch (e: Throwable) {
-                    android.util.Log.e("NoteGlanceWidget", "Error updating widget $id: $e")
-                }
-            }
-        }
-    }
 }
 
 /**
@@ -134,6 +113,11 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                 .padding(8.dp)
                 .background(cardColor)
                 .cornerRadius(18.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(NoteWidgetRouteKey to "notes")
+                    )
+                )
                 .padding(12.dp)
         ) {
             Column(
@@ -213,6 +197,11 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                 .padding(8.dp)
                 .background(cardColor)
                 .cornerRadius(18.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(NoteWidgetRouteKey to "notes")
+                    )
+                )
                 .padding(14.dp),
             contentAlignment = Alignment.Center
         ) {

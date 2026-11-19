@@ -87,6 +87,9 @@ class MainNavigationShell extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
+  static const MethodChannel _widgetRouteChannel =
+      MethodChannel('com.personal.couple_app/widget_route');
+
   int _currentIndex = 0;
   String? _scheduledDailyForCoupleId;
 
@@ -98,6 +101,14 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
         ref.read(pendingNotificationRouteProvider.notifier).state = payload;
       }
     });
+    _widgetRouteChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onRoute' && call.arguments is String) {
+        final route = (call.arguments as String).trim();
+        if (route.isNotEmpty && mounted) {
+          ref.read(pendingNotificationRouteProvider.notifier).state = route;
+        }
+      }
+    });
     _checkInitialNotificationRoute();
   }
 
@@ -105,7 +116,16 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     final launchRoute = await LocalNotificationService.consumeLaunchRoute();
     if (launchRoute != null && mounted) {
       ref.read(pendingNotificationRouteProvider.notifier).state = launchRoute;
+      return;
     }
+    try {
+      final widgetRoute =
+          await _widgetRouteChannel.invokeMethod<String>('getInitialRoute');
+      if (widgetRoute != null && widgetRoute.trim().isNotEmpty && mounted) {
+        ref.read(pendingNotificationRouteProvider.notifier).state =
+            widgetRoute.trim();
+      }
+    } catch (_) {}
   }
 
   void _handleRoute(String route, String coupleId) {
@@ -1094,7 +1114,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
     if (confirmed == true) {
       final repo = ref.read(pairingRepositoryProvider);
       await repo.unpairCurrentUser(widget.coupleId, repo.currentUserUid);
-      await WidgetSyncService.clearGlanceNote();
+      await WidgetSyncService.clearAllWidgets();
       ref.invalidate(currentCoupleIdProvider);
     }
   }
