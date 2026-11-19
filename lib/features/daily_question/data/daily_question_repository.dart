@@ -339,8 +339,144 @@ class DailyQuestionRepository {
     }
   }
 
+  /// Pure helper finding the next unused future `YYYY-MM-DD` date starting from tomorrow.
+  static String findNextAvailableFutureDateKey(
+    Set<String> occupiedDateKeys, {
+    DateTime? now,
+  }) {
+    final base = now ?? DateTime.now();
+    var cursor = DateTime(base.year, base.month, base.day).add(const Duration(days: 1));
+    for (var i = 0; i < 3650; i++) {
+      final key = formatDate(cursor);
+      if (!occupiedDateKeys.contains(key)) {
+        return key;
+      }
+      cursor = cursor.add(const Duration(days: 1));
+    }
+    return formatDate(cursor);
+  }
+
+  /// Pure helper filtering historical daily questions: strictly excludes today
+  /// and any future surprise custom prompts (`dq.date.compareTo(todayKey) < 0`),
+  /// and optionally matches [query] against prompt or answer text.
+  static List<DailyQuestionModel> filterPastQuestions(
+    List<DailyQuestionModel> items, {
+    required String todayKey,
+    String query = '',
+  }) {
+    final normalizedQuery = query.trim().toLowerCase();
+    return items.where((dq) {
+      if (dq.date.compareTo(todayKey) >= 0) return false;
+      if (dq.answers.isEmpty) return false;
+      if (normalizedQuery.isEmpty) return true;
+      if (dq.prompt.toLowerCase().contains(normalizedQuery)) return true;
+      return dq.answers.values
+          .any((a) => a.text.toLowerCase().contains(normalizedQuery));
+    }).toList();
+  }
+
+  /// Toggles an emoji reaction (`❤️`, `😂`, `🥺`, `🔥`, `😍`) for [uid] on a revealed question.
+  Future<void> toggleReaction(
+    String coupleId,
+    String questionId, {
+    required String uid,
+    required String emoji,
+    String? currentEmoji,
+  }) async {
+    if (coupleId.trim().isEmpty || uid.trim().isEmpty) return;
+    final docRef = _firestore
+        .collection('couples')
+        .doc(coupleId)
+        .collection('daily_questions')
+        .doc(questionId);
+    if (currentEmoji == emoji) {
+      await docRef.set(
+        {'reactions': {uid: FieldValue.delete()}},
+        SetOptions(merge: true),
+      );
+    } else {
+      await docRef.set(
+        {'reactions': {uid: emoji}},
+        SetOptions(merge: true),
+      );
+    }
+  }
+
+  /// Appends a follow-up comment to a revealed daily question atomically (with offline cache fallback).
+  Future<void> addComment(
+    String coupleId,
+    String questionId,
+    DailyQuestionComment comment,
+  ) async {
+    if (coupleId.trim().isEmpty || comment.text.trim().isEmpty) return;
+    final docRef = _firestore
+        .collection('couples')
+        .doc(coupleId)
+        .collection('daily_questions')
+        .doc(questionId);
+    try {
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(docRef);
+        final current = snap.exists && snap.data() != null
+            ? DailyQuestionModel.fromMap(snap.id, snap.data()!)
+            : DailyQuestionModel(id: questionId, date: questionId, prompt: '');
+        final nextComments = [...current.comments, comment];
+        tx.set(
+          docRef,
+          {'comments': nextComments.map((c) => c.toMap()).toList()},
+          SetOptions(merge: true),
+        );
+      });
+    } catch (_) {
+      List<DailyQuestionComment> cached = const [];
+      try {
+        final snap = await docRef.get(const GetOptions(source: Source.cache));
+        if (snap.exists && snap.data() != null) {
+          cached = DailyQuestionModel.fromMap(snap.id, snap.data()!).comments;
+        }
+      } catch (_) {}
+      await docRef.set(
+        {'comments': [...cached, comment].map((c) => c.toMap()).toList()},
+        SetOptions(merge: true),
+      );
+    }
+  }
+
+  /// Schedules a custom surprise prompt proposed by a partner on the next unused
+  /// future date (`>= tomorrow`), keeping it hidden until that day arrives.
+  Future<String> proposeCustomQuestion(
+    String coupleId, {
+    required String prompt,
+    required String proposedByUid,
+  }) async {
+    final cleanPrompt = prompt.trim();
+    if (coupleId.trim().isEmpty || cleanPrompt.isEmpty) {
+      throw ArgumentError('Prompt cannot be empty');
+    }
+    final col = _firestore
+        .collection('couples')
+        .doc(coupleId)
+        .collection('daily_questions');
+    final today = todayDateString;
+    final futureSnap = await col.where('date', isGreaterThan: today).get();
+    final occupied = futureSnap.docs.map((d) => d.id).toSet();
+    final targetDate = findNextAvailableFutureDateKey(occupied);
+
+    final model = DailyQuestionModel(
+      id: targetDate,
+      date: targetDate,
+      prompt: cleanPrompt,
+      answers: const {},
+      isRevealed: false,
+      isCustom: true,
+      proposedByUid: proposedByUid,
+    );
+    await col.doc(targetDate).set(model.toMap());
+    return targetDate;
+  }
+
   /// Watches all historical daily questions for [coupleId], ordered by date descending.
-  /// Filters out today's active question and unseeded or empty entries.
+  /// Strictly excludes today's active question AND any future custom surprise prompts.
   Stream<List<DailyQuestionModel>> watchPastQuestions(
     String coupleId, {
     String? todayKeyOverride,
@@ -353,10 +489,10 @@ class DailyQuestionRepository {
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final all = snapshot.docs
           .map((doc) => DailyQuestionModel.fromMap(doc.id, doc.data()))
-          .where((dq) => dq.date != today && dq.answers.isNotEmpty)
           .toList();
+      return filterPastQuestions(all, todayKey: today);
     });
   }
 }

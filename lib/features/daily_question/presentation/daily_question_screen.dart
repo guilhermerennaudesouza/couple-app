@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
@@ -39,21 +42,125 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _answerController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   final FocusNode _answerFocusNode = FocusNode();
   bool _isSubmitting = false;
+  bool _isSendingComment = false;
+  String _searchQuery = '';
+  Timer? _countdownTimer;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _tabController.dispose();
     _answerController.dispose();
+    _commentController.dispose();
+    _searchController.dispose();
     _answerFocusNode.dispose();
     super.dispose();
+  }
+
+  String _formatCountdownUntilTomorrow(bool isPt) {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final diff = tomorrow.difference(now);
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    return isPt
+        ? 'Próxima pergunta em ${h}h ${m.toString().padLeft(2, '0')}min'
+        : 'Next prompt in ${h}h ${m.toString().padLeft(2, '0')}m';
+  }
+
+  Future<void> _showProposeCustomQuestionDialog(
+    String coupleId,
+    String myUid,
+  ) async {
+    final strings = AppStrings.of(context);
+    final ctrl = TextEditingController();
+    final submitted = await showDialog<String?>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Text(strings.proposeCustomQuestionBtn),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.isPortuguese
+                  ? 'Sua pergunta será agendada como surpresa para o próximo dia livre — os dois responderão às cegas quando o dia chegar!'
+                  : 'Your prompt will be scheduled as a surprise for the next open future day — both of you will answer blind when that day arrives!',
+              style: TextStyle(fontSize: 13, color: dialogCtx.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              maxLines: 3,
+              maxLength: 180,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: strings.isPortuguese
+                    ? 'Ex: Qual momento nosso você gostaria de reviver?'
+                    : 'e.g. Which memory of us would you love to relive?',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(null),
+            child: Text(strings.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRose),
+            onPressed: () => Navigator.of(dialogCtx).pop(ctrl.text.trim()),
+            child: Text(strings.save),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+
+    if (submitted == null || submitted.isEmpty || !mounted) return;
+    try {
+      final assignedDate = await ref
+          .read(dailyQuestionRepositoryProvider)
+          .proposeCustomQuestion(
+            coupleId,
+            prompt: submitted,
+            proposedByUid: myUid,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            strings.isPortuguese
+                ? 'Pergunta surpresa agendada para $assignedDate! ✨'
+                : 'Surprise prompt scheduled for $assignedDate! ✨',
+          ),
+          backgroundColor: AppTheme.successGreen,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: AppTheme.errorRed),
+        );
+      }
+    }
   }
 
   String _getEffectiveUid() {
@@ -180,6 +287,14 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add_comment_rounded, color: AppTheme.primaryRose),
+            tooltip: strings.proposeCustomQuestionBtn,
+            onPressed: () => _showProposeCustomQuestionDialog(
+              activeCoupleId,
+              _getEffectiveUid(),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.sticky_note_2_rounded, color: AppTheme.primaryRose),
             tooltip: strings.loveNotesTooltip,
             onPressed: () {
@@ -271,10 +386,10 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                   _buildState1Input(context, coupleId, dq, myUid),
                 ] else if (hasAnswered && !isRevealed) ...[
                   // State 2: User answered, partner hasn't
-                  _buildState2Waiting(context, dq, myUid, couple),
+                  _buildState2Waiting(context, coupleId, dq, myUid, couple),
                 ] else ...[
                   // State 3: Both answered -> Dual reveal
-                  _buildState3Revealed(context, dq, myUid, couple),
+                  _buildState3Revealed(context, coupleId, dq, myUid, couple),
                 ],
                 const SizedBox(height: 40),
               ],
@@ -604,6 +719,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   // -------------------------------------------------------------
   Widget _buildState2Waiting(
     BuildContext context,
+    String coupleId,
     DailyQuestionModel dq,
     String myUid,
     CoupleModel? couple,
@@ -759,6 +875,44 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
             ),
           ),
         ],
+        const SizedBox(height: 18),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.notifications_active_rounded, size: 18),
+          label: Text(strings.nudgePartnerBtn),
+          onPressed: () async {
+            final activityState =
+                ref.read(activityStateStreamProvider(coupleId)).valueOrNull ??
+                    const ActivityStateModel();
+            final myName = couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
+            final partnerName =
+                couple?.getPartnerProfile(myUid)?.displayName ?? 'Seu amor';
+            if (!activityState.canNudgePartner(myUid)) {
+              final mins = activityState
+                  .remainingNudgeCooldown(myUid)
+                  .inMinutes
+                  .clamp(1, 60);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.nudgeCooldownMessage(mins))),
+              );
+              return;
+            }
+            HapticFeedback.lightImpact();
+            await ref
+                .read(activityStateRepositoryProvider)
+                .sendDailyQuestionNudge(
+                  coupleId,
+                  senderUid: myUid,
+                  senderName: myName,
+                );
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(strings.nudgeSentSuccess(partnerName)),
+                backgroundColor: AppTheme.primaryRose,
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -768,6 +922,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   // -------------------------------------------------------------
   Widget _buildState3Revealed(
     BuildContext context,
+    String coupleId,
     DailyQuestionModel dq,
     String myUid,
     CoupleModel? couple,
@@ -854,39 +1009,208 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
             answer: partnerAnswer,
           ).animate().fadeIn(duration: 500.ms).slideX(begin: 0.05, end: 0),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
 
-        // Sweet romance reminder footer
+        // Quick Emoji Reactions Bar
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.outlineColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    strings.isPortuguese ? 'Reagir às respostas' : 'React to answers',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (dq.reactions.isNotEmpty)
+                    Text(
+                      dq.reactions.values.join(' '),
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: DailyQuestionModel.reactionOptions.map((emoji) {
+                  final myReaction = dq.reactions[myUid];
+                  final selected = myReaction == emoji;
+                  return ChoiceChip(
+                    selected: selected,
+                    label: Text(emoji, style: const TextStyle(fontSize: 18)),
+                    selectedColor: AppTheme.primaryRose.withValues(alpha: 0.18),
+                    onSelected: (_) async {
+                      HapticFeedback.selectionClick();
+                      await ref
+                          .read(dailyQuestionRepositoryProvider)
+                          .toggleReaction(
+                            coupleId,
+                            dq.id,
+                            uid: myUid,
+                            emoji: emoji,
+                            currentEmoji: myReaction,
+                          );
+                    },
+                  );
+                }).toList(),
+              ),
+              const Divider(height: 22),
+              Text(
+                strings.isPortuguese ? 'Comentários do casal' : 'Couple comments',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: context.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (dq.comments.isEmpty)
+                Text(
+                  strings.isPortuguese
+                      ? 'Escreva um comentário carinhoso sobre a resposta de hoje 💬'
+                      : 'Leave a sweet note about today\'s answers 💬',
+                  style: TextStyle(fontSize: 12.5, color: context.textSecondary),
+                )
+              else
+                ...dq.comments.map(
+                  (c) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.surfaceVariant.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.textPrimary,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '${c.authorName}: ',
+                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            TextSpan(text: c.text),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      maxLength: 200,
+                      buildCounter: (_,
+                              {required currentLength,
+                              required isFocused,
+                              maxLength}) =>
+                          null,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: strings.isPortuguese
+                            ? 'Responder com carinho...'
+                            : 'Add a comment...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppTheme.primaryRose,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    onPressed: _isSendingComment
+                        ? null
+                        : () async {
+                            final txt = _commentController.text.trim();
+                            if (txt.isEmpty) return;
+                            setState(() => _isSendingComment = true);
+                            try {
+                              await ref
+                                  .read(dailyQuestionRepositoryProvider)
+                                  .addComment(
+                                    coupleId,
+                                    dq.id,
+                                    DailyQuestionComment(
+                                      id: const Uuid().v4().substring(0, 8),
+                                      uid: myUid,
+                                      authorName: myName,
+                                      text: txt,
+                                      createdAt: DateTime.now(),
+                                    ),
+                                  );
+                              _commentController.clear();
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isSendingComment = false);
+                              }
+                            }
+                          },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        // Countdown until tomorrow's prompt
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: AppTheme.pastelLavender.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.tertiaryMauve.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: AppTheme.tertiaryMauve.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             children: [
               const Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: AppTheme.tertiaryMauve,
-                size: 22,
+                Icons.hourglass_bottom_rounded,
+                color: AppTheme.primaryRose,
+                size: 20,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  strings.isPortuguese
-                      ? 'Conversem sobre as respostas de vocês hoje! Pequenas conversas constroem uma intimidade duradoura.'
-                      : 'Talk about your answers tonight! Small conversations build lasting intimacy.',
+                  _formatCountdownUntilTomorrow(strings.isPortuguese),
                   style: TextStyle(
-                    fontSize: 13,
-                    color: context.textPrimary.withValues(alpha: 0.85),
-                    height: 1.35,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
                   ),
                 ),
               ),
             ],
           ),
-        ).animate().fadeIn(duration: 550.ms),
+        ).animate().fadeIn(duration: 450.ms),
       ],
     );
   }
@@ -1055,14 +1379,64 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         }
 
         final myUid = _getEffectiveUid();
+        final filtered = DailyQuestionRepository.filterPastQuestions(
+          questions,
+          todayKey: DailyQuestionRepository.todayDateString,
+          query: _searchQuery,
+        );
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: questions.length,
-          itemBuilder: (context, index) {
-            final q = questions[index];
-            return _buildArchiveQuestionCard(context, coupleId, q, myUid, couple);
-          },
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _searchQuery = v),
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  hintText: strings.searchPastMemoriesHint,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text(
+                        strings.isPortuguese
+                            ? 'Nenhuma memória encontrada para "$_searchQuery".'
+                            : 'No memories match "$_searchQuery".',
+                        style: TextStyle(color: context.textSecondary),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final q = filtered[index];
+                        return _buildArchiveQuestionCard(
+                          context,
+                          coupleId,
+                          q,
+                          myUid,
+                          couple,
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
     );

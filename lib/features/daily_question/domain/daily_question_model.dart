@@ -69,14 +69,75 @@ class DailyQuestionAnswer {
       'DailyQuestionAnswer(uid: $uid, text: $text, answeredAt: $answeredAt)';
 }
 
+/// A short follow-up comment posted on a revealed Daily Question.
+@immutable
+class DailyQuestionComment {
+  final String id;
+  final String uid;
+  final String authorName;
+  final String text;
+  final DateTime createdAt;
+
+  const DailyQuestionComment({
+    required this.id,
+    required this.uid,
+    required this.authorName,
+    required this.text,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'uid': uid,
+        'authorName': authorName,
+        'text': text,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory DailyQuestionComment.fromMap(Map<String, dynamic> map) {
+    return DailyQuestionComment(
+      id: map['id'] as String? ?? '',
+      uid: map['uid'] as String? ?? '',
+      authorName: map['authorName'] as String? ?? '',
+      text: map['text'] as String? ?? '',
+      createdAt: DailyQuestionAnswer._parseDateTime(map['createdAt']),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DailyQuestionComment &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          uid == other.uid &&
+          authorName == other.authorName &&
+          text == other.text &&
+          createdAt == other.createdAt;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      uid.hashCode ^
+      authorName.hashCode ^
+      text.hashCode ^
+      createdAt.hashCode;
+}
+
 /// Root aggregate representing a couple's daily prompt and its dual concealed/revealed answers.
 @immutable
 class DailyQuestionModel {
+  static const List<String> reactionOptions = ['❤️', '😂', '🥺', '🔥', '😍'];
+
   final String id;
   final String date; // YYYY-MM-DD
   final String prompt;
   final Map<String, DailyQuestionAnswer> answers;
   final bool isRevealed;
+  final Map<String, String> reactions;
+  final List<DailyQuestionComment> comments;
+  final bool isCustom;
+  final String? proposedByUid;
 
   DailyQuestionModel({
     required this.id,
@@ -84,6 +145,10 @@ class DailyQuestionModel {
     required this.prompt,
     this.answers = const {},
     bool? isRevealed,
+    this.reactions = const {},
+    this.comments = const [],
+    this.isCustom = false,
+    this.proposedByUid,
   }) : isRevealed = (isRevealed ?? false) || (answers.length >= 2);
 
   /// Checks whether a specific partner has answered this prompt.
@@ -114,10 +179,7 @@ class DailyQuestionModel {
       answeredAt: timestamp,
     );
     final shouldReveal = updatedAnswers.length >= 2 || isRevealed;
-    return DailyQuestionModel(
-      id: id,
-      date: date,
-      prompt: prompt,
+    return copyWith(
       answers: updatedAnswers,
       isRevealed: shouldReveal,
     );
@@ -129,6 +191,10 @@ class DailyQuestionModel {
     String? prompt,
     Map<String, DailyQuestionAnswer>? answers,
     bool? isRevealed,
+    Map<String, String>? reactions,
+    List<DailyQuestionComment>? comments,
+    bool? isCustom,
+    String? proposedByUid,
   }) {
     return DailyQuestionModel(
       id: id ?? this.id,
@@ -136,6 +202,10 @@ class DailyQuestionModel {
       prompt: prompt ?? this.prompt,
       answers: answers ?? this.answers,
       isRevealed: isRevealed ?? this.isRevealed,
+      reactions: reactions ?? this.reactions,
+      comments: comments ?? this.comments,
+      isCustom: isCustom ?? this.isCustom,
+      proposedByUid: proposedByUid ?? this.proposedByUid,
     );
   }
 
@@ -145,6 +215,12 @@ class DailyQuestionModel {
       'prompt': prompt,
       'answers': answers.map((k, v) => MapEntry(k, v.toMap())),
       'isRevealed': isRevealed,
+      if (reactions.isNotEmpty) 'reactions': reactions,
+      if (comments.isNotEmpty)
+        'comments': comments.map((c) => c.toMap()).toList(),
+      if (isCustom) 'isCustom': true,
+      if (proposedByUid != null && proposedByUid!.isNotEmpty)
+        'proposedByUid': proposedByUid,
     };
   }
 
@@ -164,6 +240,28 @@ class DailyQuestionModel {
       });
     }
 
+    final parsedReactions = <String, String>{};
+    final rawReactions = map['reactions'];
+    if (rawReactions is Map) {
+      rawReactions.forEach((key, value) {
+        if (value != null && value.toString().isNotEmpty) {
+          parsedReactions[key.toString()] = value.toString();
+        }
+      });
+    }
+
+    final parsedComments = <DailyQuestionComment>[];
+    final rawComments = map['comments'];
+    if (rawComments is List) {
+      for (final item in rawComments) {
+        if (item is Map) {
+          parsedComments.add(
+            DailyQuestionComment.fromMap(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
+    }
+
     final isRevealed =
         (map['isRevealed'] as bool? ?? false) || (parsedAnswers.length >= 2);
 
@@ -173,6 +271,10 @@ class DailyQuestionModel {
       prompt: map['prompt'] as String? ?? '',
       answers: parsedAnswers,
       isRevealed: isRevealed,
+      reactions: parsedReactions,
+      comments: parsedComments,
+      isCustom: map['isCustom'] as bool? ?? false,
+      proposedByUid: map['proposedByUid'] as String?,
     );
   }
 
@@ -185,18 +287,27 @@ class DailyQuestionModel {
           date == other.date &&
           prompt == other.prompt &&
           mapEquals(answers, other.answers) &&
-          isRevealed == other.isRevealed;
+          isRevealed == other.isRevealed &&
+          mapEquals(reactions, other.reactions) &&
+          listEquals(comments, other.comments) &&
+          isCustom == other.isCustom &&
+          proposedByUid == other.proposedByUid;
 
   @override
   int get hashCode =>
       id.hashCode ^
       date.hashCode ^
       prompt.hashCode ^
-      answers.entries.fold(0, (prev, e) => prev ^ e.key.hashCode ^ e.value.hashCode) ^
-      isRevealed.hashCode;
+      answers.entries
+          .fold(0, (prev, e) => prev ^ e.key.hashCode ^ e.value.hashCode) ^
+      isRevealed.hashCode ^
+      reactions.length.hashCode ^
+      comments.length.hashCode ^
+      isCustom.hashCode ^
+      proposedByUid.hashCode;
 
   @override
   String toString() {
-    return 'DailyQuestionModel(id: $id, date: $date, prompt: $prompt, answers: ${answers.length}, isRevealed: $isRevealed)';
+    return 'DailyQuestionModel(id: $id, date: $date, prompt: $prompt, answers: ${answers.length}, isRevealed: $isRevealed, isCustom: $isCustom)';
   }
 }
