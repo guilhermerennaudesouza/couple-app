@@ -186,5 +186,35 @@ void main() {
       expect(ex.toString(), equals('Space is full'));
       expect(ex.message, equals('Space is full'));
     });
+
+    test('CoupleModel preserves uidAliases and resolves canonical UIDs', () {
+      final couple = CoupleModel(
+        id: 'couple_alias',
+        members: const ['uid_new', 'uid_2'],
+        anniversaryDate: DateTime(2024, 5, 18),
+        inviteCode: '123456',
+        uidAliases: const {'uid_old': 'uid_new'},
+      );
+      final restored = CoupleModel.fromMap('couple_alias', couple.toMap());
+      expect(restored.uidAliases, equals({'uid_old': 'uid_new'}));
+      expect(restored.resolveCanonicalUid('uid_old'), equals('uid_new'));
+      expect(restored.resolveCanonicalUid('uid_2'), equals('uid_2'));
+
+      final legacy = CoupleModel.fromMap('legacy', const {});
+      expect(legacy.uidAliases, isEmpty);
+    });
+
+    test('parseInviteCodeFromQr extracts 6-digit invite codes from URI or raw digits', () {
+      expect(
+        PairingRepository.parseInviteCodeFromQr('coupleapp://join?code=482910'),
+        equals('482910'),
+      );
+      expect(
+        PairingRepository.parseInviteCodeFromQr(' 482910 '),
+        equals('482910'),
+      );
+      expect(PairingRepository.parseInviteCodeFromQr('invalid'), isNull);
+      expect(PairingRepository.parseInviteCodeFromQr('12345'), isNull);
+    });
   });
 }

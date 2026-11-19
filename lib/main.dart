@@ -15,6 +15,7 @@ import 'package:couple_app/core/notifications/local_notification_service.dart';
 import 'package:couple_app/core/services/app_update_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/core/theme/theme_provider.dart';
+import 'package:couple_app/core/utils/couple_date_utils.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/auth/presentation/pairing_screen.dart';
 import 'package:couple_app/features/calendar/presentation/calendar_screen.dart';
@@ -296,6 +297,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
 
   void _showUpdateDialog(AppUpdateInfo update) {
     final strings = AppStrings.of(context);
+    StreamSubscription<OtaEvent>? otaSub;
 
     showDialog<void>(
       context: context,
@@ -305,7 +307,6 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
         String? statusText;
         bool isDownloading = false;
         String? errorMessage;
-        StreamSubscription<OtaEvent>? otaSub;
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -479,7 +480,10 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      otaSub?.cancel();
+      otaSub = null;
+    });
   }
 
   @override
@@ -496,7 +500,7 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
         : '...';
 
     final daysTogether = couple != null
-        ? DateTime.now().difference(couple.anniversaryDate).inDays
+        ? CoupleDateUtils.daysTogether(couple.anniversaryDate)
         : null;
 
     final partnerNames = couple != null && couple.partnerProfiles.isNotEmpty
@@ -1012,7 +1016,9 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(pairingRepositoryProvider).clearCurrentCoupleId();
+      final repo = ref.read(pairingRepositoryProvider);
+      await repo.unpairCurrentUser(widget.coupleId, repo.currentUserUid);
+      await WidgetSyncService.clearGlanceNote();
       ref.invalidate(currentCoupleIdProvider);
     }
   }

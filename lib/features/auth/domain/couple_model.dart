@@ -8,6 +8,7 @@ class CoupleModel {
   final DateTime anniversaryDate;
   final String inviteCode;
   final Map<String, PartnerProfile> partnerProfiles;
+  final Map<String, String> uidAliases;
   final DateTime createdAt;
 
   CoupleModel({
@@ -16,8 +17,19 @@ class CoupleModel {
     required this.anniversaryDate,
     required this.inviteCode,
     this.partnerProfiles = const {},
+    this.uidAliases = const {},
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  /// Resolves an old/legacy partner UID to its current canonical UID if re-paired.
+  String resolveCanonicalUid(String uid) {
+    var current = uid;
+    final visited = <String>{};
+    while (uidAliases.containsKey(current) && visited.add(current)) {
+      current = uidAliases[current]!;
+    }
+    return current;
+  }
 
   bool get isFull => members.length >= 2;
 
@@ -45,6 +57,7 @@ class CoupleModel {
       'anniversaryDate': anniversaryDate.toIso8601String(),
       'inviteCode': inviteCode,
       'partnerProfiles': partnerProfiles.map((k, v) => MapEntry(k, v.toMap())),
+      if (uidAliases.isNotEmpty) 'uidAliases': uidAliases,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -69,12 +82,23 @@ class CoupleModel {
       });
     }
 
+    final rawAliases = map['uidAliases'];
+    final Map<String, String> uidAliases = {};
+    if (rawAliases is Map) {
+      rawAliases.forEach((key, value) {
+        if (value != null) {
+          uidAliases[key.toString()] = value.toString();
+        }
+      });
+    }
+
     return CoupleModel(
       id: id,
       members: members,
       anniversaryDate: _parseDateTime(map['anniversaryDate']),
       inviteCode: map['inviteCode'] as String? ?? '',
       partnerProfiles: partnerProfiles,
+      uidAliases: uidAliases,
       createdAt: _parseDateTime(map['createdAt']),
     );
   }
@@ -85,6 +109,7 @@ class CoupleModel {
     DateTime? anniversaryDate,
     String? inviteCode,
     Map<String, PartnerProfile>? partnerProfiles,
+    Map<String, String>? uidAliases,
     DateTime? createdAt,
   }) {
     return CoupleModel(
@@ -93,6 +118,7 @@ class CoupleModel {
       anniversaryDate: anniversaryDate ?? this.anniversaryDate,
       inviteCode: inviteCode ?? this.inviteCode,
       partnerProfiles: partnerProfiles ?? this.partnerProfiles,
+      uidAliases: uidAliases ?? this.uidAliases,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -118,6 +144,7 @@ class CoupleModel {
           anniversaryDate == other.anniversaryDate &&
           inviteCode == other.inviteCode &&
           mapEquals(partnerProfiles, other.partnerProfiles) &&
+          mapEquals(uidAliases, other.uidAliases) &&
           createdAt == other.createdAt;
 
   @override
@@ -127,6 +154,7 @@ class CoupleModel {
       anniversaryDate.hashCode ^
       inviteCode.hashCode ^
       partnerProfiles.hashCode ^
+      uidAliases.hashCode ^
       createdAt.hashCode;
 
   @override

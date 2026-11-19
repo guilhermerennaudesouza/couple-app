@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
@@ -68,15 +70,19 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     super.dispose();
   }
 
-  late final String _fallbackUid = 'user_${DateTime.now().millisecondsSinceEpoch}';
-
-  String _getEffectiveUid() {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      return user?.uid ?? _fallbackUid;
-    } catch (_) {
-      return _fallbackUid;
+  Future<String> _ensureAuthenticatedUid() async {
+    final existing = FirebaseAuth.instance.currentUser?.uid;
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
     }
+    final credential = await FirebaseAuth.instance.signInAnonymously();
+    final uid = credential.user?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw const PairingException(
+        'Não foi possível autenticar no servidor. Verifique sua internet e tente novamente.',
+      );
+    }
+    return uid;
   }
 
   Future<void> _handleCreateCouple() async {
@@ -84,9 +90,10 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     setState(() => _isCreating = true);
 
     try {
+      final uid = await _ensureAuthenticatedUid();
       final repository = ref.read(pairingRepositoryProvider);
       final couple = await repository.createCouple(
-        _getEffectiveUid(),
+        uid,
         _createNameController.text.trim(),
         _selectedAnniversary,
       );
@@ -116,10 +123,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     setState(() => _isJoining = true);
 
     try {
+      final uid = await _ensureAuthenticatedUid();
       final repository = ref.read(pairingRepositoryProvider);
       await repository.joinCouple(
         _joinCodeController.text.trim(),
-        _getEffectiveUid(),
+        uid,
         _joinNameController.text.trim(),
       );
 
@@ -391,7 +399,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         final currentCouple = couple ?? initialCouple;
 
         if (currentCouple.isFull) {
-          final other = currentCouple.getPartnerProfile(_getEffectiveUid());
+          final myUid = ref.watch(currentUserUidProvider).valueOrNull ??
+              (currentCouple.members.isNotEmpty ? currentCouple.members.first : '');
+          final other = currentCouple.getPartnerProfile(myUid);
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -528,35 +538,34 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 ),
               ),
               const SizedBox(height: 28),
-              // Stylized QR code container
+              // Scannable QR code container
               Center(
                 child: Container(
-                  width: 180,
-                  height: 180,
-                  padding: const EdgeInsets.all(12),
+                  width: 192,
+                  height: 192,
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: CustomPaint(
-                    painter: _StylizedQrPainter(code: currentCouple.inviteCode),
-                    child: Center(
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppTheme.primaryRose,
-                        child: Icon(
-                          Icons.favorite_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
+                  child: QrImageView(
+                    data: 'coupleapp://join?code=${currentCouple.inviteCode}',
+                    version: QrVersions.auto,
+                    size: 164,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: Color(0xFF2B2B2B),
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: Color(0xFF2B2B2B),
                     ),
                   ),
                 ),
@@ -688,7 +697,23 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 return null;
               },
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _isJoining ? null : () => _openQrScanner(context),
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              label: Text(
+                strings.isPortuguese ? 'Escanear QR Code' : 'Scan QR Code',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryRose,
+                side: const BorderSide(color: AppTheme.primaryRose),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isJoining ? null : _handleJoinCouple,
               style: ElevatedButton.styleFrom(
@@ -716,76 +741,78 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       ),
     );
   }
-}
 
-/// A custom painter rendering a crisp, stylized QR pattern for pairing codes.
-class _StylizedQrPainter extends CustomPainter {
-  final String code;
+  Future<void> _openQrScanner(BuildContext context) async {
+    final strings = AppStrings.of(context);
+    bool handled = false;
 
-  _StylizedQrPainter({required this.code});
+    final scannedCode = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return SizedBox(
+          height: MediaQuery.of(sheetCtx).size.height * 0.65,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.outlineColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  strings.isPortuguese
+                      ? 'Aponte a câmera para o QR Code do seu par'
+                      : 'Point the camera at your partner\'s QR code',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: context.textPrimary,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    child: MobileScanner(
+                      onDetect: (capture) {
+                        if (handled) return;
+                        for (final barcode in capture.barcodes) {
+                          final raw = barcode.rawValue;
+                          if (raw == null) continue;
+                          final parsed = PairingRepository.parseInviteCodeFromQr(raw);
+                          if (parsed != null) {
+                            handled = true;
+                            Navigator.of(sheetCtx).pop(parsed);
+                            break;
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paintDark = Paint()
-      ..color = const Color(0xFF2B2B2B)
-      ..style = PaintingStyle.fill;
-
-    final double cellSize = size.width / 21;
-
-    void drawFinder(double x, double y) {
-      // Outer square 7x7
-      canvas.drawRect(
-        Rect.fromLTWH(x * cellSize, y * cellSize, 7 * cellSize, 7 * cellSize),
-        paintDark,
-      );
-      // Inner clear square 5x5
-      final paintWhite = Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill;
-      canvas.drawRect(
-        Rect.fromLTWH((x + 1) * cellSize, (y + 1) * cellSize, 5 * cellSize, 5 * cellSize),
-        paintWhite,
-      );
-      // Core center 3x3
-      canvas.drawRect(
-        Rect.fromLTWH((x + 2) * cellSize, (y + 2) * cellSize, 3 * cellSize, 3 * cellSize),
-        paintDark,
-      );
+    if (scannedCode != null && mounted) {
+      setState(() {
+        _joinCodeController.text = scannedCode;
+      });
     }
-
-    // Draw three standard QR finder patterns
-    drawFinder(1, 1);
-    drawFinder(13, 1);
-    drawFinder(1, 13);
-
-    // Deterministic pseudo pattern seeded by code
-    final seed = code.hashCode;
-    for (int r = 0; r < 21; r++) {
-      for (int c = 0; c < 21; c++) {
-        // Skip finder regions
-        if ((r < 8 && c < 8) || (r < 8 && c > 12) || (r > 12 && c < 8)) {
-          continue;
-        }
-        // Skip center badge region
-        if (r >= 8 && r <= 12 && c >= 8 && c <= 12) {
-          continue;
-        }
-        final bit = ((seed * (r + 1) + (c + 1) * 31) ^ (r * c)) % 3 == 0;
-        if (bit) {
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(c * cellSize + 0.5, r * cellSize + 0.5, cellSize - 1, cellSize - 1),
-              const Radius.circular(1.5),
-            ),
-            paintDark,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _StylizedQrPainter oldDelegate) {
-    return oldDelegate.code != code;
   }
 }
