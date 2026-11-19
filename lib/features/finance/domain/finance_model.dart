@@ -33,6 +33,7 @@ class FinanceEntry {
   final DateTime date;
   final bool isSettled;
   final DateTime? settledAt;
+  final String? settledByUid;
   final DateTime createdAt;
 
   /// Standard expense categories tailored for couples.
@@ -57,6 +58,7 @@ class FinanceEntry {
     DateTime? date,
     this.isSettled = false,
     this.settledAt,
+    this.settledByUid,
     DateTime? createdAt,
   })  : date = date ?? DateTime.now(),
         createdAt = createdAt ?? DateTime.now();
@@ -93,6 +95,7 @@ class FinanceEntry {
       'date': date.toIso8601String(),
       'isSettled': isSettled,
       'settledAt': settledAt?.toIso8601String(),
+      if (settledByUid != null) 'settledByUid': settledByUid,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -110,6 +113,7 @@ class FinanceEntry {
       date: _parseDateTime(map['date']),
       isSettled: map['isSettled'] as bool? ?? false,
       settledAt: map['settledAt'] != null ? _parseDateTime(map['settledAt']) : null,
+      settledByUid: map['settledByUid'] as String?,
       createdAt: _parseDateTime(map['createdAt']),
     );
   }
@@ -126,6 +130,7 @@ class FinanceEntry {
     DateTime? date,
     bool? isSettled,
     DateTime? settledAt,
+    String? settledByUid,
     DateTime? createdAt,
   }) {
     return FinanceEntry(
@@ -140,6 +145,7 @@ class FinanceEntry {
       date: date ?? this.date,
       isSettled: isSettled ?? this.isSettled,
       settledAt: settledAt ?? this.settledAt,
+      settledByUid: settledByUid ?? this.settledByUid,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -184,6 +190,7 @@ class FinanceEntry {
           date == other.date &&
           isSettled == other.isSettled &&
           settledAt == other.settledAt &&
+          settledByUid == other.settledByUid &&
           createdAt == other.createdAt;
 
   @override
@@ -198,6 +205,7 @@ class FinanceEntry {
       date.hashCode ^
       isSettled.hashCode ^
       settledAt.hashCode ^
+      settledByUid.hashCode ^
       createdAt.hashCode;
 
   @override

@@ -393,5 +393,19 @@ void main() {
       );
       expect(entry.shareFor('foreign_uid', partnerUid: user2), equals(0.0));
     });
+
+    test('FinanceEntry persists settledByUid across toMap and fromMap', () {
+      final entry = FinanceEntry(
+        id: 'fe_settled',
+        title: 'Dinner',
+        amount: 120.0,
+        paidBy: user1,
+        isSettled: true,
+        settledByUid: user2,
+      );
+      final restored = FinanceEntry.fromMap('fe_settled', entry.toMap());
+      expect(restored.isSettled, isTrue);
+      expect(restored.settledByUid, equals(user2));
+    });
   });
 }

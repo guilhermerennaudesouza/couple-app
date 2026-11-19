@@ -69,10 +69,10 @@ class DecideRepository {
     }
   }
 
-  /// Casts a vote for a specific partner on an active ballot session.
+  /// Casts a vote for a specific partner on an active ballot session atomically.
   ///
-  /// Merges `votes.$uid = choice`. If both partners have now voted,
-  /// marks `status = 'resolved'` and records `resolvedAt`.
+  /// Uses a Firestore transaction to avoid simultaneous-vote races, with an
+  /// offline `set(..., SetOptions(merge: true))` fallback.
   Future<void> castVote(
     String coupleId,
     String sessionId,
@@ -82,15 +82,14 @@ class DecideRepository {
     final docRef = _sessionsCollection(coupleId).doc(sessionId);
 
     try {
-      final Map<String, dynamic> existingVotes = {};
-      try {
-        final doc = await docRef.get();
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        final Map<String, dynamic> existingVotes = {};
         if (doc.exists && doc.data() != null) {
           final rawVotes = doc.data()!['votes'];
           if (rawVotes is Map) {
             existingVotes.addAll(Map<String, dynamic>.from(rawVotes));
           }
-          // Parse legacy root keys if any
           doc.data()!.forEach((k, v) {
             if (k.startsWith('votes.') && v != null) {
               final voteUid = k.substring('votes.'.length);
@@ -100,36 +99,29 @@ class DecideRepository {
             }
           });
         }
-      } catch (e) {
-        debugPrint('DecideRepository.castVote get fallback: $e');
-      }
-      existingVotes[uid] = choice;
+        existingVotes[uid] = choice;
 
-      // Use nested map syntax so SetOptions(merge: true) merges the map key
-      // without creating a literal 'votes.<uid>' string field.
-      final updates = <String, dynamic>{
-        'votes': {
-          uid: choice,
-        },
-      };
-
-      // When 2 or more partners have voted, mark resolved
-      if (existingVotes.length >= 2) {
-        updates['status'] = DecideSessionModel.statusResolved;
-        final now = DateTime.now();
-        updates['resolvedAt'] = now.toIso8601String();
-
-        // Check if all votes agree
-        final voteValues = existingVotes.values.toSet();
-        if (voteValues.length == 1 && voteValues.first.toString().isNotEmpty) {
-          updates['winningOption'] = voteValues.first.toString();
+        final updates = <String, dynamic>{
+          'votes': existingVotes,
+        };
+        if (existingVotes.length >= 2) {
+          updates['status'] = DecideSessionModel.statusResolved;
+          updates['resolvedAt'] = DateTime.now().toIso8601String();
+          final voteValues = existingVotes.values.toSet();
+          if (voteValues.length == 1 && voteValues.first.toString().isNotEmpty) {
+            updates['winningOption'] = voteValues.first.toString();
+          }
         }
-      }
-
-      await docRef.set(updates, SetOptions(merge: true));
+        transaction.set(docRef, updates, SetOptions(merge: true));
+      });
     } catch (e) {
-      debugPrint('DecideRepository.castVote error: $e');
-      rethrow;
+      debugPrint('DecideRepository.castVote transaction fallback (offline): $e');
+      await docRef.set(
+        {
+          'votes': {uid: choice},
+        },
+        SetOptions(merge: true),
+      );
     }
   }
 
@@ -155,25 +147,36 @@ class DecideRepository {
     }
   }
 
+  /// Builds the replacement payload used by [resetSessionForRevote].
+  static Map<String, dynamic> buildRevoteResetPayload() {
+    return {
+      'votes': <String, String>{},
+      'status': DecideSessionModel.statusOpen,
+      'resolvedAt': null,
+      'winningOption': null,
+    };
+  }
+
   /// Resets a ballot session to allow a fresh re-vote in case of a split decision.
+  ///
+  /// Uses `update()` (not `set(..., merge: true)`) so Firestore replaces the
+  /// entire `votes` map instead of keeping previous partner vote keys.
   Future<void> resetSessionForRevote(
     String coupleId,
     String sessionId,
   ) async {
     final docRef = _sessionsCollection(coupleId).doc(sessionId);
+    final payload = buildRevoteResetPayload();
     try {
-      await docRef.set(
-        {
-          'votes': <String, String>{},
-          'status': DecideSessionModel.statusOpen,
-          'resolvedAt': null,
-          'winningOption': null,
-        },
-        SetOptions(merge: true),
-      );
+      await docRef.update(payload);
     } catch (e) {
-      debugPrint('DecideRepository.resetSessionForRevote error: $e');
-      rethrow;
+      debugPrint('DecideRepository.resetSessionForRevote update fallback: $e');
+      await docRef.set(
+        payload,
+        SetOptions(
+          mergeFields: const ['votes', 'status', 'resolvedAt', 'winningOption'],
+        ),
+      );
     }
   }
 

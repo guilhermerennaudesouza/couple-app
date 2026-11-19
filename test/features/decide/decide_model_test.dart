@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:couple_app/features/decide/data/decide_repository.dart';
 import 'package:couple_app/features/decide/domain/decide_model.dart';
 import 'package:couple_app/features/date_ideas/domain/date_idea_model.dart';
 import 'package:couple_app/features/date_ideas/data/date_ideas_repository.dart';
@@ -265,6 +266,14 @@ void main() {
         expect(i.createdBy, equals('uid_creator'));
         expect(i.isCompleted, isFalse);
       }
+    });
+
+    test('DecideRepository.buildRevoteResetPayload clears votes, winningOption, and status', () {
+      final payload = DecideRepository.buildRevoteResetPayload();
+      expect(payload['votes'], equals(<String, String>{}));
+      expect(payload['status'], equals(DecideSessionModel.statusOpen));
+      expect(payload['resolvedAt'], isNull);
+      expect(payload['winningOption'], isNull);
     });
   });
 }

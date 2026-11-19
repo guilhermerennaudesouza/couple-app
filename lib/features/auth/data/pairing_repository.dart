@@ -270,13 +270,19 @@ class PairingRepository {
         await flushIfFull();
       }
 
-      // 3. Finance entries (paidByUid & customShares)
+      // 3. Finance entries (paidBy, settledByUid & legacy paidByUid/customShares)
       final finSnap = await coupleRef.collection('finance_entries').get();
       for (final doc in finSnap.docs) {
         final data = doc.data();
         final updates = <String, dynamic>{};
+        if (data['paidBy'] == oldUid) {
+          updates['paidBy'] = newUid;
+        }
         if (data['paidByUid'] == oldUid) {
           updates['paidByUid'] = newUid;
+        }
+        if (data['settledByUid'] == oldUid) {
+          updates['settledByUid'] = newUid;
         }
         final customShares = data['customShares'];
         if (customShares is Map && customShares.containsKey(oldUid)) {

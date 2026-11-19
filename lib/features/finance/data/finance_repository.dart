@@ -95,6 +95,7 @@ class FinanceRepository {
         batch.set(doc.reference, {
           'isSettled': true,
           'settledAt': nowIso,
+          'settledByUid': settledByUid,
         }, SetOptions(merge: true));
       }
       await batch.commit();
@@ -105,6 +106,7 @@ class FinanceRepository {
           await doc.reference.set({
             'isSettled': true,
             'settledAt': nowIso,
+            'settledByUid': settledByUid,
           }, SetOptions(merge: true));
         } catch (docErr) {
           debugPrint('FinanceRepository.settleAllBalances per-doc update error: $docErr');
@@ -170,8 +172,9 @@ class FinanceRepository {
         : contribution;
 
     try {
-      final doc = await docRef.get();
-      if (doc.exists && doc.data() != null) {
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        if (!doc.exists || doc.data() == null) return;
         final goal = SavingsGoalModel.fromMap(doc.id, doc.data()!);
         final updatedAmount = ((goal.currentAmount + contribToSave.amount) * 100)
                 .roundToDouble() /
@@ -186,11 +189,11 @@ class FinanceRepository {
           isCompleted: isCompleted,
         );
 
-        await docRef.set(updatedGoal.toMap(), SetOptions(merge: true));
-        return;
-      }
+        transaction.set(docRef, updatedGoal.toMap(), SetOptions(merge: true));
+      });
+      return;
     } catch (e) {
-      debugPrint('FinanceRepository.addContribution direct read fallback: $e');
+      debugPrint('FinanceRepository.addContribution transaction fallback (offline): $e');
     }
 
     // Direct atomic write fallback for offline mode
