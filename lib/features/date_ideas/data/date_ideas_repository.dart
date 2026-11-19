@@ -76,6 +76,27 @@ class DateIdeasRepository {
     return description;
   }
 
+  /// Translates a date idea category key (`Cozy`, `Outdoor`, etc.) to a user-facing label.
+  static String translateCategory(String category, {bool isPt = true}) {
+    if (!isPt) return category;
+    switch (category) {
+      case DateIdeaModel.categoryCozy:
+        return 'Aconchegante';
+      case DateIdeaModel.categoryOutdoor:
+        return 'Ao Ar Livre';
+      case DateIdeaModel.categoryFoodie:
+        return 'Gastronômico';
+      case DateIdeaModel.categoryRomance:
+        return 'Romântico';
+      case DateIdeaModel.categoryAdventurous:
+        return 'Aventura';
+      case DateIdeaModel.categoryBudget:
+        return 'Econômico';
+      default:
+        return category;
+    }
+  }
+
   /// Curated default date ideas inspired by Krivo couple cards.
   static List<DateIdeaModel> defaultCuratedIdeas({
     required String createdBy,

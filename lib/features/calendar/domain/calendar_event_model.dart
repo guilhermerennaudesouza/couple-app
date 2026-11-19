@@ -18,6 +18,44 @@ class CalendarEventModel {
     categorySpecial,
   ];
 
+  /// Translates legacy/cross-locale default event titles (e.g. v1.0.0 English
+  /// anniversary or curated date ideas) into Portuguese when [isPt] is true.
+  static String localizeTitle(String title, {bool isPt = true}) {
+    if (!isPt) return title;
+    switch (title.trim()) {
+      case 'Our Anniversary':
+      case 'Our Anniversary ❤️':
+        return 'Nosso Aniversário ❤️';
+      case 'Our Anniversary 💕':
+        return 'Nosso Aniversário de Namoro 💕';
+      case 'Candlelight Home Dinner & No Phones':
+        return 'Jantar à Luz de Velas em Casa & Sem Celulares';
+      case 'Sunset Beach Walk & Ice Cream':
+        return 'Caminhada ao Pôr do Sol & Sorvete';
+      case 'Try a New Cuisine Neither Has Eaten':
+        return 'Provar uma Culinária Nova Juntos';
+      case 'Late Night Stargazing with Hot Chocolate':
+        return 'Observar as Estrelas com Chocolate Quente';
+      case 'Cook Pizza from Scratch Together':
+        return 'Fazer Pizza Caseira Juntos do Zero';
+      case 'Bookstore Date: Pick a Book for Each Other':
+        return 'Encontro na Livraria: Escolher um Livro para o Outro';
+      default:
+        return title;
+    }
+  }
+
+  /// Translates legacy/cross-locale default event descriptions into Portuguese.
+  static String localizeDescription(String description, {bool isPt = true}) {
+    if (!isPt) return description;
+    switch (description.trim()) {
+      case 'The day our love story began ❤️':
+        return 'O dia em que nossa história de amor começou ❤️';
+      default:
+        return description;
+    }
+  }
+
   final String id;
   final String title;
   final String description;

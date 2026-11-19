@@ -58,6 +58,19 @@ class PartnerMood {
     return dateKey == CoupleDateUtils.formatDateKey(now);
   }
 
+  /// Returns a localized display label for known preset moods so a PT-BR user
+  /// never sees English preset labels written by an EN partner (and vice versa).
+  String localizedLabel({bool isPortuguese = true}) {
+    final normalized = label.trim().toLowerCase();
+    for (final preset in presets) {
+      if (preset.labelEn.toLowerCase() == normalized ||
+          preset.labelPt.toLowerCase() == normalized) {
+        return preset.label(isPortuguese: isPortuguese);
+      }
+    }
+    return label;
+  }
+
   Map<String, dynamic> toMap() {
     final cleanNote = sanitizeNote(note);
     return {

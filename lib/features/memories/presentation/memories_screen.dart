@@ -1126,7 +1126,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     );
   }
 
-  String _formatDuration(Duration duration, {bool isPt = false}) {
+  String _formatDuration(Duration duration, {bool isPt = true}) {
     if (duration.isNegative || duration == Duration.zero) {
       return isPt ? 'Desbloqueada agora!' : 'Unlocked now!';
     }
@@ -3001,7 +3001,7 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: strings.isPortuguese ? 'Preço Estimado (opcional)' : 'Estimated Price (optional)',
-                hintText: strings.isPortuguese ? 'ex: 150.00' : 'e.g., 79.99',
+                hintText: strings.isPortuguese ? 'ex: 150,00' : 'e.g., 79.99',
                 prefixText: strings.isPortuguese ? 'R\$ ' : '\$ ',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputBorderRadius)),
                 prefixIcon: const Icon(Icons.attach_money_rounded, color: AppTheme.primaryRose),

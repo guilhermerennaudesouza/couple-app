@@ -1,3 +1,22 @@
+# Couple App v1.1.1 — 100% Português (Brasil) por Padrão 🇧🇷💕
+
+### ✨ O que foi corrigido
+
+- **💘 Swipe de Encontros, Match & Lista 100% em PT-BR:**
+  - Categorias nos cards do modo Swipe agora aparecem traduzidas (`Aconchegante`, `Ao Ar Livre`, `Gastronômico`, `Romântico`, `Aventura`, `Econômico`).
+  - Ideias iniciais antigas salvas em inglês no Firestore (da v1.0.0) agora são traduzidas automaticamente no Swipe, no diálogo de **Deu Match!**, no **Sortear Encontro**, na notificação do parceiro, na exclusão e ao agendar no Calendário.
+- **✅ Checklists & Diálogos de Edição em PT-BR:**
+  - Templates padrão de Checklists agora são criados nativamente em português (mantendo tradução automática para listas antigas em inglês).
+  - Dropdowns de categorias nos diálogos de edição (Tarefas, Checklists, Gastos e Metas de Economia) agora exibem nomes 100% em português, incluindo a categoria `Veículo` em Finanças.
+- **💬 Pergunta do Dia, Calendário, Humor & Notificações:**
+  - `getPromptForDate` padronizado em PT-BR por padrão e busca no histórico agora encontra perguntas antigas em inglês usando termos em português.
+  - Eventos antigos de aniversário em inglês (`Our Anniversary`) traduzidos no Calendário, na Home ("Nosso Dia"), na edição/exclusão e nas notificações agendadas.
+  - Humores do parceiro e mensagens de erro (Pareamento, Cofre e Desenhar Juntos) padronizados em PT-BR.
+- **📱 Widgets Android Glance em PT-BR:**
+  - Padrão PT-BR em toda sincronização de widgets (inclusive em segundo plano no WorkManager), placeholder `Carregando Krivo...`, tradução automática de perguntas e raspadinhas no idioma do receptor e nome do app unificado como **Krivo**.
+
+---
+
 # Couple App v1.1.0 — Paridade Krivo, Home Viva "Nosso Dia", Desenhar Juntos & Sync em Segundo Plano 💑✨
 
 ### ✨ O que há de novo

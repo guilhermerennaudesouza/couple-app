@@ -54,6 +54,11 @@ class _DateIdeasSwipeViewState extends ConsumerState<DateIdeasSwipeView> {
           );
       if (isMatch && mounted) {
         HapticFeedback.heavyImpact();
+        final langCode = AppStrings.of(context).isPortuguese ? 'pt' : 'en';
+        final localizedTitle = DateIdeasRepository.translateIdeaTitle(
+          idea.title,
+          languageCode: langCode,
+        );
         final couple =
             ref.read(coupleStreamProvider(widget.coupleId)).valueOrNull;
         final myName =
@@ -64,7 +69,7 @@ class _DateIdeasSwipeViewState extends ConsumerState<DateIdeasSwipeView> {
               actorUid: widget.myUid,
               actorName: myName,
               title: 'Deu Match de Encontro! 💕',
-              body: 'Vocês dois curtiram: "${idea.title}" ✨',
+              body: 'Vocês dois curtiram: "$localizedTitle" ✨',
               route: 'decide',
             );
         await showMatchCelebrationDialog(
@@ -311,7 +316,10 @@ class _DateIdeasSwipeViewState extends ConsumerState<DateIdeasSwipeView> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        topCard.category,
+                        DateIdeasRepository.translateCategory(
+                          topCard.category,
+                          isPt: strings.isPortuguese,
+                        ),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -321,7 +329,10 @@ class _DateIdeasSwipeViewState extends ConsumerState<DateIdeasSwipeView> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      topCard.title,
+                      DateIdeasRepository.translateIdeaTitle(
+                        topCard.title,
+                        languageCode: strings.isPortuguese ? 'pt' : 'en',
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 21,
@@ -332,7 +343,11 @@ class _DateIdeasSwipeViewState extends ConsumerState<DateIdeasSwipeView> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      topCard.description,
+                      DateIdeasRepository.translateIdeaDescription(
+                        topCard.title,
+                        topCard.description,
+                        languageCode: strings.isPortuguese ? 'pt' : 'en',
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14.5,
@@ -408,6 +423,16 @@ Future<void> showMatchCelebrationDialog(
   bool isRandomPick = false,
 }) async {
   final strings = AppStrings.of(context);
+  final langCode = strings.isPortuguese ? 'pt' : 'en';
+  final displayTitle = DateIdeasRepository.translateIdeaTitle(
+    idea.title,
+    languageCode: langCode,
+  );
+  final displayDescription = DateIdeasRepository.translateIdeaDescription(
+    idea.title,
+    idea.description,
+    languageCode: langCode,
+  );
   final dialogTitle = isRandomPick
       ? (strings.isPortuguese ? 'Encontro Sorteado! 🎲' : 'Random Date Pick! 🎲')
       : strings.matchDialogTitle;
@@ -435,14 +460,14 @@ Future<void> showMatchCelebrationDialog(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            idea.title,
+            displayTitle,
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
           ),
-          if (idea.description.isNotEmpty) ...[
+          if (displayDescription.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              idea.description,
+              displayDescription,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13.5, color: dialogCtx.textSecondary),
             ),
@@ -473,8 +498,8 @@ Future<void> showMatchCelebrationDialog(
                   coupleId,
                   CalendarEventModel(
                     id: '',
-                    title: idea.title,
-                    description: idea.description,
+                    title: displayTitle,
+                    description: displayDescription,
                     date: pickedDate,
                     category: CalendarEventModel.categoryDateNight,
                     reminderDaysBefore: 1,

@@ -254,17 +254,18 @@ class LocalNotificationService {
   }) async {
     try {
       final reminderId = (event.id.hashCode.abs() % 100000) + 3000;
+      final displayTitle = CalendarEventModel.localizeTitle(event.title, isPt: true);
       final title = event.category == CalendarEventModel.categoryAnniversary
           ? 'Lembrete de Aniversário ❤️'
-          : 'Em breve: ${event.title}';
+          : 'Em breve: $displayTitle';
 
       final String body;
       if (event.reminderDaysBefore == 0) {
-        body = 'Hoje é ${event.title}! Aproveitem momentos especiais juntos 💕';
+        body = 'Hoje é $displayTitle! Aproveitem momentos especiais juntos 💕';
       } else if (event.reminderDaysBefore == 1) {
-        body = 'Amanhã é ${event.title}! Já está tudo pronto? 💕';
+        body = 'Amanhã é $displayTitle! Já está tudo pronto? 💕';
       } else {
-        body = 'Faltam ${event.reminderDaysBefore} dias para ${event.title}! 💕';
+        body = 'Faltam ${event.reminderDaysBefore} dias para $displayTitle! 💕';
       }
 
       final nextOcc = event.nextOccurrenceDate();

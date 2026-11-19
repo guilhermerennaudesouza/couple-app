@@ -72,13 +72,23 @@ class DailyPromptGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("language", null)
         val isPt = savedLocale != "en"
 
-        val promptStatus = prefs.getString("flutter.prompt_status", null)
+        val rawPromptStatus = prefs.getString("flutter.prompt_status", null)
             ?: prefs.getString("prompt_status", null)
-            ?: when {
+        val promptStatus = when {
+            isPt && (rawPromptStatus == null ||
+                rawPromptStatus.startsWith("Both answered") ||
+                rawPromptStatus.startsWith("Waiting for")) -> when {
+                isRevealed -> "Ambos responderam! 💕"
+                isAnsweredByMe -> "Aguardando seu amor... 🔒"
+                else -> "Aguardando sua resposta ✍️"
+            }
+            rawPromptStatus != null -> rawPromptStatus
+            else -> when {
                 isRevealed -> if (isPt) "Ambos responderam! 💕" else "Both answered! Tap to read 💕"
                 isAnsweredByMe -> if (isPt) "Aguardando seu amor... 🔒" else "Waiting for partner... 🔒"
                 else -> if (isPt) "Aguardando sua resposta ✍️" else "Waiting for your answer ✍️"
             }
+        }
 
         val hasPrompt = promptText.isNotBlank()
 

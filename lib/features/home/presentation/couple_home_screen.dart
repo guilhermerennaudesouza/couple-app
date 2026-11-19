@@ -1096,6 +1096,7 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
     required PartnerMood? mood,
     required String emptyHint,
   }) {
+    final isPt = AppStrings.of(context).isPortuguese;
     return Container(
       padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
@@ -1118,7 +1119,7 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
           const SizedBox(height: 4),
           if (mood != null) ...[
             Text(
-              '${mood.emoji} ${mood.label}',
+              '${mood.emoji} ${mood.localizedLabel(isPortuguese: isPt)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1535,7 +1536,10 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
                 )
               else ...[
                 Text(
-                  nextEvent.title,
+                  CalendarEventModel.localizeTitle(
+                    nextEvent.title,
+                    isPt: strings.isPortuguese,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

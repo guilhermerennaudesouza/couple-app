@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:couple_app/core/firebase/firebase_config.dart';
 import 'package:couple_app/core/notifications/local_notification_service.dart';
+import 'package:couple_app/features/daily_question/data/daily_question_repository.dart';
 import 'package:couple_app/features/drawing/domain/shared_canvas_model.dart';
 import 'package:couple_app/features/home/domain/activity_state_model.dart';
 import 'package:couple_app/features/widgets/widget_sync_service.dart';
@@ -330,21 +331,25 @@ class BackgroundSyncService {
         }
       }
 
-      // 2. Pinned Note widget (already privacy-masked when saved)
+      // 2. Pinned Note widget (re-localizes masked scratch cards in receiver's language)
       final rawNote = snapshot['pinnedNote'];
       if (rawNote is Map) {
+        final isMaskedScratch =
+            rawNote['isScratchCard'] == true && rawNote['isScratched'] != true;
+        final noteTitle = isMaskedScratch
+            ? (isPortuguese ? 'Raspadinha Secreta ✨' : 'Secret Scratch Card ✨')
+            : (rawNote['title']?.toString() ?? '');
+        final noteContent = isMaskedScratch
+            ? (isPortuguese
+                ? '🎁 Mensagem surpresa! Toque para raspar ✨'
+                : '🎁 Surprise note! Tap to scratch ✨')
+            : (rawNote['content']?.toString() ?? '');
         await HomeWidget.saveWidgetData<String>(
           'note_id',
           rawNote['id']?.toString() ?? '',
         );
-        await HomeWidget.saveWidgetData<String>(
-          'note_title',
-          rawNote['title']?.toString() ?? '',
-        );
-        await HomeWidget.saveWidgetData<String>(
-          'note_content',
-          rawNote['content']?.toString() ?? '',
-        );
+        await HomeWidget.saveWidgetData<String>('note_title', noteTitle);
+        await HomeWidget.saveWidgetData<String>('note_content', noteContent);
         await HomeWidget.saveWidgetData<String>(
           'note_author',
           rawNote['author']?.toString() ?? '',
@@ -368,7 +373,11 @@ class BackgroundSyncService {
       // 3. Daily Prompt widget
       final rawPrompt = snapshot['todayPrompt'];
       if (rawPrompt is Map) {
-        final promptText = rawPrompt['prompt']?.toString() ?? '';
+        final rawPromptText = rawPrompt['prompt']?.toString() ?? '';
+        final promptText = DailyQuestionRepository.translatePrompt(
+          rawPromptText,
+          languageCode: isPortuguese ? 'pt' : 'en',
+        );
         final isRevealed = rawPrompt['isRevealed'] == true;
         final rawAnswered = rawPrompt['answeredUids'];
         final answeredUids = rawAnswered is List

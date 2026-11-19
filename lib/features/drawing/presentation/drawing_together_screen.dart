@@ -151,7 +151,7 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
           if (candidate.length <= maxRawBytes) break;
         }
       }
-      if (pngBytes == null) throw Exception('Failed to render PNG');
+      if (pngBytes == null) throw Exception('Falha ao renderizar o desenho.');
 
       final rev = await ref
           .read(sharedCanvasRepositoryProvider)
@@ -200,7 +200,7 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
     try {
       HapticFeedback.lightImpact();
       final pngBytes = await _renderCanvasToPng(canvasModel, sizePx: 1080);
-      if (pngBytes == null) throw Exception('Failed to export PNG');
+      if (pngBytes == null) throw Exception('Falha ao exportar a imagem.');
 
       final ok = await _deviceSettingsChannel.invokeMethod<bool>(
         'saveImageToGallery',

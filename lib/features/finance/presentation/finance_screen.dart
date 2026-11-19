@@ -1051,6 +1051,7 @@ class _SavingsTab extends ConsumerWidget {
       'Home' => isPt ? 'Casa & Reforma' : 'Home',
       'Date Night' => isPt ? 'Encontros Especiais' : 'Date Night',
       'Emergency' => isPt ? 'Reserva de Emergência' : 'Emergency',
+      'Vehicle' => isPt ? 'Veículo' : 'Vehicle',
       _ => isPt ? 'Outros Sonhos' : goal.category,
     };
 
@@ -2167,7 +2168,7 @@ class _CreateSavingsGoalModalState
                     decoration: InputDecoration(
                       labelText: isPt ? 'Depósito Inicial (R\$)' : 'Starting (R\$)',
                       prefixText: 'R\$ ',
-                      hintText: '0.00',
+                      hintText: isPt ? '0,00' : '0.00',
                       filled: true,
                       fillColor: context.surfaceVariant,
                       border: OutlineInputBorder(
@@ -2231,6 +2232,7 @@ class _CreateSavingsGoalModalState
                   'Home' => isPt ? 'Casa & Reforma' : 'Home',
                   'Date Night' => isPt ? 'Encontros Especiais' : 'Date Night',
                   'Emergency' => isPt ? 'Reserva de Emergência' : 'Emergency',
+                  'Vehicle' => isPt ? 'Veículo' : 'Vehicle',
                   _ => isPt ? 'Outros Sonhos' : cat,
                 };
                 return ChoiceChip(

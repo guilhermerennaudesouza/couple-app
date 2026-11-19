@@ -786,7 +786,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: Text(strings.deleteList),
-                  content: Text(list.title),
+                  content: Text(
+                    TaskRepository.translateChecklistTitle(
+                      list.title,
+                      isPt: strings.isPortuguese,
+                    ),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),

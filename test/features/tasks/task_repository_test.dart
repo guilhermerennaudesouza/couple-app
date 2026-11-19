@@ -173,9 +173,9 @@ void main() {
       expect(templates.length, greaterThanOrEqualTo(3));
 
       final titles = templates.map((t) => t.title).toList();
-      expect(titles.contains('Weekly Groceries'), isTrue);
-      expect(titles.contains('Weekend Getaway Packing'), isTrue);
-      expect(titles.contains('Date Night Prep'), isTrue);
+      expect(titles.contains('Compras da Semana'), isTrue);
+      expect(titles.contains('Mala de Viagem de Fim de Semana'), isTrue);
+      expect(titles.contains('Preparativos para o Encontro'), isTrue);
 
       for (final template in templates) {
         expect(template.items.isNotEmpty, isTrue);

@@ -1181,7 +1181,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             const SizedBox(height: 8),
             Text(isPt ? '1. Vá para a tela inicial do seu celular Android.' : '1. Go to your Android phone home screen.'),
             Text(isPt ? '2. Toque e segure em um espaço vazio.' : '2. Touch and hold an empty space on the home screen.'),
-            Text(isPt ? '3. Toque em "Widgets" e procure por "Couple App".' : '3. Tap "Widgets" and find "Couple App".'),
+            Text(isPt ? '3. Toque em "Widgets" e procure por "Krivo".' : '3. Tap "Widgets" and find "Krivo".'),
             Text(isPt ? '4. Arraste o widget do casal ou de notas para sua tela.' : '4. Drag the widget to your screen.'),
             const SizedBox(height: 12),
             Text(

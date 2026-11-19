@@ -137,7 +137,7 @@ class DailyQuestionRepository {
   /// Deterministically picks a prompt from the question bank for a given date
   /// using an epoch-day coprime permutation (`gcd(17, 50) == 1`) so every
   /// prompt in the bank appears once before any repetition.
-  static String getPromptForDate(String dateString, {String? languageCode}) {
+  static String getPromptForDate(String dateString, {String languageCode = 'pt'}) {
     final bank = languageCode == 'pt' ? defaultQuestionBankPt : defaultQuestionBank;
     final parsed = DateTime.tryParse(dateString);
     int index;
@@ -258,7 +258,7 @@ class DailyQuestionRepository {
   ) async {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) {
-      throw ArgumentError('Answer cannot be empty.');
+      throw ArgumentError('A resposta não pode estar vazia.');
     }
 
     final docRef = _firestore
@@ -371,7 +371,11 @@ class DailyQuestionRepository {
       if (dq.date.compareTo(todayKey) >= 0) return false;
       if (dq.answers.isEmpty) return false;
       if (normalizedQuery.isEmpty) return true;
-      if (dq.prompt.toLowerCase().contains(normalizedQuery)) return true;
+      final ptPrompt = translatePrompt(dq.prompt, languageCode: 'pt').toLowerCase();
+      if (dq.prompt.toLowerCase().contains(normalizedQuery) ||
+          ptPrompt.contains(normalizedQuery)) {
+        return true;
+      }
       if (dq.isRevealed) {
         return dq.answers.values
             .any((a) => a.text.toLowerCase().contains(normalizedQuery));
@@ -464,7 +468,7 @@ class DailyQuestionRepository {
   }) async {
     final cleanPrompt = prompt.trim();
     if (coupleId.trim().isEmpty || cleanPrompt.isEmpty) {
-      throw ArgumentError('Prompt cannot be empty');
+      throw ArgumentError('A pergunta não pode estar vazia.');
     }
     final col = _firestore
         .collection('couples')

@@ -24,7 +24,7 @@ void main() {
       expect(leapStats['days_together'], equals(2));
       expect(leapStats['partnerName'], equals('Maya'));
       expect(leapStats['partner_name'], equals('Maya'));
-      expect(leapStats['formattedDays'], equals('2 days'));
+      expect(leapStats['formattedDays'], equals('2 dias'));
 
       // Standard multi-year span across leap year 2024 (2024-05-18 to 2026-11-04 is 900 days)
       final multiYearStats = WidgetSyncService.formatCoupleStats(
@@ -34,7 +34,7 @@ void main() {
       );
       expect(multiYearStats['daysTogether'], equals(900));
       expect(multiYearStats['partnerName'], equals('Leo'));
-      expect(multiYearStats['formattedDays'], equals('900 days'));
+      expect(multiYearStats['formattedDays'], equals('900 dias'));
       expect(multiYearStats['anniversary'], equals(DateTime(2024, 5, 18).toIso8601String()));
     });
 
@@ -46,7 +46,7 @@ void main() {
         partnerName: 'Elena',
       );
       expect(stats['daysTogether'], equals(0));
-      expect(stats['formattedDays'], equals('0 days'));
+      expect(stats['formattedDays'], equals('0 dias'));
     });
 
     test('prevents DST drift across daylight saving time transition dates', () {
@@ -75,8 +75,8 @@ void main() {
       );
 
       expect(result['prompt'], equals(prompt));
-      expect(result['status'], equals('Both answered! Tap to read 💕'));
-      expect(result['prompt_status'], equals('Both answered! Tap to read 💕'));
+      expect(result['status'], equals('Ambos responderam! 💕'));
+      expect(result['prompt_status'], equals('Ambos responderam! 💕'));
       expect(result['isRevealed'], isTrue);
       expect(result['is_revealed'], isTrue);
       expect(result['isAnsweredByMe'], isTrue);
@@ -92,8 +92,8 @@ void main() {
       );
 
       expect(result['prompt'], equals(prompt));
-      expect(result['status'], equals('Waiting for partner... 🔒'));
-      expect(result['prompt_status'], equals('Waiting for partner... 🔒'));
+      expect(result['status'], equals('Aguardando seu amor... 🔒'));
+      expect(result['prompt_status'], equals('Aguardando seu amor... 🔒'));
       expect(result['isRevealed'], isFalse);
       expect(result['is_revealed'], isFalse);
       expect(result['isAnsweredByMe'], isTrue);
@@ -108,8 +108,8 @@ void main() {
       );
 
       expect(result['prompt'], equals(prompt));
-      expect(result['status'], equals('Waiting for your answer ✍️'));
-      expect(result['prompt_status'], equals('Waiting for your answer ✍️'));
+      expect(result['status'], equals('Aguardando sua resposta ✍️'));
+      expect(result['prompt_status'], equals('Aguardando sua resposta ✍️'));
       expect(result['isRevealed'], isFalse);
       expect(result['isAnsweredByMe'], isFalse);
     });
@@ -279,7 +279,7 @@ void main() {
       expect(
         saveCalls.any((c) =>
             c.arguments['id'] == 'prompt_status' &&
-            c.arguments['data'] == 'Waiting for partner... 🔒'),
+            c.arguments['data'] == 'Aguardando seu amor... 🔒'),
         isTrue,
       );
       expect(

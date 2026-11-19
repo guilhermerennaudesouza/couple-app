@@ -123,7 +123,7 @@ class PairingRepository {
   }) async {
     final cleanCode = inviteCode.trim();
     if (cleanCode.length != 6) {
-      throw const PairingException('Invite code must be 6 digits.');
+      throw const PairingException('O código de convite precisa ter 6 dígitos.');
     }
 
     final querySnapshot = await _firestore
@@ -134,7 +134,7 @@ class PairingRepository {
 
     if (querySnapshot.docs.isEmpty) {
       throw const PairingException(
-        'No couple space found with this invite code. Please verify and try again.',
+        'Nenhum espaço do casal encontrado com este código. Confira e tente novamente.',
       );
     }
 
@@ -145,7 +145,7 @@ class PairingRepository {
       final freshSnap = await tx.get(docRef);
       if (!freshSnap.exists || freshSnap.data() == null) {
         throw const PairingException(
-          'No couple space found with this invite code. Please verify and try again.',
+          'Nenhum espaço do casal encontrado com este código. Confira e tente novamente.',
         );
       }
       final couple = CoupleModel.fromMap(freshSnap.id, freshSnap.data()!);
@@ -170,7 +170,7 @@ class PairingRepository {
 
         if (matchingOldUid == null) {
           throw const PairingException(
-            'This couple space is already full with 2 partners.',
+            'Este espaço do casal já está completo com 2 pessoas.',
           );
         }
 
@@ -440,7 +440,7 @@ class PairingRepository {
         (trimmedAvatar.startsWith('data:image/') ||
             trimmedAvatar.startsWith('base64:')) &&
         !isValidAvatarDataUri(trimmedAvatar)) {
-      throw const PairingException('Avatar image exceeds 80 KB Spark limit.');
+      throw const PairingException('A foto de perfil excede o limite de 80 KB.');
     }
 
     final docRef = _firestore.collection(couplesCollection).doc(coupleId);

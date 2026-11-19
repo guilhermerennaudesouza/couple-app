@@ -104,7 +104,7 @@ class VaultItemModel {
 
     return VaultItemModel(
       id: id,
-      title: map['title'] as String? ?? 'Untitled',
+      title: map['title'] as String? ?? 'Sem título',
       category: map['category'] as String? ?? 'Personal',
       type: map['type'] as String? ?? typeNote,
       payload: payload,

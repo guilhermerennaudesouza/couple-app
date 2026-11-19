@@ -21,6 +21,78 @@ import 'package:couple_app/features/vault/domain/vault_item_model.dart';
 import 'package:couple_app/features/wishlist/domain/wish_model.dart';
 
 // ---------------------------------------------------------------------------
+// Localized category label helpers (canonical English keys stored in Firestore)
+// ---------------------------------------------------------------------------
+
+String localizeTaskCategoryLabel(String category, {bool isPt = true}) {
+  if (!isPt) return category;
+  switch (category) {
+    case 'Home':
+      return 'Casa';
+    case 'Shopping':
+      return 'Compras';
+    case 'Errands':
+      return 'Recados';
+    case 'Romance':
+      return 'Romance';
+    case 'Travel':
+      return 'Viagem';
+    case 'Health':
+      return 'Saúde';
+    case 'Finance':
+      return 'Finanças';
+    case 'General':
+      return 'Geral';
+    default:
+      return category;
+  }
+}
+
+String localizeExpenseCategoryLabel(String category, {bool isPt = true}) {
+  if (!isPt) return category;
+  switch (category) {
+    case 'Dining':
+      return 'Restaurantes';
+    case 'Groceries':
+      return 'Mercado';
+    case 'Travel':
+      return 'Viagem';
+    case 'Home':
+      return 'Casa';
+    case 'Entertainment':
+      return 'Lazer';
+    case 'Utilities':
+      return 'Contas';
+    case 'Other':
+      return 'Outros';
+    default:
+      return category;
+  }
+}
+
+String localizeSavingsCategoryLabel(String category, {bool isPt = true}) {
+  if (!isPt) return category;
+  switch (category) {
+    case 'Vacation':
+      return 'Viagem & Férias';
+    case 'Wedding':
+      return 'Casamento';
+    case 'Home':
+      return 'Casa & Reforma';
+    case 'Emergency':
+      return 'Reserva de Emergência';
+    case 'Date Night':
+      return 'Encontros Especiais';
+    case 'Vehicle':
+      return 'Veículo';
+    case 'Other':
+      return 'Outros Sonhos';
+    default:
+      return category;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pure, unit-tested edit builders ensuring optional-field clearing & invariants
 // ---------------------------------------------------------------------------
 
@@ -167,7 +239,14 @@ class _EditTaskDialogState extends State<_EditTaskDialog> {
               initialValue: _category,
               decoration: InputDecoration(labelText: strings.categoryLabel),
               items: TaskRepository.standardCategories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        localizeTaskCategoryLabel(c, isPt: strings.isPortuguese),
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _category = v);
@@ -238,9 +317,15 @@ Future<void> showEditChecklistDialog(
   required String coupleId,
   required ChecklistModel list,
 }) async {
+  final isPt = AppStrings.of(context).isPortuguese;
+  final initialTitle =
+      TaskRepository.translateChecklistTitle(list.title, isPt: isPt);
   final result = await showDialog<Map<String, String>?>(
     context: context,
-    builder: (_) => _EditChecklistDialog(list: list),
+    builder: (_) => _EditChecklistDialog(
+      list: list,
+      initialTitle: initialTitle,
+    ),
   );
   if (result != null) {
     await ref.read(taskRepositoryProvider).updateListMetadata(
@@ -254,7 +339,8 @@ Future<void> showEditChecklistDialog(
 
 class _EditChecklistDialog extends StatefulWidget {
   final ChecklistModel list;
-  const _EditChecklistDialog({required this.list});
+  final String initialTitle;
+  const _EditChecklistDialog({required this.list, required this.initialTitle});
 
   @override
   State<_EditChecklistDialog> createState() => _EditChecklistDialogState();
@@ -267,7 +353,7 @@ class _EditChecklistDialogState extends State<_EditChecklistDialog> {
   @override
   void initState() {
     super.initState();
-    _titleCtrl = TextEditingController(text: widget.list.title);
+    _titleCtrl = TextEditingController(text: widget.initialTitle);
     _category = TaskRepository.standardCategories.contains(widget.list.category)
         ? widget.list.category
         : TaskRepository.standardCategories.first;
@@ -296,7 +382,14 @@ class _EditChecklistDialogState extends State<_EditChecklistDialog> {
             initialValue: _category,
             decoration: InputDecoration(labelText: strings.categoryLabel),
             items: TaskRepository.standardCategories
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .map(
+                  (c) => DropdownMenuItem(
+                    value: c,
+                    child: Text(
+                      localizeTaskCategoryLabel(c, isPt: strings.isPortuguese),
+                    ),
+                  ),
+                )
                 .toList(),
             onChanged: (v) {
               if (v != null) setState(() => _category = v);
@@ -402,7 +495,17 @@ class _EditExpenseDialogState extends State<_EditExpenseDialog> {
               initialValue: _category,
               decoration: InputDecoration(labelText: strings.categoryLabel),
               items: FinanceEntry.categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        localizeExpenseCategoryLabel(
+                          c,
+                          isPt: strings.isPortuguese,
+                        ),
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _category = v);
@@ -524,7 +627,17 @@ class _EditSavingsGoalDialogState extends State<_EditSavingsGoalDialog> {
               initialValue: _category,
               decoration: InputDecoration(labelText: strings.categoryLabel),
               items: SavingsGoalModel.categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        localizeSavingsCategoryLabel(
+                          c,
+                          isPt: strings.isPortuguese,
+                        ),
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _category = v);

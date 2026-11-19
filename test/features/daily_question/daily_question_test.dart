@@ -153,7 +153,7 @@ void main() {
       final prompt1 = DailyQuestionRepository.getPromptForDate('2026-11-04');
       final prompt2 = DailyQuestionRepository.getPromptForDate('2026-11-04');
       expect(prompt1, equals(prompt2));
-      expect(DailyQuestionRepository.defaultQuestionBank.contains(prompt1), isTrue);
+      expect(DailyQuestionRepository.defaultQuestionBankPt.contains(prompt1), isTrue);
     });
 
     test('DailyQuestionModel value equality and copyWith', () {

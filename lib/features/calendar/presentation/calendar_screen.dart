@@ -791,11 +791,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          strings.isPortuguese &&
-                                  (event.title == 'Our Anniversary' ||
-                                      event.title == 'Our Anniversary ❤️')
-                              ? 'Nosso Aniversário ❤️'
-                              : event.title,
+                          CalendarEventModel.localizeTitle(
+                            event.title,
+                            isPt: strings.isPortuguese,
+                          ),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -1081,17 +1080,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required String coupleId,
     CalendarEventModel? existingEvent,
   }) {
-    final titleController =
-        TextEditingController(text: existingEvent?.title ?? '');
-    final descController =
-        TextEditingController(text: existingEvent?.description ?? '');
+    final strings = AppStrings.of(context);
+    final titleController = TextEditingController(
+      text: existingEvent != null
+          ? CalendarEventModel.localizeTitle(
+              existingEvent.title,
+              isPt: strings.isPortuguese,
+            )
+          : '',
+    );
+    final descController = TextEditingController(
+      text: existingEvent != null
+          ? CalendarEventModel.localizeDescription(
+              existingEvent.description,
+              isPt: strings.isPortuguese,
+            )
+          : '',
+    );
     DateTime selectedDate = existingEvent?.date ?? DateTime.now();
     bool isAnnual = existingEvent?.isAnnual ?? false;
     String selectedCategory =
         existingEvent?.category ?? CalendarEventModel.categoryDateNight;
     int reminderDays = existingEvent?.reminderDaysBefore ?? 1;
 
-    final strings = AppStrings.of(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1410,11 +1421,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required CalendarEventModel event,
   }) {
     final strings = AppStrings.of(context);
+    final displayTitle = CalendarEventModel.localizeTitle(
+      event.title,
+      isPt: strings.isPortuguese,
+    );
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(strings.isPortuguese ? 'Excluir Evento?' : 'Delete Event?'),
-        content: Text(strings.isPortuguese ? 'Tem certeza de que deseja remover "${event.title}"?' : 'Are you sure you want to remove "${event.title}"?'),
+        content: Text(strings.isPortuguese ? 'Tem certeza de que deseja remover "$displayTitle"?' : 'Are you sure you want to remove "$displayTitle"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -1430,7 +1445,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(strings.isPortuguese ? '"${event.title}" removido' : 'Removed "${event.title}"'),
+                    content: Text(strings.isPortuguese ? '"$displayTitle" removido' : 'Removed "$displayTitle"'),
                   ),
                 );
               }

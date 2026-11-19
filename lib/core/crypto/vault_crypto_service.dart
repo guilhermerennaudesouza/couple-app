@@ -141,7 +141,7 @@ class VaultCryptoService {
         macBase64: base64Encode(secretBox.mac.bytes),
       );
     } catch (e) {
-      throw VaultCryptoException('Failed to encrypt plaintext', e);
+      throw VaultCryptoException('Falha ao criptografar o conteúdo.', e);
     }
   }
 
@@ -165,7 +165,7 @@ class VaultCryptoService {
       return utf8.decode(clearTextBytes);
     } catch (e) {
       throw VaultCryptoException(
-        'Decryption failed: incorrect key or tampered payload',
+        'Falha ao descriptografar: PIN incorreto ou dados corrompidos.',
         e,
       );
     }

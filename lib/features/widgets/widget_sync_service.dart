@@ -256,7 +256,7 @@ class WidgetSyncService {
     required DateTime anniversary,
     DateTime? today,
     required String partnerName,
-    bool isPortuguese = false,
+    bool isPortuguese = true,
   }) {
     final daysTogether = CoupleDateUtils.daysTogether(anniversary, now: today);
     final formattedDays = isPortuguese ? '$daysTogether dias' : '$daysTogether days';
@@ -278,7 +278,7 @@ class WidgetSyncService {
     required String partnerName,
     int dailyStreak = 0,
     DateTime? today,
-    bool isPortuguese = false,
+    bool isPortuguese = true,
   }) async {
     try {
       final stats = formatCoupleStats(
@@ -318,7 +318,7 @@ class WidgetSyncService {
     required bool isAnsweredByMe,
     required bool isRevealed,
     required bool isAnsweredByPartner,
-    bool isPortuguese = false,
+    bool isPortuguese = true,
   }) {
     final String status;
     if (isPortuguese) {
@@ -359,7 +359,7 @@ class WidgetSyncService {
     required bool isAnsweredByMe,
     required bool isRevealed,
     required bool isAnsweredByPartner,
-    bool isPortuguese = false,
+    bool isPortuguese = true,
   }) async {
     try {
       final data = formatDailyPrompt(
@@ -525,6 +525,8 @@ class WidgetSyncService {
         'author': _truncateText(formatted['note_author'] ?? '', 40),
         'color': formatted['note_color'],
         'updatedAt': formatted['note_updated_at'],
+        'isScratchCard': pinnedNote.isScratchCard,
+        'isScratched': pinnedNote.isScratched,
       };
     } else {
       snapshot['pinnedNote'] = null;

@@ -21,7 +21,7 @@ class AppStrings {
   }
 
   // --- Navigation & Core Shell ---
-  String get appTitle => 'Couple App';
+  String get appTitle => 'Krivo';
   String get navToday => isPortuguese ? 'Hoje' : 'Today';
   String get navTasks => isPortuguese ? 'Tarefas' : 'Tasks';
   String get navCalendar => isPortuguese ? 'Calendário' : 'Calendar';

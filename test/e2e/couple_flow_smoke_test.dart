@@ -690,7 +690,7 @@ void main() {
         partnerName: partner2Name,
       );
       expect(stats['daysTogether'], equals(900));
-      expect(stats['formattedDays'], equals('900 days'));
+      expect(stats['formattedDays'], equals('900 dias'));
       expect(stats['partnerName'], equals('Sam'));
 
       // Format daily prompt in all 3 states
@@ -700,7 +700,7 @@ void main() {
         isRevealed: true,
         isAnsweredByPartner: true,
       );
-      expect(promptBothAnswered['prompt_status'], equals('Both answered! Tap to read 💕'));
+      expect(promptBothAnswered['prompt_status'], equals('Ambos responderam! 💕'));
 
       final promptWaitingPartner = WidgetSyncService.formatDailyPrompt(
         prompt: 'Favorite trip together?',
@@ -708,7 +708,7 @@ void main() {
         isRevealed: false,
         isAnsweredByPartner: false,
       );
-      expect(promptWaitingPartner['prompt_status'], equals('Waiting for partner... 🔒'));
+      expect(promptWaitingPartner['prompt_status'], equals('Aguardando seu amor... 🔒'));
 
       final promptWaitingMe = WidgetSyncService.formatDailyPrompt(
         prompt: 'Favorite trip together?',
@@ -716,7 +716,7 @@ void main() {
         isRevealed: false,
         isAnsweredByPartner: true,
       );
-      expect(promptWaitingMe['prompt_status'], equals('Waiting for your answer ✍️'));
+      expect(promptWaitingMe['prompt_status'], equals('Aguardando sua resposta ✍️'));
 
       // Format top tasks (prioritizes incomplete, urgent dueDate)
       final taskList = [

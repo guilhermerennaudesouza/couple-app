@@ -204,7 +204,7 @@ class SharedCanvasRepository {
     final encoded = base64Encode(pngBytes);
     if (utf8.encode(encoded).length >
         DrawingWidgetSnapshotModel.maxSnapshotBase64Bytes) {
-      throw Exception('Drawing snapshot exceeds safe Firestore Spark size.');
+      throw Exception('O desenho excedeu o limite de tamanho para o widget.');
     }
 
     final now = DateTime.now();

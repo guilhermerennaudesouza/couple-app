@@ -373,7 +373,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         formatted = formatted[0].toUpperCase() + formatted.substring(1);
       }
     } catch (_) {
-      formatted = DateFormat('EEEE, MMMM d').format(dt);
+      formatted =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     }
 
     return Row(
@@ -1455,7 +1456,8 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         formattedDate = DateFormat('MMMM d, yyyy', 'en_US').format(dt);
       }
     } catch (_) {
-      formattedDate = DateFormat('MMMM d, yyyy').format(dt);
+      formattedDate =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     }
     final myProfile = couple?.getMyProfile(myUid);
     final partnerProfile = couple?.getPartnerProfile(myUid);

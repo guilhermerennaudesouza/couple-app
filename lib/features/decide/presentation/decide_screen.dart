@@ -1719,14 +1719,19 @@ class _DateIdeaCard extends ConsumerWidget {
 
   void _confirmDeleteIdea(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
+    final langCode = strings.isPortuguese ? 'pt' : 'en';
+    final displayTitle = DateIdeasRepository.translateIdeaTitle(
+      idea.title,
+      languageCode: langCode,
+    );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(strings.isPortuguese ? 'Excluir Ideia de Encontro?' : 'Delete Date Idea?'),
         content: Text(
           strings.isPortuguese
-              ? 'Tem certeza de que deseja excluir "${idea.title}"?'
-              : 'Are you sure you want to delete "${idea.title}"?',
+              ? 'Tem certeza de que deseja excluir "$displayTitle"?'
+              : 'Are you sure you want to delete "$displayTitle"?',
         ),
         actions: [
           TextButton(

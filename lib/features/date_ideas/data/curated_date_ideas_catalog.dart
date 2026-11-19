@@ -69,7 +69,7 @@ final List<DateIdeaModel> kCuratedDateIdeasPtBr = [
   ),
   DateIdeaModel(
     id: 'cat_pt_10',
-    title: 'Noite de Pintura & Drinks (Paint & Sip)',
+    title: 'Noite de Pintura & Drinks',
     description: 'Comprem duas telas pequenas e tintas e tentem pintar o retrato um do outro — risadas garantidas!',
     category: DateIdeaModel.categoryCozy,
     createdBy: 'catalog',
