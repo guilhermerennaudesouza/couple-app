@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:couple_app/core/l10n/app_strings.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
+import 'package:couple_app/core/utils/couple_date_utils.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/daily_question/data/daily_question_repository.dart';
 import 'package:couple_app/features/date_ideas/data/date_ideas_repository.dart';
@@ -79,6 +80,8 @@ class CoupleStatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
     final couple = ref.watch(coupleStreamProvider(coupleId)).valueOrNull;
+    final todayQuestion =
+        ref.watch(todayDailyQuestionProvider(coupleId)).valueOrNull;
     final questions =
         ref.watch(pastDailyQuestionsProvider(coupleId)).valueOrNull ??
             const [];
@@ -101,21 +104,16 @@ class CoupleStatsScreen extends ConsumerWidget {
         ref.watch(savingsGoalsStreamProvider(coupleId)).valueOrNull ?? const [];
 
     final daysTogether = couple != null
-        ? DateTime.now()
-            .difference(
-              DateTime(
-                couple.anniversaryDate.year,
-                couple.anniversaryDate.month,
-                couple.anniversaryDate.day,
-              ),
-            )
-            .inDays
-            .clamp(0, 999999)
+        ? CoupleDateUtils.daysTogether(couple.anniversaryDate)
         : 0;
+
+    final revealedTodayCount =
+        (todayQuestion != null && todayQuestion.isRevealed) ? 1 : 0;
 
     final summary = CoupleStatsSummary(
       daysTogether: daysTogether,
-      questionsAnswered: questions.where((q) => q.isRevealed).length,
+      questionsAnswered:
+          questions.where((q) => q.isRevealed).length + revealedTodayCount,
       tasksCompleted: tasks.where((t) => t.isCompleted).length,
       datesCompleted: dateIdeas.where((d) => d.isCompleted).length,
       memoriesCount: memories.length,

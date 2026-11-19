@@ -119,6 +119,22 @@ void main() {
       expect(NoteModel.presetColors, contains('#FFE0B2')); // Peach Glow
       expect(NoteModel.presetColors.length, equals(6));
     });
+
+    test('NoteModel equality distinguishes isScratchCard, isScratched, and drawingDataJson', () {
+      final base = NoteModel(
+        id: 'n_eq',
+        title: 'Surpresa',
+        content: 'Te amo',
+        authorUid: 'u1',
+        authorName: 'Gui',
+        isScratchCard: true,
+        isScratched: false,
+        drawingDataJson: null,
+      );
+      expect(base == base.copyWith(isScratched: true), isFalse);
+      expect(base == base.copyWith(isScratchCard: false), isFalse);
+      expect(base == base.copyWith(drawingDataJson: '[{"c":1,"w":4,"p":[]}]'), isFalse);
+    });
   });
 
   group('WidgetSyncService tests', () {

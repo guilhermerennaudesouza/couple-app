@@ -445,9 +445,12 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
                 IconButton(
                   tooltip: 'Excluir cupom',
                   onPressed: () async {
-                    await ref
-                        .read(loyaltyRepositoryProvider)
-                        .deleteCoupon(widget.coupleId, coupon.id);
+                    final ok = await _confirmDeleteItem(context, coupon.title);
+                    if (ok == true) {
+                      await ref
+                          .read(loyaltyRepositoryProvider)
+                          .deleteCoupon(widget.coupleId, coupon.id);
+                    }
                   },
                   icon: Icon(
                     Icons.delete_outline_rounded,
@@ -544,9 +547,12 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
                   ),
                   IconButton(
                     onPressed: () async {
-                      await ref
-                          .read(loyaltyRepositoryProvider)
-                          .deleteCoupon(widget.coupleId, card.id);
+                      final ok = await _confirmDeleteItem(context, card.title);
+                      if (ok == true) {
+                        await ref
+                            .read(loyaltyRepositoryProvider)
+                            .deleteCoupon(widget.coupleId, card.id);
+                      }
                     },
                     icon: Icon(
                       Icons.delete_outline_rounded,
@@ -714,6 +720,23 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
                       ),
                     ),
                     const SizedBox(height: 14),
+                    if (!isLoyaltyCard) ...[
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: LoyaltyCouponModel.couponCategories.map((cat) {
+                          final isSel = selectedCategory == cat;
+                          return ChoiceChip(
+                            label: Text(cat),
+                            selected: isSel,
+                            selectedColor: AppTheme.primaryRose.withValues(alpha: 0.2),
+                            onSelected: (_) =>
+                                setModalState(() => selectedCategory = cat),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     TextField(
                       controller: titleCtrl,
                       decoration: InputDecoration(
@@ -833,6 +856,32 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
           },
         );
       },
+    ).whenComplete(() {
+      titleCtrl.dispose();
+      descCtrl.dispose();
+      codeCtrl.dispose();
+      storeCtrl.dispose();
+    });
+  }
+
+  Future<bool?> _confirmDeleteItem(BuildContext context, String title) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir item?'),
+        content: Text('Deseja remover "$title"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
     );
   }
 }

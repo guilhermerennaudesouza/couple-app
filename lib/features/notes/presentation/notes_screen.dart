@@ -324,7 +324,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       isPt ? "d 'de' MMM, HH:mm" : 'MMM d, h:mm a',
       isPt ? 'pt_BR' : 'en_US',
     ).format(note.updatedAt);
-    final isConcealedScratch = note.isScratchCard && !note.isScratched;
+    final isConcealedScratch =
+        note.isScratchCard && !note.isScratched && !isAuthor;
+    final isAuthorWaitingScratch =
+        note.isScratchCard && !note.isScratched && isAuthor;
 
     return Material(
       color: Colors.transparent,
@@ -512,6 +515,25 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (isAuthorWaitingScratch)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryRose.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  isPt
+                                      ? '🎁 Aguardando seu amor raspar'
+                                      : '🎁 Waiting for partner to scratch',
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.primaryRoseDark,
+                                  ),
+                                ),
+                              ),
                             if (note.content.isNotEmpty)
                               Text(
                                 note.content,
@@ -980,7 +1002,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               authorName: existingNote?.authorName ?? authorName,
                               updatedAt: DateTime.now(),
                               isScratchCard: isScratchCard,
-                              isScratched: isScratchCard ? false : true,
+                              isScratched: isScratchCard
+                                  ? (existingNote?.isScratched ?? false)
+                                  : true,
                               drawingDataJson: drawingDataJson,
                             );
 

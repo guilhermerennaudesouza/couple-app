@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/utils/couple_date_utils.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/task_model.dart';
@@ -322,7 +323,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     final strings = AppStrings.of(context);
     final isDone = task.isCompleted;
     final isOverdue = task.dueDate != null &&
-        task.dueDate!.isBefore(DateTime.now()) &&
+        CoupleDateUtils.isDateOverdue(task.dueDate!) &&
         !task.isCompleted;
 
     return Dismissible(
@@ -445,12 +446,32 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 ),
               ),
 
-              // Delete button
+              // Delete button (with confirmation)
               IconButton(
                 icon: Icon(Icons.close_rounded, size: 18),
-                color: context.textSecondary.withOpacity(0.6),
-                onPressed: () {
-                  ref.read(taskRepositoryProvider).deleteTask(coupleId, task.id);
+                color: context.textSecondary.withValues(alpha: 0.6),
+                onPressed: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(strings.isPortuguese ? 'Excluir tarefa?' : 'Delete task?'),
+                      content: Text(task.title),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: Text(strings.cancel),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: Text(strings.delete),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true) {
+                    await ref.read(taskRepositoryProvider).deleteTask(coupleId, task.id);
+                  }
                 },
               ),
             ],
@@ -731,9 +752,30 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         ),
         trailing: PopupMenuButton<String>(
           icon: Icon(Icons.more_vert_rounded, color: context.textSecondary),
-          onSelected: (value) {
+          onSelected: (value) async {
             if (value == 'delete') {
-              ref.read(taskRepositoryProvider).deleteList(coupleId, list.id);
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(strings.deleteList),
+                  content: Text(list.title),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: Text(strings.cancel),
+                    ),
+                    FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: Text(strings.delete),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) {
+                _inlineItemControllers.remove(list.id)?.dispose();
+                await ref.read(taskRepositoryProvider).deleteList(coupleId, list.id);
+              }
             }
           },
           itemBuilder: (context) => [

@@ -153,7 +153,7 @@ class AdultGamesRepository {
       id: 'ag_bold_06',
       title: 'Proibido Usar as Mãos',
       prompt:
-          'Provoke e beije seu parceiro(a) por 90 segundos sem que ele(a) possa usar as mãos para tocar em você.',
+          'Provoque e beije seu parceiro(a) por 90 segundos sem que ele(a) possa usar as mãos para tocar em você.',
       level: AdultGameCardModel.levelBold,
       cardType: AdultGameCardModel.typeDare,
     ),
@@ -291,6 +291,18 @@ class AdultGamesRepository {
         'nudgeSenderName': senderName,
         'nudgeMessage': message,
         'nudgeSentAt': Timestamp.fromDate(DateTime.now()),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
+  Future<void> clearNudge(String coupleId) async {
+    await _sessionRef(coupleId).set(
+      {
+        'nudgeSenderUid': null,
+        'nudgeSenderName': null,
+        'nudgeMessage': null,
+        'nudgeSentAt': null,
       },
       SetOptions(merge: true),
     );

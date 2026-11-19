@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:couple_app/core/utils/couple_date_utils.dart';
 import 'package:couple_app/features/cycle/domain/cycle_model.dart';
 
 final cycleRepositoryProvider = Provider<CycleRepository>((ref) {
@@ -83,12 +84,15 @@ class CycleRepository {
     required DateTime lastPeriodStart,
     required int cycleLength,
     required int periodDuration,
+    String? trackerUid,
   }) async {
     await _docRef(coupleId).set(
       {
         'lastPeriodStart': Timestamp.fromDate(lastPeriodStart),
         'cycleLength': cycleLength,
         'periodDuration': periodDuration,
+        'isConfigured': true,
+        if (trackerUid != null && trackerUid.isNotEmpty) 'trackerUid': trackerUid,
         'updatedAt': Timestamp.fromDate(DateTime.now()),
       },
       SetOptions(merge: true),
@@ -100,7 +104,8 @@ class CycleRepository {
     CycleDataModel current,
     String symptom,
   ) async {
-    final next = List<String>.from(current.currentSymptoms);
+    final todayKey = CoupleDateUtils.formatDateKey(DateTime.now());
+    final next = List<String>.from(current.activeTodaySymptoms());
     if (next.contains(symptom)) {
       next.remove(symptom);
     } else {
@@ -109,6 +114,7 @@ class CycleRepository {
     await _docRef(coupleId).set(
       {
         'currentSymptoms': next,
+        'symptomsDate': todayKey,
         'updatedAt': Timestamp.fromDate(DateTime.now()),
       },
       SetOptions(merge: true),

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/utils/couple_date_utils.dart';
 
 /// Represents the couple's Cycle Tracker & Partner Care state ("Ciclo & Cuidado do Casal").
 class CycleDataModel {
@@ -10,7 +11,10 @@ class CycleDataModel {
   final DateTime lastPeriodStart;
   final int cycleLength;
   final int periodDuration;
+  final bool isConfigured;
   final List<String> currentSymptoms;
+  final String? symptomsDate; // YYYY-MM-DD for daily auto-reset
+  final String? trackerUid; // UID of partner tracking their cycle
   final String? activeCareRequest;
   final String? careRequestedByName;
   final DateTime? careRequestedAt;
@@ -20,12 +24,23 @@ class CycleDataModel {
     required this.lastPeriodStart,
     this.cycleLength = 28,
     this.periodDuration = 5,
+    this.isConfigured = true,
     this.currentSymptoms = const [],
+    this.symptomsDate,
+    this.trackerUid,
     this.activeCareRequest,
     this.careRequestedByName,
     this.careRequestedAt,
     DateTime? updatedAt,
   }) : updatedAt = updatedAt ?? DateTime.now();
+
+  /// Returns symptoms only if they were logged today; auto-resets on a new calendar day.
+  List<String> activeTodaySymptoms({DateTime? today}) {
+    if (currentSymptoms.isEmpty) return const [];
+    if (symptomsDate == null || symptomsDate!.isEmpty) return currentSymptoms;
+    final todayKey = CoupleDateUtils.formatDateKey(today ?? DateTime.now());
+    return symptomsDate == todayKey ? currentSymptoms : const [];
+  }
 
   /// Returns 1-indexed day of the current cycle.
   int currentCycleDay({DateTime? today}) {
@@ -103,7 +118,10 @@ class CycleDataModel {
     DateTime? lastPeriodStart,
     int? cycleLength,
     int? periodDuration,
+    bool? isConfigured,
     List<String>? currentSymptoms,
+    String? symptomsDate,
+    String? trackerUid,
     String? activeCareRequest,
     String? careRequestedByName,
     DateTime? careRequestedAt,
@@ -114,7 +132,10 @@ class CycleDataModel {
       lastPeriodStart: lastPeriodStart ?? this.lastPeriodStart,
       cycleLength: cycleLength ?? this.cycleLength,
       periodDuration: periodDuration ?? this.periodDuration,
+      isConfigured: isConfigured ?? this.isConfigured,
       currentSymptoms: currentSymptoms ?? this.currentSymptoms,
+      symptomsDate: symptomsDate ?? this.symptomsDate,
+      trackerUid: trackerUid ?? this.trackerUid,
       activeCareRequest: clearCareRequest
           ? null
           : (activeCareRequest ?? this.activeCareRequest),
@@ -133,7 +154,10 @@ class CycleDataModel {
       'lastPeriodStart': Timestamp.fromDate(lastPeriodStart),
       'cycleLength': cycleLength,
       'periodDuration': periodDuration,
+      'isConfigured': isConfigured,
       'currentSymptoms': currentSymptoms,
+      if (symptomsDate != null) 'symptomsDate': symptomsDate,
+      if (trackerUid != null) 'trackerUid': trackerUid,
       'activeCareRequest': activeCareRequest,
       'careRequestedByName': careRequestedByName,
       'careRequestedAt':
@@ -143,20 +167,25 @@ class CycleDataModel {
   }
 
   factory CycleDataModel.fromMap(Map<String, dynamic>? map) {
-    if (map == null) {
+    if (map == null || map.isEmpty) {
       return CycleDataModel(
-        lastPeriodStart: DateTime.now().subtract(const Duration(days: 10)),
+        lastPeriodStart: DateTime.now(),
+        isConfigured: false,
       );
     }
+    final parsedStart = _parseDate(map['lastPeriodStart']);
+    final configured = map['isConfigured'] as bool? ?? (parsedStart != null);
     return CycleDataModel(
-      lastPeriodStart: _parseDate(map['lastPeriodStart']) ??
-          DateTime.now().subtract(const Duration(days: 10)),
+      lastPeriodStart: parsedStart ?? DateTime.now(),
       cycleLength: (map['cycleLength'] as num?)?.toInt() ?? 28,
       periodDuration: (map['periodDuration'] as num?)?.toInt() ?? 5,
+      isConfigured: configured,
       currentSymptoms: (map['currentSymptoms'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      symptomsDate: map['symptomsDate'] as String?,
+      trackerUid: map['trackerUid'] as String?,
       activeCareRequest: map['activeCareRequest'] as String?,
       careRequestedByName: map['careRequestedByName'] as String?,
       careRequestedAt: _parseDate(map['careRequestedAt']),

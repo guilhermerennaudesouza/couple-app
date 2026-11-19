@@ -140,8 +140,12 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
         data: (allCards) {
           final session =
               sessionAsync.valueOrNull ?? const AdultGameSessionState();
+          final effectiveLevel = _localCardId == null &&
+                  session.selectedLevel.isNotEmpty
+              ? session.selectedLevel
+              : _selectedLevel;
           final levelCards =
-              allCards.where((c) => c.level == _selectedLevel).toList();
+              allCards.where((c) => c.level == effectiveLevel).toList();
           final completedInLevel =
               levelCards.where((c) => c.isCompleted).length;
 
@@ -157,7 +161,7 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
           }
           activeCard ??= levelCards.isNotEmpty ? levelCards.first : null;
 
-          final accent = _levelColor(_selectedLevel);
+          final accent = _levelColor(effectiveLevel);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 40),
@@ -192,6 +196,20 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
                             fontWeight: FontWeight.w700,
                             color: context.textPrimary,
                           ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Dispensar convite',
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(adultGamesRepositoryProvider)
+                              .clearNudge(widget.coupleId);
+                        },
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: context.textSecondary,
                         ),
                       ),
                     ],
@@ -775,6 +793,9 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      titleCtrl.dispose();
+      promptCtrl.dispose();
+    });
   }
 }

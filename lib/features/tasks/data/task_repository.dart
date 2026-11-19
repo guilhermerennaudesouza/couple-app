@@ -265,7 +265,7 @@ class TaskRepository {
     }
   }
 
-  /// Appends an item to an existing checklist with offline-resilient handling.
+  /// Appends an item to an existing checklist atomically (with offline cache fallback).
   Future<void> addChecklistItem(
     String coupleId,
     String listId,
@@ -274,12 +274,13 @@ class TaskRepository {
   ) async {
     final docRef = _listsCollection(coupleId).doc(listId);
     try {
-      final snapshot = await docRef.get();
-      if (snapshot.exists && snapshot.data() != null) {
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists || snapshot.data() == null) return;
         final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
         final updatedList = currentList.addItem(text, addedBy);
-        await docRef.set(updatedList.toMap(), SetOptions(merge: true));
-      }
+        transaction.set(docRef, updatedList.toMap(), SetOptions(merge: true));
+      });
     } catch (_) {
       try {
         final snapshot = await docRef.get(const GetOptions(source: Source.cache));
@@ -292,7 +293,7 @@ class TaskRepository {
     }
   }
 
-  /// Removes an item from an existing checklist with offline-resilient handling.
+  /// Removes an item from an existing checklist atomically (with offline cache fallback).
   Future<void> removeChecklistItem(
     String coupleId,
     String listId,
@@ -300,12 +301,13 @@ class TaskRepository {
   ) async {
     final docRef = _listsCollection(coupleId).doc(listId);
     try {
-      final snapshot = await docRef.get();
-      if (snapshot.exists && snapshot.data() != null) {
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists || snapshot.data() == null) return;
         final currentList = ChecklistModel.fromMap(snapshot.id, snapshot.data()!);
         final updatedList = currentList.removeItem(itemId);
-        await docRef.set(updatedList.toMap(), SetOptions(merge: true));
-      }
+        transaction.set(docRef, updatedList.toMap(), SetOptions(merge: true));
+      });
     } catch (_) {
       try {
         final snapshot = await docRef.get(const GetOptions(source: Source.cache));

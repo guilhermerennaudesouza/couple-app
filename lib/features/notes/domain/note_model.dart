@@ -151,7 +151,10 @@ class NoteModel {
           isPinnedToWidget == other.isPinnedToWidget &&
           authorUid == other.authorUid &&
           authorName == other.authorName &&
-          updatedAt == other.updatedAt;
+          updatedAt == other.updatedAt &&
+          isScratchCard == other.isScratchCard &&
+          isScratched == other.isScratched &&
+          drawingDataJson == other.drawingDataJson;
 
   @override
   int get hashCode =>
@@ -162,7 +165,10 @@ class NoteModel {
       isPinnedToWidget.hashCode ^
       authorUid.hashCode ^
       authorName.hashCode ^
-      updatedAt.hashCode;
+      updatedAt.hashCode ^
+      isScratchCard.hashCode ^
+      isScratched.hashCode ^
+      drawingDataJson.hashCode;
 
   @override
   String toString() {

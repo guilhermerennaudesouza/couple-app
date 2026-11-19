@@ -76,6 +76,58 @@ class CycleScreen extends ConsumerWidget {
           ),
         ),
         data: (cycle) {
+          if (!cycle.isConfigured) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🌸', style: TextStyle(fontSize: 52)),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Configure o Ciclo do Casal',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: context.textPrimary,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Informe a data da última menstruação e a duração do ciclo para receber dicas personalizadas de cuidado e alertas de carinho.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: context.textSecondary, height: 1.4),
+                    ),
+                    const SizedBox(height: 22),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primaryRose,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                      ),
+                      onPressed: () =>
+                          _showCycleSettingsModal(context, ref, cycle, trackerUid: myUid),
+                      icon: const Icon(Icons.edit_calendar_rounded),
+                      label: const Text('Configurar Datas do Ciclo'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final isPartnerCareMode =
+              cycle.trackerUid != null &&
+              cycle.trackerUid!.isNotEmpty &&
+              cycle.trackerUid != myUid;
+          final trackedName = cycle.trackerUid != null
+              ? (coupleAsync.valueOrNull?.getMyProfile(cycle.trackerUid!)?.name ?? 'Seu Amor')
+              : 'Seu Amor';
+          final todaySymptoms = cycle.activeTodaySymptoms();
+
           final phase = cycle.currentPhase();
           final accent = _phaseColor(phase);
           final currentDay = cycle.currentCycleDay();
@@ -276,7 +328,9 @@ class CycleScreen extends ConsumerWidget {
 
               // Daily Symptoms & Mood Chips
               Text(
-                'COMO ESTOU ME SENTINDO HOJE',
+                isPartnerCareMode
+                    ? 'CUIDANDO DE ${trackedName.toUpperCase()} — SINTOMAS DE HOJE'
+                    : 'COMO ESTOU ME SENTINDO HOJE',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -289,7 +343,7 @@ class CycleScreen extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: CycleRepository.availableSymptoms.map((symptom) {
-                  final isSelected = cycle.currentSymptoms.contains(symptom);
+                  final isSelected = todaySymptoms.contains(symptom);
                   return FilterChip(
                     label: Text(symptom),
                     selected: isSelected,
@@ -388,8 +442,9 @@ class CycleScreen extends ConsumerWidget {
   void _showCycleSettingsModal(
     BuildContext context,
     WidgetRef ref,
-    CycleDataModel current,
-  ) {
+    CycleDataModel current, {
+    String? trackerUid,
+  }) {
     DateTime pickedStart = current.lastPeriodStart;
     int cycleLength = current.cycleLength;
     int periodDuration = current.periodDuration;
@@ -534,6 +589,7 @@ class CycleScreen extends ConsumerWidget {
                               lastPeriodStart: pickedStart,
                               cycleLength: cycleLength,
                               periodDuration: periodDuration,
+                              trackerUid: trackerUid ?? current.trackerUid,
                             );
                       },
                       style: FilledButton.styleFrom(

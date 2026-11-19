@@ -61,7 +61,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final strings = AppStrings.of(context);
     final effectiveCoupleId = widget.coupleId ??
         widget.initialCouple?.id ??
-        'default_couple_id';
+        ref.watch(currentCoupleIdProvider).valueOrNull ??
+        '';
+    if (effectiveCoupleId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(strings.calendarTitle), centerTitle: true),
+        body: Center(child: Text(strings.noSpaceConnectedDesc)),
+      );
+    }
     final activeCouple = widget.initialCouple ??
         ref.watch(coupleStreamProvider(effectiveCoupleId)).valueOrNull;
 
@@ -175,7 +182,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               else
                 _buildMonthGridSliver(
                   context,
-                  events: events,
+                  events: _selectedCategoryFilter == 'All'
+                      ? events
+                      : events.where((e) => e.category == _selectedCategoryFilter).toList(),
                   coupleId: effectiveCoupleId,
                 ),
 
@@ -218,7 +227,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       case 'All':
         return 'Todas';
       case CalendarEventModel.categoryAnniversary:
-        return 'Aniversários';
+        return 'Aniversário de Namoro';
       case CalendarEventModel.categoryDateNight:
         return 'Encontros';
       case CalendarEventModel.categoryBirthday:
@@ -1335,7 +1344,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      titleController.dispose();
+      descController.dispose();
+    });
   }
 
   /// Prompts dialog to test / configure 20:00 Daily Question recurring reminder.
