@@ -10,6 +10,7 @@ import 'package:local_auth/local_auth.dart';
 import '../../../core/crypto/vault_crypto_service.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/quick_edit_dialogs.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../cheatsheet/data/cheatsheet_repository.dart';
@@ -1130,6 +1131,29 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (_unlockedKey != null && decryptedText != null)
+                        IconButton(
+                          tooltip: strings.editLabel,
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: AppTheme.primaryRose,
+                          ),
+                          onPressed: () async {
+                            final saved = await showEditVaultItemDialog(
+                              context,
+                              ref,
+                              coupleId: coupleId,
+                              item: item,
+                              currentPlaintext: decryptedText!,
+                              unlockedKey: _unlockedKey!,
+                            );
+                            if (saved &&
+                                bottomSheetContext.mounted &&
+                                Navigator.canPop(bottomSheetContext)) {
+                              Navigator.pop(bottomSheetContext);
+                            }
+                          },
+                        ),
                       IconButton(
                         icon: const Icon(
                           Icons.delete_outline_rounded,

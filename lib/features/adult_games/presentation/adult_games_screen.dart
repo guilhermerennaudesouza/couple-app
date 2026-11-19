@@ -462,9 +462,11 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
                     );
                   },
                   icon: const Icon(Icons.local_fire_department_rounded),
-                  label: const Text(
-                    'Chamar Meu Amor para Jogar Hoje 🔥',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  label: Text(
+                    strings.isPortuguese
+                        ? 'Chamar Meu Amor para Jogar Hoje 🔥'
+                        : 'Invite My Partner to Play Tonight 🔥',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

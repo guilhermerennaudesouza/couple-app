@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/couple_date_utils.dart';
+import '../../../core/widgets/quick_edit_dialogs.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../home/data/activity_state_repository.dart';
@@ -453,6 +454,19 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
                 ),
               ),
 
+              // Edit button
+              IconButton(
+                tooltip: strings.editLabel,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                color: context.textSecondary.withValues(alpha: 0.75),
+                onPressed: () => showEditTaskDialog(
+                  context,
+                  ref,
+                  coupleId: coupleId,
+                  task: task,
+                ),
+              ),
+
               // Delete button (with confirmation)
               IconButton(
                 icon: Icon(Icons.close_rounded, size: 18),
@@ -760,7 +774,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         trailing: PopupMenuButton<String>(
           icon: Icon(Icons.more_vert_rounded, color: context.textSecondary),
           onSelected: (value) async {
-            if (value == 'delete') {
+            if (value == 'edit') {
+              await showEditChecklistDialog(
+                context,
+                ref,
+                coupleId: coupleId,
+                list: list,
+              );
+            } else if (value == 'delete') {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
@@ -786,6 +807,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
             }
           },
           itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Text(strings.editLabel),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'delete',
               child: Row(

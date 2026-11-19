@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:couple_app/core/l10n/app_strings.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
+import 'package:couple_app/core/widgets/quick_edit_dialogs.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/home/data/activity_state_repository.dart';
 import 'package:couple_app/features/home/domain/activity_state_model.dart';
@@ -453,13 +454,31 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
                       ),
                     ),
                     icon: const Icon(Icons.redeem_rounded, size: 16),
-                    label: const Text(
-                      'Resgatar Vale',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                    label: Text(
+                      AppStrings.of(context).isPortuguese
+                          ? 'Resgatar Vale'
+                          : 'Redeem Coupon',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 IconButton(
-                  tooltip: 'Excluir cupom',
+                  tooltip: AppStrings.of(context).editLabel,
+                  onPressed: () => showEditCouponDialog(
+                    context,
+                    ref,
+                    coupleId: widget.coupleId,
+                    coupon: coupon,
+                  ),
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 19,
+                    color: context.textMuted,
+                  ),
+                ),
+                IconButton(
+                  tooltip: AppStrings.of(context).isPortuguese
+                      ? 'Excluir cupom'
+                      : 'Delete coupon',
                   onPressed: () async {
                     final ok = await _confirmDeleteItem(context, coupon.title);
                     if (ok == true) {

@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/currency_parser.dart';
 import '../../../core/utils/photo_budget_utils.dart';
+import '../../../core/widgets/quick_edit_dialogs.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/memory_model.dart';
@@ -484,9 +485,37 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                 ] else ...[
                   const Spacer(),
                 ],
-                IconButton(
+                PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert_rounded, size: 20, color: AppTheme.textSecondaryDark),
-                  onPressed: () => _confirmDeleteMemory(context, coupleId, memory),
+                  onSelected: (action) {
+                    if (action == 'edit') {
+                      showEditMemoryDialog(context, ref, coupleId: coupleId, memory: memory);
+                    } else if (action == 'delete') {
+                      _confirmDeleteMemory(context, coupleId, memory);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(strings.editLabel),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 18),
+                          const SizedBox(width: 8),
+                          Text(strings.delete, style: const TextStyle(color: AppTheme.errorRed)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1532,10 +1561,38 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
                   ),
                 ),
 
-                // Delete Menu
-                IconButton(
+                // Edit / Delete Menu
+                PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert_rounded, size: 20, color: context.textSecondary),
-                  onPressed: () => _confirmDeleteWish(context, coupleId, wish),
+                  onSelected: (action) {
+                    if (action == 'edit') {
+                      showEditWishDialog(context, ref, coupleId: coupleId, wish: wish);
+                    } else if (action == 'delete') {
+                      _confirmDeleteWish(context, coupleId, wish);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(strings.editLabel),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 18),
+                          const SizedBox(width: 8),
+                          Text(strings.delete, style: const TextStyle(color: AppTheme.errorRed)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

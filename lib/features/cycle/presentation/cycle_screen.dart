@@ -56,7 +56,9 @@ class CycleScreen extends ConsumerWidget {
         actions: [
           if (cycleAsync.valueOrNull != null)
             IconButton(
-              tooltip: 'Configurar Datas do Ciclo',
+              tooltip: strings.isPortuguese
+                  ? 'Configurar Datas do Ciclo'
+                  : 'Configure Cycle Dates',
               onPressed: () => _showCycleSettingsModal(
                 context,
                 ref,

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/utils/currency_parser.dart';
+import '../../../core/widgets/quick_edit_dialogs.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../../auth/domain/couple_model.dart';
 import '../data/finance_repository.dart';
@@ -736,11 +738,28 @@ class _ExpensesTab extends ConsumerWidget {
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert_rounded, size: 20),
           onSelected: (action) {
-            if (action == 'delete') {
+            if (action == 'edit') {
+              showEditExpenseDialog(
+                context,
+                ref,
+                coupleId: coupleId,
+                entry: entry,
+              );
+            } else if (action == 'delete') {
               _confirmDeleteExpense(context, ref, entry);
             }
           },
           itemBuilder: (ctx) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Text(strings.editLabel),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'delete',
               child: Row(
@@ -1112,11 +1131,28 @@ class _SavingsTab extends ConsumerWidget {
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert_rounded, size: 20),
                   onSelected: (action) {
-                    if (action == 'delete') {
+                    if (action == 'edit') {
+                      showEditSavingsGoalDialog(
+                        context,
+                        ref,
+                        coupleId: coupleId,
+                        goal: goal,
+                      );
+                    } else if (action == 'delete') {
                       _confirmDeleteGoal(context, ref, goal);
                     }
                   },
                   itemBuilder: (ctx) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 20),
+                          const SizedBox(width: 8),
+                          Text(strings.editLabel),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'delete',
                       child: Row(
@@ -1519,7 +1555,7 @@ class _AddExpenseModalState extends ConsumerState<_AddExpenseModal> {
 
   Future<void> _submitExpense() async {
     final title = _titleController.text.trim();
-    final amount = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    final amount = parseBrlCurrency(_amountController.text) ?? 0.0;
 
     final strings = AppStrings.of(context);
     if (title.isEmpty) {
@@ -1943,9 +1979,8 @@ class _CreateSavingsGoalModalState
 
   Future<void> _submitGoal() async {
     final title = _titleController.text.trim();
-    final target = double.tryParse(_targetController.text.replaceAll(',', '.')) ?? 0.0;
-    final initialDeposit =
-        double.tryParse(_initialDepositController.text.replaceAll(',', '.')) ?? 0.0;
+    final target = parseBrlCurrency(_targetController.text) ?? 0.0;
+    final initialDeposit = parseBrlCurrency(_initialDepositController.text) ?? 0.0;
 
     final strings = AppStrings.of(context);
     if (title.isEmpty) {
@@ -2293,7 +2328,7 @@ class _ContributeModalState extends ConsumerState<_ContributeModal> {
   Future<void> _submitContribution() async {
     final strings = AppStrings.of(context);
     final isPt = strings.isPortuguese;
-    final amount = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    final amount = parseBrlCurrency(_amountController.text) ?? 0.0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

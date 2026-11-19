@@ -66,12 +66,22 @@ class CoupleStatsSummary {
 
   int get xpToNextLevel => 500 - (totalXp % 500);
 
-  String get rankTitlePt {
-    if (level >= 15) return 'Almas Gêmeas Lendárias 👑';
-    if (level >= 10) return 'Guardiões do Amor Eterno 💎';
-    if (level >= 6) return 'Parceiros Inseparáveis 🔥';
-    if (level >= 3) return 'Corações em Sintonia 💕';
-    return 'Apaixonados em Jornada 🌱';
+  String get rankTitlePt => rankTitle(isPortuguese: true);
+
+  String rankTitle({required bool isPortuguese}) {
+    if (isPortuguese) {
+      if (level >= 15) return 'Almas Gêmeas Lendárias 👑';
+      if (level >= 10) return 'Guardiões do Amor Eterno 💎';
+      if (level >= 6) return 'Parceiros Inseparáveis 🔥';
+      if (level >= 3) return 'Corações em Sintonia 💕';
+      return 'Apaixonados em Jornada 🌱';
+    } else {
+      if (level >= 15) return 'Legendary Soulmates 👑';
+      if (level >= 10) return 'Guardians of Eternal Love 💎';
+      if (level >= 6) return 'Inseparable Partners 🔥';
+      if (level >= 3) return 'Hearts in Sync 💕';
+      return 'Lovers on a Journey 🌱';
+    }
   }
 }
 
@@ -145,8 +155,11 @@ class CoupleStatsScreen extends ConsumerWidget {
             ? profiles.first.name
             : 'Nosso Casal 💕';
 
-    final currencyFmt =
-        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final isPt = strings.isPortuguese;
+    final currencyFmt = NumberFormat.currency(
+      locale: isPt ? 'pt_BR' : 'en_US',
+      symbol: isPt ? 'R\$' : '\$',
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -185,7 +198,9 @@ class CoupleStatsScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    'NÍVEL ${summary.level} • ${summary.totalXp} XP',
+                    isPt
+                        ? 'NÍVEL ${summary.level} • ${summary.totalXp} XP'
+                        : 'LEVEL ${summary.level} • ${summary.totalXp} XP',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -205,7 +220,7 @@ class CoupleStatsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  summary.rankTitlePt,
+                  summary.rankTitle(isPortuguese: isPt),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -227,7 +242,9 @@ class CoupleStatsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Faltam ${summary.xpToNextLevel} XP para o Nível ${summary.level + 1}',
+                  isPt
+                      ? 'Faltam ${summary.xpToNextLevel} XP para o Nível ${summary.level + 1}'
+                      : '${summary.xpToNextLevel} XP to Level ${summary.level + 1}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -241,7 +258,7 @@ class CoupleStatsScreen extends ConsumerWidget {
           const SizedBox(height: 24),
 
           Text(
-            'NOSSA RETROSPECTIVA EM NÚMEROS ✨',
+            isPt ? 'NOSSA RETROSPECTIVA EM NÚMEROS ✨' : 'OUR RETROSPECTIVE IN NUMBERS ✨',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -263,70 +280,70 @@ class CoupleStatsScreen extends ConsumerWidget {
                 context,
                 emoji: '❤️',
                 value: '${summary.daysTogether}',
-                label: 'Dias de Amor Juntos',
+                label: isPt ? 'Dias de Amor Juntos' : 'Days in Love Together',
                 accent: AppTheme.primaryRose,
               ),
               _buildStatTile(
                 context,
                 emoji: '💬',
                 value: '${summary.questionsAnswered}',
-                label: 'Perguntas Reveladas',
+                label: isPt ? 'Perguntas Reveladas' : 'Revealed Questions',
                 accent: AppTheme.secondaryPlum,
               ),
               _buildStatTile(
                 context,
                 emoji: '✨',
                 value: '${summary.datesCompleted}',
-                label: 'Encontros Realizados',
+                label: isPt ? 'Encontros Realizados' : 'Dates Completed',
                 accent: const Color(0xFFF59E0B),
               ),
               _buildStatTile(
                 context,
                 emoji: '📸',
                 value: '${summary.memoriesCount}',
-                label: 'Memórias Guardadas',
+                label: isPt ? 'Memórias Guardadas' : 'Saved Memories',
                 accent: const Color(0xFFEC4899),
               ),
               _buildStatTile(
                 context,
                 emoji: '🎟️',
                 value: '${summary.couponsRedeemed}',
-                label: 'Cupons de Amor Usados',
+                label: isPt ? 'Cupons de Amor Usados' : 'Love Coupons Used',
                 accent: const Color(0xFF8B5CF6),
               ),
               _buildStatTile(
                 context,
                 emoji: '☑️',
                 value: '${summary.tasksCompleted}',
-                label: 'Tarefas Concluídas',
+                label: isPt ? 'Tarefas Concluídas' : 'Tasks Completed',
                 accent: const Color(0xFF10B981),
               ),
               _buildStatTile(
                 context,
                 emoji: '⏳',
                 value: '${summary.capsulesCount}',
-                label: 'Cápsulas do Tempo',
+                label: isPt ? 'Cápsulas do Tempo' : 'Time Capsules',
                 accent: const Color(0xFF06B6D4),
               ),
               _buildStatTile(
                 context,
                 emoji: '🎁',
                 value: '${summary.wishesFulfilled}',
-                label: 'Desejos Realizados',
+                label: isPt ? 'Desejos Realizados' : 'Wishes Fulfilled',
                 accent: const Color(0xFFE11D48),
               ),
               _buildStatTile(
                 context,
                 emoji: '🔥',
                 value: '${summary.dailyStreak}',
-                label: 'Ofensiva Diária (Dias)',
+                label: isPt ? 'Ofensiva Diária (Dias)' : 'Daily Streak (Days)',
                 accent: const Color(0xFFEA580C),
               ),
               _buildStatTile(
                 context,
                 emoji: '💓',
                 value: '${summary.totalPulsesCount}',
-                label: 'Carinhos Enviados',
+                label: isPt ? 'Carinhos Enviados' : 'Love Pulses Sent',
                 accent: AppTheme.primaryRose,
               ),
             ],

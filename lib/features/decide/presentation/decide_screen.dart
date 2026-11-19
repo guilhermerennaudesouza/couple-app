@@ -1300,7 +1300,7 @@ class _DateIdeasTabState extends ConsumerState<_DateIdeasTab> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(getCategoryLabel(cat, strings)),
+              label: Text(_DateIdeasTab.getCategoryLabel(cat, strings)),
               selected: isSelected,
               showCheckmark: false,
               selectedColor: AppTheme.primaryRose.withOpacity(0.18),
@@ -1323,7 +1323,7 @@ class _DateIdeasTabState extends ConsumerState<_DateIdeasTab> {
 
   Widget _buildEmptyCategoryState(BuildContext context) {
     final strings = AppStrings.of(context);
-    final displayCategory = getCategoryLabel(selectedCategory, strings);
+    final displayCategory = _DateIdeasTab.getCategoryLabel(selectedCategory, strings);
 
     return Container(
       padding: const EdgeInsets.all(32),
