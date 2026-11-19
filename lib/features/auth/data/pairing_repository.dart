@@ -219,6 +219,16 @@ final pairingRepositoryProvider = Provider<PairingRepository>((ref) {
   return PairingRepository();
 });
 
+/// Canonical authenticated Firebase user UID stream, resilient to uninitialized
+/// Firebase instances in headless unit test environments.
+final currentUserUidProvider = StreamProvider<String?>((ref) {
+  try {
+    return FirebaseAuth.instance.authStateChanges().map((user) => user?.uid);
+  } catch (_) {
+    return Stream<String?>.value(null);
+  }
+});
+
 final currentCoupleIdProvider = FutureProvider<String?>((ref) async {
   final repo = ref.watch(pairingRepositoryProvider);
   return repo.getCurrentCoupleId();
