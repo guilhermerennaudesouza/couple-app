@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:couple_app/core/utils/couple_date_utils.dart';
 import 'package:couple_app/core/utils/currency_parser.dart';
+import 'package:couple_app/core/utils/photo_budget_utils.dart';
+import 'package:couple_app/features/wishlist/domain/wish_model.dart';
 
 void main() {
   group('parseBrlCurrency', () {
@@ -58,6 +61,56 @@ void main() {
 
     test('formatDateKey produces padded YYYY-MM-DD', () {
       expect(CoupleDateUtils.formatDateKey(DateTime(2026, 3, 5)), '2026-03-05');
+    });
+  });
+
+  group('PhotoBudgetUtils & WishModel', () {
+    test('PhotoBudgetUtils enforces max 4 photos and 850KB Firestore document budget', () {
+      final small = 'data:image/jpeg;base64,${'A' * 1000}';
+      expect(
+        PhotoBudgetUtils.canAddPhoto(
+          existingDataUris: [small, small, small],
+          candidateDataUri: small,
+        ),
+        isTrue,
+      );
+      expect(
+        PhotoBudgetUtils.canAddPhoto(
+          existingDataUris: [small, small, small, small],
+          candidateDataUri: small,
+        ),
+        isFalse,
+      );
+      final huge = 'data:image/jpeg;base64,${'A' * (900 * 1024)}';
+      expect(
+        PhotoBudgetUtils.canAddPhoto(
+          existingDataUris: const [],
+          candidateDataUri: huge,
+        ),
+        isFalse,
+      );
+    });
+
+    test('PhotoBudgetUtils decodeCachedBase64 caches decoded bytes', () {
+      final uri = 'data:image/jpeg;base64,${base64Encode([1, 2, 3, 4])}';
+      final first = PhotoBudgetUtils.decodeCachedBase64(uri);
+      final second = PhotoBudgetUtils.decodeCachedBase64(uri);
+      expect(first, equals([1, 2, 3, 4]));
+      expect(identical(first, second), isTrue);
+    });
+
+    test('WishModel parses Brazilian decimal prices and includes isSecretRadar/occasion in equality', () {
+      final a = WishModel.fromMap('w1', {
+        'title': 'Perfume',
+        'estimatedPrice': '150,50',
+        'isSecretRadar': true,
+        'occasion': 'Aniversário',
+      });
+      final b = a.copyWith(isSecretRadar: false);
+      final c = a.copyWith(occasion: 'Natal');
+      expect(a.estimatedPrice, 150.50);
+      expect(a == b, isFalse);
+      expect(a == c, isFalse);
     });
   });
 }

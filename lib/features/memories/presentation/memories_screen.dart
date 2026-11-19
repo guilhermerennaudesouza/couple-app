@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/utils/currency_parser.dart';
+import '../../../core/utils/photo_budget_utils.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
 import '../domain/memory_model.dart';
@@ -42,11 +44,8 @@ Widget buildPhotoThumbnail(
   double? height,
 }) {
   if (photoUrl.startsWith('data:image') || photoUrl.startsWith('base64:')) {
-    try {
-      final base64Data = photoUrl.contains(',')
-          ? photoUrl.substring(photoUrl.indexOf(',') + 1)
-          : (photoUrl.startsWith('base64:') ? photoUrl.substring(7) : photoUrl);
-      final bytes = base64Decode(base64Data);
+    final bytes = PhotoBudgetUtils.decodeCachedBase64(photoUrl);
+    if (bytes != null) {
       return Image.memory(
         bytes,
         fit: fit,
@@ -61,7 +60,7 @@ Widget buildPhotoThumbnail(
           ),
         ),
       );
-    } catch (_) {
+    } else {
       return Container(
         color: AppTheme.surfaceVariantDark,
         width: width,
@@ -1883,12 +1882,26 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
   }
 
   Future<void> _pickAndUploadPhoto() async {
+    final isPt = AppStrings.of(context).isPortuguese;
+    if (_photoUrls.length >= PhotoBudgetUtils.maxPhotosPerDoc) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isPt
+                ? 'Limite de ${PhotoBudgetUtils.maxPhotosPerDoc} fotos por registro atingido.'
+                : 'Maximum of ${PhotoBudgetUtils.maxPhotosPerDoc} photos per entry reached.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final picker = ImagePicker();
     final image = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 70,
+      maxWidth: 960,
+      maxHeight: 960,
+      imageQuality: 65,
     );
     if (image == null) return;
 
@@ -1896,8 +1909,26 @@ class _AddMemorySheetState extends ConsumerState<_AddMemorySheet> {
 
     try {
       final bytes = await image.readAsBytes();
-      // Compress and store as Base64 data URI directly in Firestore (100% free Spark tier)
       final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+      if (!PhotoBudgetUtils.canAddPhoto(
+        existingDataUris: _photoUrls,
+        candidateDataUri: base64String,
+      )) {
+        if (mounted) {
+          setState(() => _isUploading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isPt
+                    ? 'Tamanho máximo de fotos excedido para este registro (limite 850 KB).'
+                    : 'Photo size budget exceeded for this entry (850 KB limit).',
+              ),
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
@@ -2277,12 +2308,26 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
   }
 
   Future<void> _pickAndUploadPhoto() async {
+    final isPt = AppStrings.of(context).isPortuguese;
+    if (_photoUrls.length >= PhotoBudgetUtils.maxPhotosPerDoc) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isPt
+                ? 'Limite de ${PhotoBudgetUtils.maxPhotosPerDoc} fotos por registro atingido.'
+                : 'Maximum of ${PhotoBudgetUtils.maxPhotosPerDoc} photos per entry reached.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final picker = ImagePicker();
     final image = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 70,
+      maxWidth: 960,
+      maxHeight: 960,
+      imageQuality: 65,
     );
     if (image == null) return;
 
@@ -2290,8 +2335,26 @@ class _SealCapsuleSheetState extends ConsumerState<_SealCapsuleSheet> {
 
     try {
       final bytes = await image.readAsBytes();
-      // Compress and store as Base64 data URI directly in Firestore (100% free Spark tier)
       final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+      if (!PhotoBudgetUtils.canAddPhoto(
+        existingDataUris: _photoUrls,
+        candidateDataUri: base64String,
+      )) {
+        if (mounted) {
+          setState(() => _isUploading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isPt
+                    ? 'Tamanho máximo de fotos excedido para este registro (limite 850 KB).'
+                    : 'Photo size budget exceeded for this entry (850 KB limit).',
+              ),
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
@@ -2715,8 +2778,7 @@ class _AddWishSheetState extends ConsumerState<_AddWishSheet> {
       return;
     }
 
-    final priceStr = _priceController.text.replaceAll(RegExp(r'[^0-9.]'), '');
-    final price = double.tryParse(priceStr);
+    final price = parseBrlCurrency(_priceController.text);
 
     setState(() => _isSaving = true);
 

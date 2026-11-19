@@ -15,13 +15,11 @@ import '../../wishlist/domain/wish_model.dart';
 /// - Storage: `/couples/{coupleId}/photos/{filename}`
 class MemoriesRepository {
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
 
   MemoriesRepository({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> _memoriesCollection(String coupleId) {
     return _firestore.collection('couples').doc(coupleId).collection('memories');
@@ -29,10 +27,6 @@ class MemoriesRepository {
 
   CollectionReference<Map<String, dynamic>> _wishlistCollection(String coupleId) {
     return _firestore.collection('couples').doc(coupleId).collection('wishlist');
-  }
-
-  Reference _photosStorageRef(String coupleId, String filename) {
-    return _storage.ref().child('couples').child(coupleId).child('photos').child(filename);
   }
 
   // ==========================================
@@ -78,30 +72,15 @@ class MemoriesRepository {
     await _memoriesCollection(coupleId).doc(memoryId).delete();
   }
 
-  /// Uploads photo bytes to Firebase Storage if available, or seamlessly returns
-  /// a Base64 Data URI on the free Spark tier (zero cloud storage cost).
+  /// Encodes compressed photo bytes directly as a Base64 Data URI for 100% free
+  /// Firebase Spark tier storage without triggering Storage bucket retries/timeouts.
   Future<String> uploadPhoto(
     String coupleId,
     Uint8List bytes,
     String filename, {
     String mimeType = 'image/jpeg',
   }) async {
-    try {
-      final photoRef = _photosStorageRef(coupleId, filename);
-      final metadata = SettableMetadata(
-        contentType: mimeType,
-        customMetadata: {
-          'coupleId': coupleId,
-          'uploadedAt': DateTime.now().toIso8601String(),
-        },
-      );
-
-      await photoRef.putData(bytes, metadata);
-      return await photoRef.getDownloadURL();
-    } catch (_) {
-      // Free Spark Tier Fallback: encode as Base64 Data URI for direct Firestore storage
-      return 'data:$mimeType;base64,${base64Encode(bytes)}';
-    }
+    return 'data:$mimeType;base64,${base64Encode(bytes)}';
   }
 
   // ==========================================

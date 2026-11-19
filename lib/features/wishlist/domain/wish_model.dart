@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/utils/currency_parser.dart';
 
 /// Represents an item on the couple's shared wishlist.
 ///
@@ -139,8 +140,7 @@ class WishModel {
     if (value is int) return value.toDouble();
     if (value is num) return value.toDouble();
     if (value is String) {
-      final cleaned = value.replaceAll(RegExp(r'[^0-9.]'), '');
-      return double.tryParse(cleaned);
+      return parseBrlCurrency(value);
     }
     return null;
   }
@@ -170,7 +170,9 @@ class WishModel {
           isPurchased == other.isPurchased &&
           purchasedBy == other.purchasedBy &&
           createdBy == other.createdBy &&
-          createdAt == other.createdAt;
+          createdAt == other.createdAt &&
+          isSecretRadar == other.isSecretRadar &&
+          occasion == other.occasion;
 
   @override
   int get hashCode => Object.hash(
@@ -184,6 +186,8 @@ class WishModel {
         purchasedBy,
         createdBy,
         createdAt,
+        isSecretRadar,
+        occasion,
       );
 
   @override
