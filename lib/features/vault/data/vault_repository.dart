@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../domain/vault_config_model.dart';
 import '../domain/vault_item_model.dart';
 
-/// Repository managing encrypted private vault items with Cloud Firestore synchronization.
+/// Repository managing encrypted private vault items and shared PIN sentinel
+/// verification with Cloud Firestore synchronization.
 ///
 /// Persisted under:
-/// `/couples/{coupleId}/vault_items/{itemId}`
+/// - `/couples/{coupleId}/vault_items/{itemId}`
+/// - `/couples/{coupleId}/vault_meta/config`
 class VaultRepository {
   final FirebaseFirestore _firestore;
 
@@ -19,6 +22,79 @@ class VaultRepository {
         .collection('couples')
         .doc(coupleId)
         .collection('vault_items');
+  }
+
+  DocumentReference<Map<String, dynamic>> _configDoc(String coupleId) {
+    return _firestore
+        .collection('couples')
+        .doc(coupleId)
+        .collection('vault_meta')
+        .doc('config');
+  }
+
+  /// Reads the shared couple PIN verification sentinel if configured.
+  Future<VaultConfigModel?> getVaultConfig(String coupleId) async {
+    try {
+      final snap = await _configDoc(coupleId).get();
+      if (!snap.exists || snap.data() == null) return null;
+      return VaultConfigModel.fromMap(snap.data()!);
+    } catch (e) {
+      debugPrint('VaultRepository.getVaultConfig error: $e');
+      return null;
+    }
+  }
+
+  /// Saves the shared couple PIN verification sentinel.
+  Future<void> saveVaultConfig(String coupleId, VaultConfigModel config) async {
+    await _configDoc(coupleId).set(config.toMap(), SetOptions(merge: true));
+  }
+
+  /// Fetches all current encrypted vault items once (used for legacy upgrade & PIN rotation).
+  Future<List<VaultItemModel>> getAllVaultItemsOnce(String coupleId) async {
+    final snap = await _vaultCollection(coupleId).get();
+    return snap.docs
+        .map((doc) => VaultItemModel.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  /// Resolves the safe lock-gate mode for [coupleId].
+  Future<VaultPinMode> resolveVaultPinMode(String coupleId) async {
+    final config = await getVaultConfig(coupleId);
+    if (config != null) return VaultPinMode.unlockSentinel;
+    final itemsSnap = await _vaultCollection(coupleId).limit(1).get();
+    return VaultConfigModel.resolveMode(
+      hasConfig: false,
+      hasExistingItems: itemsSnap.docs.isNotEmpty,
+    );
+  }
+
+  /// Atomically replaces all re-encrypted vault items and the PIN sentinel during PIN change.
+  Future<void> reencryptAllItemsAndSentinel(
+    String coupleId, {
+    required List<VaultItemModel> reencryptedItems,
+    required VaultConfigModel newConfig,
+  }) async {
+    final batch = _firestore.batch();
+    for (final item in reencryptedItems) {
+      batch.set(
+        _vaultCollection(coupleId).doc(item.id),
+        item.toMap(),
+        SetOptions(merge: true),
+      );
+    }
+    batch.set(_configDoc(coupleId), newConfig.toMap());
+    await batch.commit();
+  }
+
+  /// Permanently wipes all encrypted vault items and the shared PIN sentinel.
+  Future<void> resetVault(String coupleId) async {
+    final snap = await _vaultCollection(coupleId).get();
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_configDoc(coupleId));
+    await batch.commit();
   }
 
   /// Watches all encrypted vault items for a couple in real time.

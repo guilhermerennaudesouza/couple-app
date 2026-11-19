@@ -15,6 +15,7 @@ import '../../auth/domain/couple_model.dart';
 import '../../cheatsheet/data/cheatsheet_repository.dart';
 import '../../cheatsheet/domain/cheatsheet_model.dart';
 import '../data/vault_repository.dart';
+import '../domain/vault_config_model.dart';
 import '../domain/vault_item_model.dart';
 
 /// Screen providing a zero-knowledge AES-256-GCM encrypted private vault
@@ -49,6 +50,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   String _enteredPin = '';
   String? _setupInitialPin;
   bool _isSettingUpPin = false;
+  VaultPinMode _pinMode = VaultPinMode.createNew;
+  VaultConfigModel? _remoteConfig;
+  bool _isProcessingPin = false;
   String? _pinErrorMessage;
   bool _hasStoredPin = false;
   
@@ -85,14 +89,20 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.uid.isNotEmpty) {
-      return user.uid;
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) {
+      return providerUid;
     }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && user.uid.isNotEmpty) {
+        return user.uid;
+      }
+    } catch (_) {}
     if (couple != null && couple.members.isNotEmpty) {
       return couple.members.first;
     }
-    return 'user_uid';
+    return '';
   }
 
   String _getPartnerUid(CoupleModel? couple, String effectiveUid) {
@@ -103,7 +113,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
         if (m != effectiveUid) return m;
       }
     }
-    return 'partner_uid';
+    return '';
   }
 
   Future<void> _checkSecuritySetup([String? explicitCoupleId]) async {
@@ -119,13 +129,36 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           await _secureStorage.read(key: 'vault_has_pin_$coupleId');
       await _localAuth.isDeviceSupported();
 
+      VaultPinMode resolvedMode =
+          (storedKey != null || hasPinFlag == 'true')
+              ? VaultPinMode.unlockSentinel
+              : VaultPinMode.createNew;
+      VaultConfigModel? remoteConfig;
+
+      try {
+        final repo = ref.read(vaultRepositoryProvider);
+        remoteConfig = await repo.getVaultConfig(coupleId);
+        if (remoteConfig != null) {
+          resolvedMode = VaultPinMode.unlockSentinel;
+        } else {
+          resolvedMode = await repo.resolveVaultPinMode(coupleId);
+        }
+      } catch (e) {
+        debugPrint('VaultScreen remote config check fallback: $e');
+      }
+
       if (mounted) {
         final hadPin = _hasStoredPin;
         setState(() {
+          _remoteConfig = remoteConfig;
+          _pinMode = resolvedMode;
           _hasStoredPin = storedKey != null || hasPinFlag == 'true';
-          _isSettingUpPin = !_hasStoredPin;
+          _isSettingUpPin = resolvedMode == VaultPinMode.createNew;
         });
-        if (_hasStoredPin && !hadPin && _unlockedKey == null) {
+        if (_hasStoredPin &&
+            resolvedMode == VaultPinMode.unlockSentinel &&
+            !hadPin &&
+            _unlockedKey == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && _unlockedKey == null) {
               _unlockWithBiometrics(silentError: true);
@@ -139,15 +172,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   Future<String> _getOrCreateSalt(String coupleId) async {
-    // Deterministic salt tied to the unique coupleId ensures:
-    // 1. Cross-device consistency between partners
-    // 2. Data recovery after app re-installation
-    // 3. Unique rainbow-table protection per couple space (100k PBKDF2 iterations)
     return 'krivo_vault_salt_$coupleId';
   }
 
   void _onDigitPressed(String digit) {
-    if (_enteredPin.length >= 6) return;
+    if (_isProcessingPin || _enteredPin.length >= 6) return;
     setState(() {
       _pinErrorMessage = null;
       _enteredPin += digit;
@@ -159,6 +188,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   void _onBackspacePressed() {
+    if (_isProcessingPin) return;
     if (_enteredPin.isNotEmpty) {
       setState(() {
         _pinErrorMessage = null;
@@ -168,101 +198,174 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
   }
 
   Future<void> _handleCompletedPin() async {
+    if (_isProcessingPin) return;
     final coupleId = _getActiveCoupleId();
     final pin = _enteredPin;
     final strings = AppStrings.of(context);
+    final repo = ref.read(vaultRepositoryProvider);
 
-    if (_isSettingUpPin) {
+    if (_pinMode == VaultPinMode.createNew) {
       if (_setupInitialPin == null) {
-        // First PIN entry for setup -> ask for confirmation
         setState(() {
           _setupInitialPin = pin;
           _enteredPin = '';
         });
-      } else {
-        // Confirmation PIN entry
-        if (pin == _setupInitialPin) {
-          try {
-            final salt = await _getOrCreateSalt(coupleId);
-            final key = await _cryptoService.deriveKey(pin: pin, salt: salt);
-            final exportedKey = await _cryptoService.exportKeyBytes(key);
+      } else if (pin == _setupInitialPin) {
+        setState(() => _isProcessingPin = true);
+        try {
+          final salt = await _getOrCreateSalt(coupleId);
+          final key = await _cryptoService.deriveKey(pin: pin, salt: salt);
+          final sentinelPayload = await _cryptoService.encrypt(
+            plaintext: VaultConfigModel.sentinelPlaintext,
+            key: key,
+          );
+          final newConfig = VaultConfigModel(sentinel: sentinelPayload);
+          await repo.saveVaultConfig(coupleId, newConfig);
 
-            await _secureStorage.write(
-              key: 'vault_cached_key_$coupleId',
-              value: exportedKey,
-            );
-            await _secureStorage.write(
-              key: 'vault_has_pin_$coupleId',
-              value: 'true',
-            );
+          final exportedKey = await _cryptoService.exportKeyBytes(key);
+          await _secureStorage.write(
+            key: 'vault_cached_key_$coupleId',
+            value: exportedKey,
+          );
+          await _secureStorage.write(
+            key: 'vault_has_pin_$coupleId',
+            value: 'true',
+          );
 
-            if (mounted) {
-              setState(() {
-                _unlockedKey = key;
-                _hasStoredPin = true;
-                _isSettingUpPin = false;
-                _setupInitialPin = null;
-                _enteredPin = '';
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(strings.pinSetSuccess),
-                  backgroundColor: AppTheme.primaryRose,
-                ),
-              );
-            }
-          } catch (e) {
-            if (!mounted) return;
+          if (mounted) {
             setState(() {
-              _pinErrorMessage = strings.isPortuguese ? 'Falha ao processar chave. Tente novamente.' : 'Failed to derive key. Please try again.';
-              _enteredPin = '';
+              _unlockedKey = key;
+              _remoteConfig = newConfig;
+              _pinMode = VaultPinMode.unlockSentinel;
+              _hasStoredPin = true;
+              _isSettingUpPin = false;
+              _isProcessingPin = false;
               _setupInitialPin = null;
+              _enteredPin = '';
             });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(strings.pinSetSuccess),
+                backgroundColor: AppTheme.primaryRose,
+              ),
+            );
           }
-        } else {
+        } catch (e) {
           if (!mounted) return;
           setState(() {
-            _pinErrorMessage = strings.pinMismatch;
+            _isProcessingPin = false;
+            _pinErrorMessage = strings.isPortuguese
+                ? 'Falha ao processar chave. Tente novamente.'
+                : 'Failed to derive key. Please try again.';
             _enteredPin = '';
             _setupInitialPin = null;
           });
         }
+      } else {
+        if (!mounted) return;
+        setState(() {
+          _pinErrorMessage = strings.pinMismatch;
+          _enteredPin = '';
+          _setupInitialPin = null;
+        });
       }
       return;
     }
 
-    // Normal Unlock Flow
+    // Unlock against shared Firestore sentinel OR legacy backfill against existing items
+    setState(() => _isProcessingPin = true);
     try {
       final salt = await _getOrCreateSalt(coupleId);
       final derivedKey = await _cryptoService.deriveKey(pin: pin, salt: salt);
-      final storedKey =
-          await _secureStorage.read(key: 'vault_cached_key_$coupleId');
 
-      if (storedKey != null) {
-        final derivedKeyBytes =
-            await _cryptoService.exportKeyBytes(derivedKey);
-        if (derivedKeyBytes != storedKey) {
+      if (_pinMode == VaultPinMode.legacyBackfill) {
+        final existingItems = await repo.getAllVaultItemsOnce(coupleId);
+        bool decryptedAny = existingItems.isEmpty;
+        for (final item in existingItems) {
+          try {
+            await _cryptoService.decrypt(payload: item.payload, key: derivedKey);
+            decryptedAny = true;
+            break;
+          } catch (_) {}
+        }
+        if (!decryptedAny) {
           if (!mounted) return;
           setState(() {
+            _isProcessingPin = false;
             _pinErrorMessage = strings.incorrectPin;
             _enteredPin = '';
           });
           HapticFeedback.vibrate();
           return;
         }
-      } else {
-        // Cache this key for future checks
-        final derivedKeyBytes =
-            await _cryptoService.exportKeyBytes(derivedKey);
-        await _secureStorage.write(
-          key: 'vault_cached_key_$coupleId',
-          value: derivedKeyBytes,
+        // Valid legacy PIN -> backfill shared sentinel
+        final sentinelPayload = await _cryptoService.encrypt(
+          plaintext: VaultConfigModel.sentinelPlaintext,
+          key: derivedKey,
         );
+        final backfilled = VaultConfigModel(sentinel: sentinelPayload);
+        await repo.saveVaultConfig(coupleId, backfilled);
+        _remoteConfig = backfilled;
+      } else {
+        final config = _remoteConfig ?? await repo.getVaultConfig(coupleId);
+        if (config != null) {
+          _remoteConfig = config;
+          try {
+            final check = await _cryptoService.decrypt(
+              payload: config.sentinel,
+              key: derivedKey,
+            );
+            if (check != VaultConfigModel.sentinelPlaintext) {
+              throw const VaultCryptoException('Sentinel mismatch');
+            }
+          } catch (_) {
+            if (!mounted) return;
+            setState(() {
+              _isProcessingPin = false;
+              _pinErrorMessage = strings.incorrectPin;
+              _enteredPin = '';
+            });
+            HapticFeedback.vibrate();
+            return;
+          }
+        } else {
+          final storedKey =
+              await _secureStorage.read(key: 'vault_cached_key_$coupleId');
+          if (storedKey != null) {
+            final derivedKeyBytes =
+                await _cryptoService.exportKeyBytes(derivedKey);
+            if (derivedKeyBytes != storedKey) {
+              if (!mounted) return;
+              setState(() {
+                _isProcessingPin = false;
+                _pinErrorMessage = strings.incorrectPin;
+                _enteredPin = '';
+              });
+              HapticFeedback.vibrate();
+              return;
+            }
+          }
+        }
       }
+
+      // Cache verified key locally for biometrics
+      final derivedKeyBytes = await _cryptoService.exportKeyBytes(derivedKey);
+      await _secureStorage.write(
+        key: 'vault_cached_key_$coupleId',
+        value: derivedKeyBytes,
+      );
+      await _secureStorage.write(
+        key: 'vault_has_pin_$coupleId',
+        value: 'true',
+      );
 
       if (mounted) {
         setState(() {
           _unlockedKey = derivedKey;
+          _pinMode = VaultPinMode.unlockSentinel;
+          _hasStoredPin = true;
+          _isSettingUpPin = false;
+          _isProcessingPin = false;
           _enteredPin = '';
           _pinErrorMessage = null;
         });
@@ -270,7 +373,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _pinErrorMessage = '${strings.isPortuguese ? "Erro ao desbloquear" : "Unlock error"}: $e';
+        _isProcessingPin = false;
+        _pinErrorMessage =
+            '${strings.isPortuguese ? "Erro ao desbloquear" : "Unlock error"}: $e';
         _enteredPin = '';
       });
     }
@@ -311,6 +416,30 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
             await _secureStorage.read(key: 'vault_cached_key_$coupleId');
         if (cachedKeyBase64 != null && cachedKeyBase64.isNotEmpty) {
           final key = _cryptoService.importKeyBytes(cachedKeyBase64);
+          final config = _remoteConfig ??
+              await ref.read(vaultRepositoryProvider).getVaultConfig(coupleId);
+          if (config != null) {
+            try {
+              final check = await _cryptoService.decrypt(
+                payload: config.sentinel,
+                key: key,
+              );
+              if (check != VaultConfigModel.sentinelPlaintext) {
+                throw const VaultCryptoException('Stale cached key');
+              }
+            } catch (_) {
+              await _secureStorage.delete(key: 'vault_cached_key_$coupleId');
+              if (mounted) {
+                setState(() {
+                  _hasStoredPin = false;
+                  _pinErrorMessage = strings.isPortuguese
+                      ? 'O PIN do casal foi alterado. Digite o novo PIN de 6 dígitos.'
+                      : 'The couple PIN changed. Please enter the new 6-digit PIN.';
+                });
+              }
+              return;
+            }
+          }
           if (mounted) {
             setState(() {
               _unlockedKey = key;
@@ -388,7 +517,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
       appBar: AppBar(
         title: Text(strings.vaultTitleBar),
         actions: [
-          if (_tabController.index == 0 && _unlockedKey != null)
+          if (_tabController.index == 0 && _unlockedKey != null) ...[
+            IconButton(
+              tooltip: strings.isPortuguese ? 'Alterar PIN do Cofre' : 'Change Vault PIN',
+              onPressed: () => _showChangePinDialog(activeCoupleId),
+              icon: const Icon(Icons.password_rounded, size: 20),
+            ),
             TextButton.icon(
               onPressed: _lockVault,
               icon: const Icon(Icons.lock_rounded, size: 18),
@@ -397,6 +531,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 foregroundColor: AppTheme.primaryRose,
               ),
             ),
+          ],
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -492,17 +627,23 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
   Widget _buildLockGateView() {
     final strings = AppStrings.of(context);
-    final titleText = _isSettingUpPin
+    final titleText = _pinMode == VaultPinMode.createNew
         ? (_setupInitialPin == null
             ? strings.pinSetupTitle
             : strings.pinConfirmTitle)
-        : strings.vaultPrivateTitle;
+        : (_pinMode == VaultPinMode.legacyBackfill
+            ? (strings.isPortuguese ? 'Confirmar PIN Atual' : 'Confirm Existing PIN')
+            : strings.vaultPrivateTitle);
 
-    final subtitleText = _isSettingUpPin
+    final subtitleText = _pinMode == VaultPinMode.createNew
         ? (_setupInitialPin == null
             ? strings.pinSetupDesc
             : strings.pinConfirmDesc)
-        : strings.pinUnlockDesc;
+        : (_pinMode == VaultPinMode.legacyBackfill
+            ? (strings.isPortuguese
+                ? 'Digite o PIN de 6 dígitos já usado no Cofre para sincronizar a proteção entre os dois celulares.'
+                : 'Enter your existing 6-digit Vault PIN to sync protection across both phones.')
+            : strings.pinUnlockDesc);
 
     return SafeArea(
       child: Center(
@@ -583,7 +724,18 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                   ),
                 ),
               ],
-              const SizedBox(height: 28),
+              if (_isProcessingPin) ...[
+                const SizedBox(height: 16),
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppTheme.primaryRose,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
               // Numeric Keypad
               _buildPinKeypad(context),
               if (!_isSettingUpPin && _hasStoredPin) ...[
@@ -591,7 +743,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primaryRose,
-                    side: BorderSide(color: AppTheme.primaryRose.withOpacity(0.5)),
+                    side: BorderSide(color: AppTheme.primaryRose.withValues(alpha: 0.5)),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -603,6 +755,22 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   onPressed: () => _unlockWithBiometrics(silentError: false),
+                ),
+              ],
+              if (_pinMode != VaultPinMode.createNew) ...[
+                const SizedBox(height: 14),
+                TextButton(
+                  onPressed: () => _confirmResetVault(_getActiveCoupleId()),
+                  child: Text(
+                    strings.isPortuguese
+                        ? 'Esqueci o PIN / Resetar Cofre'
+                        : 'Forgot PIN / Reset Vault',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: context.textSecondary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -1302,7 +1470,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           },
         );
       },
-    );
+    ).whenComplete(() {
+      titleController.dispose();
+      secretController.dispose();
+    });
   }
 
   String _translateVaultCategory(String category, AppStrings strings) {
@@ -1811,6 +1982,276 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
           },
         );
       },
+    ).whenComplete(() {
+      ringController.dispose();
+      shoeController.dispose();
+      clothingController.dispose();
+      coffeeController.dispose();
+      comfortFoodController.dispose();
+      allergiesController.dispose();
+      flowersController.dispose();
+      notesController.dispose();
+    });
+  }
+
+  Future<void> _showChangePinDialog(String coupleId) async {
+    final strings = AppStrings.of(context);
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool isSaving = false;
+    String? errorText;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setDlgState) {
+            return AlertDialog(
+              title: Text(strings.isPortuguese ? 'Alterar PIN do Cofre' : 'Change Vault PIN'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: currentController,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'PIN Atual (6 dígitos)' : 'Current PIN (6 digits)',
+                      ),
+                    ),
+                    TextField(
+                      controller: newController,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Novo PIN (6 dígitos)' : 'New PIN (6 digits)',
+                      ),
+                    ),
+                    TextField(
+                      controller: confirmController,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: InputDecoration(
+                        labelText: strings.isPortuguese ? 'Confirmar Novo PIN' : 'Confirm New PIN',
+                      ),
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        errorText!,
+                        style: const TextStyle(color: AppTheme.errorRed, fontSize: 12.5),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.of(dialogCtx).pop(),
+                  child: Text(strings.cancel),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRose),
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          final cur = currentController.text.trim();
+                          final next = newController.text.trim();
+                          final conf = confirmController.text.trim();
+                          if (cur.length != 6 || next.length != 6) {
+                            setDlgState(() => errorText = strings.isPortuguese
+                                ? 'Os PINs devem ter exatamente 6 dígitos.'
+                                : 'PINs must be exactly 6 digits.');
+                            return;
+                          }
+                          if (next != conf) {
+                            setDlgState(() => errorText = strings.pinMismatch);
+                            return;
+                          }
+                          setDlgState(() {
+                            isSaving = true;
+                            errorText = null;
+                          });
+                          try {
+                            final salt = await _getOrCreateSalt(coupleId);
+                            final curKey = await _cryptoService.deriveKey(pin: cur, salt: salt);
+                            final repo = ref.read(vaultRepositoryProvider);
+                            final config = _remoteConfig ?? await repo.getVaultConfig(coupleId);
+                            if (config != null) {
+                              final check = await _cryptoService.decrypt(
+                                payload: config.sentinel,
+                                key: curKey,
+                              );
+                              if (check != VaultConfigModel.sentinelPlaintext) {
+                                throw const VaultCryptoException('Wrong current PIN');
+                              }
+                            }
+                            final newKey = await _cryptoService.deriveKey(pin: next, salt: salt);
+                            final allItems = await repo.getAllVaultItemsOnce(coupleId);
+                            final reencrypted = <VaultItemModel>[];
+                            for (final item in allItems) {
+                              final plain = await _cryptoService.decrypt(
+                                payload: item.payload,
+                                key: curKey,
+                              );
+                              final newPayload = await _cryptoService.encrypt(
+                                plaintext: plain,
+                                key: newKey,
+                              );
+                              reencrypted.add(
+                                item.copyWith(
+                                  payload: newPayload,
+                                  updatedAt: DateTime.now(),
+                                ),
+                              );
+                            }
+                            final newSentinel = await _cryptoService.encrypt(
+                              plaintext: VaultConfigModel.sentinelPlaintext,
+                              key: newKey,
+                            );
+                            final newConfig = VaultConfigModel(sentinel: newSentinel);
+                            await repo.reencryptAllItemsAndSentinel(
+                              coupleId,
+                              reencryptedItems: reencrypted,
+                              newConfig: newConfig,
+                            );
+                            final exported = await _cryptoService.exportKeyBytes(newKey);
+                            await _secureStorage.write(
+                              key: 'vault_cached_key_$coupleId',
+                              value: exported,
+                            );
+                            if (mounted) {
+                              setState(() {
+                                _unlockedKey = newKey;
+                                _remoteConfig = newConfig;
+                              });
+                            }
+                            if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    strings.isPortuguese
+                                        ? 'PIN alterado e segredos re-criptografados com sucesso! 🔐'
+                                        : 'PIN changed and all secrets re-encrypted! 🔐',
+                                  ),
+                                  backgroundColor: AppTheme.successGreen,
+                                ),
+                              );
+                            }
+                          } catch (_) {
+                            setDlgState(() {
+                              isSaving = false;
+                              errorText = strings.incorrectPin;
+                            });
+                          }
+                        },
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(strings.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      currentController.dispose();
+      newController.dispose();
+      confirmController.dispose();
+    });
+  }
+
+  Future<void> _confirmResetVault(String coupleId) async {
+    final strings = AppStrings.of(context);
+    final firstConfirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.isPortuguese ? 'Resetar Cofre Privado?' : 'Reset Private Vault?'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Como o Cofre usa criptografia de conhecimento zero, não é possível recuperar o PIN. Resetar vai APAGAR PERMANENTEMENTE todos os segredos salvos pelo casal.'
+              : 'Because the Vault uses zero-knowledge encryption, PINs cannot be recovered. Resetting will PERMANENTLY DELETE all saved secrets for the couple.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(strings.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(strings.isPortuguese ? 'Continuar' : 'Continue'),
+          ),
+        ],
+      ),
     );
+    if (firstConfirm != true || !mounted) return;
+
+    final secondConfirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.isPortuguese ? 'Confirmação Final ⚠️' : 'Final Confirmation ⚠️'),
+        content: Text(
+          strings.isPortuguese
+              ? 'Tem certeza absoluta? Todos os itens do Cofre serão apagados para que vocês possam criar um novo PIN compartilhado.'
+              : 'Are you absolutely sure? Every Vault item will be wiped so you can create a fresh shared PIN.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(strings.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(strings.isPortuguese ? 'Apagar Tudo e Resetar' : 'Wipe All & Reset'),
+          ),
+        ],
+      ),
+    );
+    if (secondConfirm != true || !mounted) return;
+
+    try {
+      await ref.read(vaultRepositoryProvider).resetVault(coupleId);
+      await _secureStorage.delete(key: 'vault_cached_key_$coupleId');
+      await _secureStorage.delete(key: 'vault_has_pin_$coupleId');
+      if (mounted) {
+        setState(() {
+          _unlockedKey = null;
+          _remoteConfig = null;
+          _hasStoredPin = false;
+          _pinMode = VaultPinMode.createNew;
+          _isSettingUpPin = true;
+          _setupInitialPin = null;
+          _enteredPin = '';
+          _pinErrorMessage = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              strings.isPortuguese
+                  ? 'Cofre resetado. Crie um novo PIN compartilhado de 6 dígitos.'
+                  : 'Vault reset. Create a new shared 6-digit PIN.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao resetar Cofre: $e')),
+        );
+      }
+    }
   }
 }

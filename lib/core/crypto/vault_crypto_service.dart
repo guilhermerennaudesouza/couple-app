@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,11 +83,13 @@ class EncryptedVaultPayload {
 class VaultCryptoService {
   final Cipher _cipher;
   final Pbkdf2 _pbkdf2;
+  final bool _useDefaultPbkdf2;
 
   VaultCryptoService({
     Cipher? cipher,
     Pbkdf2? pbkdf2,
   })  : _cipher = cipher ?? AesGcm.with256bits(),
+        _useDefaultPbkdf2 = pbkdf2 == null,
         _pbkdf2 = pbkdf2 ??
             Pbkdf2(
               macAlgorithm: Hmac.sha256(),
@@ -94,11 +97,28 @@ class VaultCryptoService {
               bits: 256,
             );
 
-  /// Derives a 256-bit [SecretKey] from a 6-digit user PIN and salt using PBKDF2 (100,000 iterations).
+  /// Derives a 256-bit [SecretKey] from a 6-digit user PIN and salt using PBKDF2
+  /// (100,000 iterations) off the main UI isolate to prevent frame drops.
   Future<SecretKey> deriveKey({
     required String pin,
     required String salt,
   }) async {
+    if (_useDefaultPbkdf2) {
+      final rawBytes = await Isolate.run<List<int>>(() async {
+        final kdf = Pbkdf2(
+          macAlgorithm: Hmac.sha256(),
+          iterations: 100000,
+          bits: 256,
+        );
+        final derived = await kdf.deriveKey(
+          secretKey: SecretKey(utf8.encode(pin)),
+          nonce: utf8.encode(salt),
+        );
+        return await derived.extractBytes();
+      });
+      return SecretKey(rawBytes);
+    }
+
     return await _pbkdf2.deriveKey(
       secretKey: SecretKey(utf8.encode(pin)),
       nonce: utf8.encode(salt),
