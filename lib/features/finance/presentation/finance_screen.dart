@@ -53,8 +53,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? 'guest_uid';
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   String _getUserDisplayName(CoupleModel? couple, String uid, {bool isMe = false}) {
@@ -88,7 +93,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen>
     final couple = coupleAsync.valueOrNull ?? widget.initialCouple;
 
     final myUid = _getEffectiveUid();
-    final partnerUid = couple?.getOtherUid(myUid) ?? 'partner_uid';
+    final partnerUid = couple?.getOtherUid(myUid) ?? '';
     final myName = _getUserDisplayName(couple, myUid, isMe: true);
     final partnerName = _getUserDisplayName(couple, partnerUid, isMe: false);
     final strings = AppStrings.of(context);

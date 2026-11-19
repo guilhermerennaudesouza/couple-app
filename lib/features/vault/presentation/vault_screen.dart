@@ -2004,10 +2004,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
 
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (ctx, setDlgState) {
-            return AlertDialog(
+            return PopScope(
+              canPop: !isSaving,
+              child: AlertDialog(
               title: Text(strings.isPortuguese ? 'Alterar PIN do Cofre' : 'Change Vault PIN'),
               content: SingleChildScrollView(
                 child: Column(
@@ -2090,6 +2093,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                               if (check != VaultConfigModel.sentinelPlaintext) {
                                 throw const VaultCryptoException('Wrong current PIN');
                               }
+                            } else if (_unlockedKey != null) {
+                              final curBytes = await _cryptoService.exportKeyBytes(curKey);
+                              final unlockedBytes =
+                                  await _cryptoService.exportKeyBytes(_unlockedKey!);
+                              if (curBytes != unlockedBytes) {
+                                throw const VaultCryptoException('Wrong current PIN');
+                              }
                             }
                             final newKey = await _cryptoService.deriveKey(pin: next, salt: salt);
                             final allItems = await repo.getAllVaultItemsOnce(coupleId);
@@ -2144,11 +2154,22 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                                 ),
                               );
                             }
-                          } catch (_) {
-                            setDlgState(() {
-                              isSaving = false;
-                              errorText = strings.incorrectPin;
-                            });
+                          } on VaultCryptoException {
+                            if (dialogCtx.mounted) {
+                              setDlgState(() {
+                                isSaving = false;
+                                errorText = strings.incorrectPin;
+                              });
+                            }
+                          } catch (e) {
+                            if (dialogCtx.mounted) {
+                              setDlgState(() {
+                                isSaving = false;
+                                errorText = strings.isPortuguese
+                                    ? 'Não foi possível salvar o novo PIN. Verifique sua conexão e tente novamente.'
+                                    : 'Could not save the new PIN. Check your connection and try again.';
+                              });
+                            }
                           }
                         },
                   child: isSaving
@@ -2160,6 +2181,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen>
                       : Text(strings.save),
                 ),
               ],
+            ),
             );
           },
         );

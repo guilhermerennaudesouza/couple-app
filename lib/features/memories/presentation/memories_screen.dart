@@ -154,8 +154,13 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen>
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? 'partner_uid';
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   String _getUserDisplayName(CoupleModel? couple, String uid) {

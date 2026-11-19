@@ -59,8 +59,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? 'guest_uid';
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   TextEditingController _getInlineController(String listId) {

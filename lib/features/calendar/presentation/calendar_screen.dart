@@ -42,8 +42,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? 'guest_uid';
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   void _checkAndSeedAnniversary(String coupleId, CoupleModel? couple) {

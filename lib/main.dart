@@ -128,7 +128,17 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     } catch (_) {}
   }
 
+  @override
+  void dispose() {
+    LocalNotificationService.setNotificationTapHandler(null);
+    _widgetRouteChannel.setMethodCallHandler(null);
+    super.dispose();
+  }
+
   void _handleRoute(String route, String coupleId) {
+    final navigator = Navigator.of(context);
+    navigator.popUntil((r) => r.isFirst);
+
     final tabIdx = parseRouteToTabIndex(route);
     if (tabIdx != null) {
       if (_currentIndex != tabIdx) {
@@ -137,7 +147,6 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
       return;
     }
 
-    final navigator = Navigator.of(context);
     if (route == 'notes') {
       navigator.push(
         MaterialPageRoute(builder: (_) => NotesScreen(coupleId: coupleId)),

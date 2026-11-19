@@ -66,10 +66,12 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
   }
 
   String _currentUid() {
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
     try {
-      return ref.read(pairingRepositoryProvider).currentUserUid ?? 'local_user';
+      return ref.read(pairingRepositoryProvider).currentUserUid ?? '';
     } catch (_) {
-      return 'local_user';
+      return '';
     }
   }
 
@@ -101,6 +103,24 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
     if (!_isAgeVerified) {
       return _buildAgeVerificationScreen(context, strings);
     }
+
+    // Sync remote partner level switches without locking out local tab changes
+    ref.listen<AsyncValue<AdultGameSessionState>>(
+      adultGameSessionStreamProvider(widget.coupleId),
+      (prev, next) {
+        final prevLevel = prev?.valueOrNull?.selectedLevel;
+        final nextLevel = next.valueOrNull?.selectedLevel;
+        if (nextLevel != null &&
+            nextLevel.isNotEmpty &&
+            nextLevel != prevLevel &&
+            nextLevel != _selectedLevel) {
+          setState(() {
+            _selectedLevel = nextLevel;
+            _localCardId = null;
+          });
+        }
+      },
+    );
 
     final deckAsync = ref.watch(adultGamesDeckStreamProvider(widget.coupleId));
     final sessionAsync =
@@ -140,12 +160,8 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
         data: (allCards) {
           final session =
               sessionAsync.valueOrNull ?? const AdultGameSessionState();
-          final effectiveLevel = _localCardId == null &&
-                  session.selectedLevel.isNotEmpty
-              ? session.selectedLevel
-              : _selectedLevel;
           final levelCards =
-              allCards.where((c) => c.level == effectiveLevel).toList();
+              allCards.where((c) => c.level == _selectedLevel).toList();
           final completedInLevel =
               levelCards.where((c) => c.isCompleted).length;
 
@@ -161,7 +177,7 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
           }
           activeCard ??= levelCards.isNotEmpty ? levelCards.first : null;
 
-          final accent = _levelColor(effectiveLevel);
+          final accent = _levelColor(_selectedLevel);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 40),
@@ -480,7 +496,11 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
                           : context.outlineColor,
                     ),
                   ),
-                  child: ListTile(
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
                     onTap: () {
                       HapticFeedback.selectionClick();
                       setState(() => _localCardId = card.id);
@@ -514,6 +534,7 @@ class _AdultGamesScreenState extends ConsumerState<AdultGamesScreen> {
                         fontSize: 12,
                         color: context.textSecondary,
                       ),
+                    ),
                     ),
                   ),
                 ),

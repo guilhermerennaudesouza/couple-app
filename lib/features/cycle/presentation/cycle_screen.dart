@@ -37,10 +37,13 @@ class CycleScreen extends ConsumerWidget {
     final cycleAsync = ref.watch(cycleDataStreamProvider(coupleId));
     final coupleAsync = ref.watch(coupleStreamProvider(coupleId));
 
-    String myUid = 'local_user';
-    try {
-      myUid = ref.read(pairingRepositoryProvider).currentUserUid ?? 'local_user';
-    } catch (_) {}
+    final providerUid = ref.watch(currentUserUidProvider).valueOrNull;
+    String myUid = providerUid ?? '';
+    if (myUid.isEmpty) {
+      try {
+        myUid = ref.read(pairingRepositoryProvider).currentUserUid ?? '';
+      } catch (_) {}
+    }
     final myName =
         coupleAsync.valueOrNull?.getMyProfile(myUid)?.name ?? 'Seu Amor';
 

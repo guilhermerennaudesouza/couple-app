@@ -24,16 +24,19 @@ final widgetSyncProvider = Provider.family<void, String>((ref, coupleId) {
   final tasksAsync = ref.watch(tasksStreamProvider(coupleId));
   final notesAsync = ref.watch(notesStreamProvider(coupleId));
   final locale = ref.watch(localeProvider);
+  final authUid = ref.watch(currentUserUidProvider).valueOrNull;
 
   final couple = coupleAsync.valueOrNull;
   final todayQuestion = todayAsync.valueOrNull;
   final tasks = tasksAsync.valueOrNull ?? const [];
   final notes = notesAsync.valueOrNull ?? const [];
   final pinnedNote = notes.where((n) => n.isPinnedToWidget).firstOrNull;
-  String? myUid;
-  try {
-    myUid = FirebaseAuth.instance.currentUser?.uid;
-  } catch (_) {}
+  String? myUid = authUid;
+  if (myUid == null || myUid.isEmpty) {
+    try {
+      myUid = FirebaseAuth.instance.currentUser?.uid;
+    } catch (_) {}
+  }
 
   final timer = Timer(const Duration(milliseconds: 400), () {
     WidgetSyncService.syncAllWidgets(

@@ -64,6 +64,21 @@ class NoteModel {
   /// Whether this love note contains a freehand doodle drawing.
   bool get hasDrawing => drawingDataJson != null && drawingDataJson!.trim().isNotEmpty;
 
+  /// Computes the proper `isScratched` flag when saving/editing a note:
+  /// - Turning a regular note into a scratch card resets `isScratched = false` (concealed).
+  /// - Editing an existing scratch card preserves its current `isScratched` state.
+  /// - Non-scratch notes are always `isScratched = true`.
+  static bool resolveScratchedOnSave({
+    required bool isScratchCard,
+    NoteModel? existingNote,
+  }) {
+    if (!isScratchCard) return true;
+    if (existingNote != null && existingNote.isScratchCard) {
+      return existingNote.isScratched;
+    }
+    return false;
+  }
+
   /// Converts the note into a Firestore-compatible map.
   Map<String, dynamic> toMap() {
     return {

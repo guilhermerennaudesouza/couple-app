@@ -215,7 +215,14 @@ class LocalNotificationService {
 
   /// Schedules an event or anniversary alarm [event.reminderDaysBefore] days
   /// prior to the event date at 10:00 AM using exact zoned scheduling.
-  static Future<void> scheduleEventReminder(CalendarEventModel event) async {
+  ///
+  /// When [showIfDueNow] is `false` (default for reactive background sync),
+  /// alarms whose trigger time has already passed are skipped instead of
+  /// repeatedly firing immediate `show()` notifications.
+  static Future<void> scheduleEventReminder(
+    CalendarEventModel event, {
+    bool showIfDueNow = false,
+  }) async {
     try {
       final reminderId = (event.id.hashCode.abs() % 100000) + 3000;
       final title = event.category == CalendarEventModel.categoryAnniversary
@@ -266,8 +273,8 @@ class LocalNotificationService {
               UILocalNotificationDateInterpretation.absoluteTime,
           payload: 'calendar_event:${event.id}',
         );
-      } else if (!event.isPast()) {
-        // Notification is due today or immediately
+      } else if (showIfDueNow && !event.isPast()) {
+        // Explicit user-initiated immediate reminder when due today
         await _notificationsPlugin.show(
           reminderId,
           title,

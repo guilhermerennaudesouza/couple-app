@@ -36,8 +36,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
       return widget.currentUid!;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid ?? 'guest_uid';
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   String _getUserDisplayName(CoupleModel? couple, String uid) {
@@ -1002,9 +1007,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               authorName: existingNote?.authorName ?? authorName,
                               updatedAt: DateTime.now(),
                               isScratchCard: isScratchCard,
-                              isScratched: isScratchCard
-                                  ? (existingNote?.isScratched ?? false)
-                                  : true,
+                              isScratched: NoteModel.resolveScratchedOnSave(
+                                isScratchCard: isScratchCard,
+                                existingNote: existingNote,
+                              ),
                               drawingDataJson: drawingDataJson,
                             );
 

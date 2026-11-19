@@ -44,7 +44,10 @@ final reminderSyncProvider = Provider.family<void, String>((ref, coupleId) {
   final timer = Timer(const Duration(milliseconds: 500), () async {
     for (final event in events) {
       if (!event.isPast()) {
-        await LocalNotificationService.scheduleEventReminder(event);
+        await LocalNotificationService.scheduleEventReminder(
+          event,
+          showIfDueNow: false,
+        );
       }
     }
     for (final task in tasks) {

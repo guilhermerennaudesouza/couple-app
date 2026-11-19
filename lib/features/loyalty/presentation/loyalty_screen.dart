@@ -42,10 +42,12 @@ class _LoyaltyScreenState extends ConsumerState<LoyaltyScreen>
   }
 
   String _currentUid() {
+    final providerUid = ref.read(currentUserUidProvider).valueOrNull;
+    if (providerUid != null && providerUid.isNotEmpty) return providerUid;
     try {
-      return ref.read(pairingRepositoryProvider).currentUserUid ?? 'local_user';
+      return ref.read(pairingRepositoryProvider).currentUserUid ?? '';
     } catch (_) {
-      return 'local_user';
+      return '';
     }
   }
 
