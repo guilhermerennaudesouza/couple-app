@@ -1,10 +1,13 @@
 package com.personal.couple_app
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.PowerManager
+import android.provider.MediaStore
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -90,8 +93,45 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(false)
                     }
                 }
+                "saveImageToGallery" -> {
+                    val bytes = call.argument<ByteArray>("bytes")
+                    val fileName = call.argument<String>("fileName") ?: "couple_drawing_${System.currentTimeMillis()}.png"
+                    if (bytes == null || bytes.isEmpty()) {
+                        result.success(false)
+                    } else {
+                        val saved = savePngToMediaStore(bytes, fileName)
+                        result.success(saved)
+                    }
+                }
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    private fun savePngToMediaStore(bytes: ByteArray, fileName: String): Boolean {
+        return try {
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/CoupleApp")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+            }
+            val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: return false
+            contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.write(bytes)
+                stream.flush()
+            } ?: return false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                values.clear()
+                values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                contentResolver.update(uri, values, null, null)
+            }
+            true
+        } catch (_: Throwable) {
+            false
         }
     }
 

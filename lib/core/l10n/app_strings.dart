@@ -499,4 +499,38 @@ class AppStrings {
   String get samsungBatteryAlreadyOk => isPortuguese ? 'Bateria liberada ✓' : 'Battery unrestricted ✓';
   String get samsungExactAlarmsBtn => isPortuguese ? 'Alarmes exatos' : 'Exact alarms';
   String get openAlertAction => isPortuguese ? 'Abrir' : 'Open';
+
+  // ---------------------------------------------------------------------------
+  // Phase 3: Drawing Together, Date Ideas Swipe, Interactive Daily Q & Edit Flows
+  // ---------------------------------------------------------------------------
+  String get drawingTogetherTitle => isPortuguese ? 'Desenhar Juntos 🎨' : 'Draw Together 🎨';
+  String get drawingTogetherSub => isPortuguese
+      ? 'Lousa ao vivo a dois com envio direto para o widget da tela inicial'
+      : 'Live shared canvas pinned straight to both home-screen widgets';
+  String get sendDrawingToWidgetBtn => isPortuguese
+      ? 'Enviar para o Widget dos Dois 🎨'
+      : 'Pin to Both Home Widgets 🎨';
+  String get drawingSentToWidgetToast => isPortuguese
+      ? 'Desenho enviado para o widget da tela inicial! 🎨💕'
+      : 'Drawing pinned to both home screen widgets! 🎨💕';
+  String get drawingSavedGalleryToast => isPortuguese
+      ? 'Desenho salvo na galeria (Pictures/CoupleApp)! 🖼️'
+      : 'Drawing saved to gallery (Pictures/CoupleApp)! 🖼️';
+  String get drawingClearTitle => isPortuguese ? 'Limpar tela?' : 'Clear canvas?';
+  String get drawingClearConfirm => isPortuguese
+      ? 'Isso apagará o desenho atual para vocês dois.'
+      : 'This will clear the shared drawing for both of you.';
+  String get undoAction => isPortuguese ? 'Desfazer' : 'Undo';
+  String get clearAction => isPortuguese ? 'Limpar' : 'Clear';
+  String get eraserLabel => isPortuguese ? 'Borracha' : 'Eraser';
+  String get saveGalleryTooltip => isPortuguese ? 'Salvar na galeria' : 'Save to gallery';
+  String get swipeDiscoverTab => isPortuguese ? 'Descobrir (Swipe)' : 'Discover (Swipe)';
+  String get listViewTab => isPortuguese ? 'Lista' : 'List';
+  String get reviewSkippedBtn => isPortuguese ? 'Rever ideias puladas' : 'Review skipped ideas';
+  String get randomDatePickerBtn => isPortuguese ? 'Sortear Encontro 🎲' : 'Pick Random Date 🎲';
+  String get matchDialogTitle => isPortuguese ? 'Deu Match! 💕' : 'It\'s a Match! 💕';
+  String get scheduleInCalendarBtn => isPortuguese ? 'Agendar no Calendário' : 'Schedule in Calendar';
+  String get proposeCustomQuestionBtn => isPortuguese ? 'Propor Pergunta Surpresa ✨' : 'Propose Surprise Question ✨';
+  String get searchPastMemoriesHint => isPortuguese ? 'Buscar em perguntas ou respostas...' : 'Search prompts or answers...';
+  String get editLabel => isPortuguese ? 'Editar' : 'Edit';
 }

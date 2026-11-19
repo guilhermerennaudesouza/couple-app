@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../auth/domain/couple_model.dart';
 import '../../auth/data/pairing_repository.dart';
+import '../../drawing/data/shared_canvas_repository.dart';
 import '../../home/data/activity_state_repository.dart';
 import '../../home/domain/activity_state_model.dart';
 import '../domain/note_model.dart';
@@ -1018,6 +1019,17 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                             final repo = ref.read(noteRepositoryProvider);
                             await repo.saveNote(coupleId, note);
+
+                            if (isPinned) {
+                              await WidgetSyncService.updateGlanceNote(
+                                note,
+                                isPortuguese: strings.isPortuguese,
+                                switchModeToNote: true,
+                              );
+                              ref
+                                  .read(sharedCanvasRepositoryProvider)
+                                  .setNoteWidgetModeToNote(coupleId);
+                            }
 
                             final safeBody = ActivityStateModel.sanitizeNoteBodyForActivity(
                               content: note.content,

@@ -2,6 +2,8 @@ package com.personal.couple_app
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color as AndroidColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -10,6 +12,8 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
@@ -22,6 +26,7 @@ import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -33,19 +38,20 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import java.io.File
 
 private val NoteWidgetRouteKey = ActionParameters.Key<String>(MainActivity.EXTRA_WIDGET_ROUTE)
 
 /**
- * Jetpack Glance Widget Receiver for Krivo shared sticky notes.
+ * Jetpack Glance Widget Receiver for Krivo shared sticky notes & shared couple drawings.
  */
 class NoteGlanceWidget : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NoteGlanceWidgetContent()
 }
 
 /**
- * Aesthetic Jetpack Glance Composable widget rendering a pastel sticky note
- * on the Android home screen with real-time couple data.
+ * Aesthetic Jetpack Glance Composable widget rendering either the couple's latest
+ * pinned drawing (when `widget_mode == "drawing"`) or pinned pastel sticky note.
  */
 class NoteGlanceWidgetContent : GlanceAppWidget() {
 
@@ -56,7 +62,18 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
             context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         }
 
-        // Read note attributes supporting both standard FlutterSharedPreferences prefix and plain keys
+        val widgetMode = prefs.getString("flutter.widget_mode", null)
+            ?: prefs.getString("widget_mode", "note")
+            ?: "note"
+
+        val drawingPath = prefs.getString("flutter.drawing_image_path", null)
+            ?: prefs.getString("drawing_image_path", "")
+            ?: ""
+
+        val drawingAuthor = prefs.getString("flutter.drawing_author", null)
+            ?: prefs.getString("drawing_author", "")
+            ?: ""
+
         val title = prefs.getString("flutter.note_title", null)
             ?: prefs.getString("note_title", "")
             ?: ""
@@ -79,12 +96,24 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
             ?: prefs.getString("language", null)
         val isPt = savedLocale != "en"
 
+        val drawingBitmap: Bitmap? = if (widgetMode == "drawing" && drawingPath.isNotBlank()) {
+            loadSafeBitmap(drawingPath)
+        } else {
+            null
+        }
+
         val hasNote = content.isNotBlank() || title.isNotBlank()
         val cardColor = parseHexColor(colorHex, defaultColor = Color(0xFFFFE082))
 
         provideContent {
             GlanceTheme {
-                if (hasNote) {
+                if (drawingBitmap != null) {
+                    DrawingCardContent(
+                        bitmap = drawingBitmap,
+                        author = drawingAuthor,
+                        isPt = isPt
+                    )
+                } else if (hasNote) {
                     NoteCardContent(
                         title = title,
                         content = content,
@@ -94,6 +123,76 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                     )
                 } else {
                     EmptyNoteCard(cardColor = cardColor, isPt = isPt)
+                }
+            }
+        }
+    }
+
+    private fun loadSafeBitmap(path: String): Bitmap? {
+        return try {
+            val file = File(path)
+            if (!file.exists() || !file.canRead() || file.length() <= 0L) return null
+            val opts = BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.RGB_565
+            }
+            BitmapFactory.decodeFile(file.absolutePath, opts)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    @Composable
+    private fun DrawingCardContent(
+        bitmap: Bitmap,
+        author: String,
+        isPt: Boolean
+    ) {
+        Box(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .padding(6.dp)
+                .background(Color(0xFFFFF5F8))
+                .cornerRadius(20.dp)
+                .clickable(
+                    actionStartActivity<MainActivity>(
+                        actionParametersOf(NoteWidgetRouteKey to "drawing")
+                    )
+                )
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = GlanceModifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = GlanceModifier
+                        .defaultWeight()
+                        .fillMaxWidth()
+                        .cornerRadius(14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        provider = ImageProvider(bitmap),
+                        contentDescription = if (isPt) "Desenho do casal" else "Couple drawing",
+                        contentScale = ContentScale.Fit,
+                        modifier = GlanceModifier.fillMaxSize()
+                    )
+                }
+                Spacer(modifier = GlanceModifier.height(4.dp))
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = if (author.isNotBlank()) "🎨 $author 💕" else if (isPt) "🎨 Desenho do Casal" else "🎨 Couple Drawing",
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorProvider(Color(0xFF8B263E))
+                        ),
+                        maxLines = 1
+                    )
                 }
             }
         }
@@ -125,16 +224,13 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                 verticalAlignment = Alignment.Top,
                 horizontalAlignment = Alignment.Start
             ) {
-                // Header: Pin icon / Love badge
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "📌",
-                        style = TextStyle(
-                            fontSize = 14.sp
-                        )
+                        style = TextStyle(fontSize = 14.sp)
                     )
                     Spacer(modifier = GlanceModifier.width(6.dp))
                     Text(
@@ -150,7 +246,6 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
 
                 Spacer(modifier = GlanceModifier.height(6.dp))
 
-                // Body: Note content text
                 Box(
                     modifier = GlanceModifier
                         .defaultWeight()
@@ -169,7 +264,6 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
 
                 Spacer(modifier = GlanceModifier.height(6.dp))
 
-                // Footer: Author & heart signature
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -225,9 +319,9 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
                     text = if (isPt) {
-                        "Fixe uma nota de amor no app para vê-la aqui 💕"
+                        "Fixe um recado ou desenho no app para vê-lo aqui 💕"
                     } else {
-                        "Pin a note from Krivo to see it here 💕"
+                        "Pin a note or drawing in Krivo to see it here 💕"
                     },
                     style = TextStyle(
                         fontSize = 11.sp,
@@ -239,9 +333,6 @@ class NoteGlanceWidgetContent : GlanceAppWidget() {
         }
     }
 
-    /**
-     * Resilient hex color parser supporting 6-character, 8-character, and hash prefixes.
-     */
     private fun parseHexColor(hex: String, defaultColor: Color): Color {
         return try {
             val cleanHex = hex.trim().removePrefix("#").removePrefix("0x")

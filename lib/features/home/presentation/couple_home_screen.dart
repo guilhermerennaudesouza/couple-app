@@ -21,6 +21,7 @@ import 'package:couple_app/features/daily_question/domain/daily_question_model.d
 import 'package:couple_app/features/daily_question/presentation/daily_question_screen.dart';
 import 'package:couple_app/features/decide/data/decide_repository.dart';
 import 'package:couple_app/features/decide/domain/decide_model.dart';
+import 'package:couple_app/features/drawing/presentation/drawing_together_screen.dart';
 import 'package:couple_app/features/home/data/activity_state_repository.dart';
 import 'package:couple_app/features/home/domain/activity_state_model.dart';
 import 'package:couple_app/features/loyalty/data/loyalty_repository.dart';
@@ -395,13 +396,83 @@ class _CoupleHomeScreenState extends ConsumerState<CoupleHomeScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 5. LIVE COMPACT SUMMARY CARDS (Pinned Note, Urgent Tasks, Next Event)
+            // 5. LIVE COMPACT SUMMARY CARDS (Pinned Note, Draw Together, Urgent Tasks, Next Event)
             _buildPinnedNoteCard(
               context,
               pinnedNote: pinnedNote,
               myUid: myUid,
               isPt: isPt,
               strings: strings,
+            ),
+            const SizedBox(height: 10),
+            Material(
+              color: context.cardColor,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DrawingTogetherScreen(
+                        coupleId: widget.coupleId,
+                        currentUid: myUid,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppTheme.primaryRose.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryRose.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.brush_rounded,
+                          color: AppTheme.primaryRose,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.drawingTogetherTitle,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              strings.drawingTogetherSub,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded),
+                    ],
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             Row(

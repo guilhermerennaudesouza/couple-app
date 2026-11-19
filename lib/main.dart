@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:couple_app/core/firebase/firebase_config.dart';
 import 'package:couple_app/core/l10n/app_strings.dart';
@@ -26,6 +27,8 @@ import 'package:couple_app/features/calendar/presentation/calendar_screen.dart';
 import 'package:couple_app/features/daily_question/presentation/daily_question_screen.dart';
 import 'package:couple_app/features/decide/data/decide_repository.dart';
 import 'package:couple_app/features/decide/presentation/decide_screen.dart';
+import 'package:couple_app/features/drawing/data/shared_canvas_repository.dart';
+import 'package:couple_app/features/drawing/presentation/drawing_together_screen.dart';
 import 'package:couple_app/features/finance/presentation/finance_screen.dart';
 import 'package:couple_app/features/home/data/activity_state_repository.dart';
 import 'package:couple_app/features/home/domain/activity_state_model.dart';
@@ -105,6 +108,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
   String? _registeredBgSyncSignature;
   bool _hasSeededActivityState = false;
   String? _lastSeenEventId;
+  int _lastSyncedDrawingRevision = 0;
   ActivityStateModel? _activePartnerBanner;
   Timer? _bannerDismissTimer;
 
@@ -116,8 +120,47 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     _registeredBgSyncSignature = null;
     _hasSeededActivityState = false;
     _lastSeenEventId = null;
+    _lastSyncedDrawingRevision = 0;
     _activePartnerBanner = null;
     _currentIndex = 0;
+  }
+
+  Future<void> _syncRemoteDrawingWidgetIfNeeded(
+    String coupleId,
+    ActivityStateModel state, {
+    required bool isPortuguese,
+  }) async {
+    if (!BackgroundSyncService.shouldFetchDrawingSnapshot(
+      state: state,
+      lastAppliedRevision: _lastSyncedDrawingRevision,
+    )) {
+      return;
+    }
+    _lastSyncedDrawingRevision = state.drawingWidgetRevision;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedRev =
+          prefs.getInt(BackgroundSyncService.prefLastDrawingRevision) ?? 0;
+      if (savedRev >= state.drawingWidgetRevision) return;
+
+      final snap = await ref
+          .read(sharedCanvasRepositoryProvider)
+          .getWidgetSnapshot(coupleId);
+      final bytes = snap?.decodeBytes();
+      if (bytes != null && bytes.isNotEmpty) {
+        await WidgetSyncService.syncDrawingSnapshotToWidget(
+          pngBytes: bytes,
+          authorName: snap!.updatedByName,
+          isPortuguese: isPortuguese,
+        );
+        await prefs.setInt(
+          BackgroundSyncService.prefLastDrawingRevision,
+          state.drawingWidgetRevision,
+        );
+      }
+    } catch (e) {
+      debugPrint('MainNavigationShell._syncRemoteDrawingWidgetIfNeeded error: $e');
+    }
   }
 
   @override
@@ -214,6 +257,12 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
       navigator.push(
         MaterialPageRoute(builder: (_) => LoyaltyScreen(coupleId: coupleId)),
       );
+    } else if (route == 'drawing') {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => DrawingTogetherScreen(coupleId: coupleId),
+        ),
+      );
     }
   }
 
@@ -304,6 +353,11 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
           (prev, next) {
             final state = next.valueOrNull;
             if (state == null) return;
+            _syncRemoteDrawingWidgetIfNeeded(
+              coupleId,
+              state,
+              isPortuguese: activeLocale.languageCode == 'pt',
+            );
             if (!_hasSeededActivityState) {
               _hasSeededActivityState = true;
               _lastSeenEventId = state.lastEventId;
@@ -1119,6 +1173,23 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen>
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => NotesScreen(coupleId: coupleId),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Card 4.5: 🎨 Draw Together Realtime Canvas (Krivo Signature Feature)
+            _HubFeatureCard(
+              icon: Icons.brush_rounded,
+              iconColor: AppTheme.primaryRose,
+              iconBgColor: AppTheme.primaryRose.withValues(alpha: 0.14),
+              title: strings.drawingTogetherTitle,
+              subtitle: strings.drawingTogetherSub,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => DrawingTogetherScreen(coupleId: coupleId),
                   ),
                 );
               },

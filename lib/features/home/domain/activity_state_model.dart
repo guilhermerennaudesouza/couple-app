@@ -181,6 +181,10 @@ class ActivityStateModel {
   static const String typeCoupon = 'coupon';
   static const String typeTask = 'task';
   static const String typeMood = 'mood';
+  static const String typeDrawing = 'drawing';
+
+  static const String widgetModeNote = 'note';
+  static const String widgetModeDrawing = 'drawing';
 
   final String lastEventId;
   final String lastEventType;
@@ -194,6 +198,7 @@ class ActivityStateModel {
   final List<ThinkingOfYouPulse> recentPulses;
   final int totalPulsesCount;
   final int drawingWidgetRevision;
+  final String noteWidgetMode;
   final Map<String, DateTime> nudgeSentAtByUid;
   final Map<String, dynamic> widgetSnapshot;
 
@@ -210,6 +215,7 @@ class ActivityStateModel {
     this.recentPulses = const [],
     this.totalPulsesCount = 0,
     this.drawingWidgetRevision = 0,
+    this.noteWidgetMode = widgetModeNote,
     this.nudgeSentAtByUid = const {},
     this.widgetSnapshot = const {},
   });
@@ -309,6 +315,7 @@ class ActivityStateModel {
     List<ThinkingOfYouPulse>? recentPulses,
     int? totalPulsesCount,
     int? drawingWidgetRevision,
+    String? noteWidgetMode,
     Map<String, DateTime>? nudgeSentAtByUid,
     Map<String, dynamic>? widgetSnapshot,
   }) {
@@ -326,6 +333,7 @@ class ActivityStateModel {
       totalPulsesCount: totalPulsesCount ?? this.totalPulsesCount,
       drawingWidgetRevision:
           drawingWidgetRevision ?? this.drawingWidgetRevision,
+      noteWidgetMode: noteWidgetMode ?? this.noteWidgetMode,
       nudgeSentAtByUid: nudgeSentAtByUid ?? this.nudgeSentAtByUid,
       widgetSnapshot: widgetSnapshot ?? this.widgetSnapshot,
     );
@@ -345,6 +353,7 @@ class ActivityStateModel {
       'recentPulses': recentPulses.map((p) => p.toMap()).toList(),
       'totalPulsesCount': totalPulsesCount,
       'drawingWidgetRevision': drawingWidgetRevision,
+      'noteWidgetMode': noteWidgetMode,
       'nudgeSentAtByUid':
           nudgeSentAtByUid.map((k, v) => MapEntry(k, v.toIso8601String())),
       if (widgetSnapshot.isNotEmpty) 'widgetSnapshot': widgetSnapshot,
@@ -409,6 +418,9 @@ class ActivityStateModel {
       totalPulsesCount: (map['totalPulsesCount'] as num?)?.toInt() ?? 0,
       drawingWidgetRevision:
           (map['drawingWidgetRevision'] as num?)?.toInt() ?? 0,
+      noteWidgetMode: (map['noteWidgetMode'] as String?) == widgetModeDrawing
+          ? widgetModeDrawing
+          : widgetModeNote,
       nudgeSentAtByUid: parsedNudges,
       widgetSnapshot: parsedSnapshot,
     );

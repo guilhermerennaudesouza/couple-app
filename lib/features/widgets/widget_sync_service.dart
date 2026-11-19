@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/utils/couple_date_utils.dart';
 import '../auth/data/pairing_repository.dart';
@@ -165,13 +167,47 @@ class WidgetSyncService {
     };
   }
 
+  /// Saves PNG bytes into internal app storage and switches Android's
+  /// `NoteGlanceWidget` to `drawing` mode so the couple's artwork renders natively.
+  static Future<String?> syncDrawingSnapshotToWidget({
+    required Uint8List pngBytes,
+    required String authorName,
+    bool isPortuguese = true,
+  }) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}${Platform.pathSeparator}shared_drawing_widget.png');
+      await file.writeAsBytes(pngBytes, flush: true);
+
+      final lang = isPortuguese ? 'pt' : 'en';
+      await HomeWidget.saveWidgetData<String>('language', lang);
+      await HomeWidget.saveWidgetData<String>('app_locale', lang);
+      await HomeWidget.saveWidgetData<String>('widget_mode', 'drawing');
+      await HomeWidget.saveWidgetData<String>('drawing_image_path', file.path);
+      await HomeWidget.saveWidgetData<String>('drawing_author', authorName.trim());
+
+      await HomeWidget.updateWidget(
+        name: noteWidgetName,
+        androidName: noteWidgetName,
+      );
+      return file.path;
+    } catch (e) {
+      debugPrint('WidgetSyncService.syncDrawingSnapshotToWidget error: $e');
+      return null;
+    }
+  }
+
   /// Updates the home screen Glance sticky note widget with the latest pinned note.
   static Future<void> updateGlanceNote(
     NoteModel note, {
     bool isPortuguese = true,
+    bool switchModeToNote = false,
   }) async {
     try {
       final payload = formatNoteForWidget(note, isPortuguese: isPortuguese);
+      if (switchModeToNote) {
+        await HomeWidget.saveWidgetData<String>('widget_mode', 'note');
+      }
       await HomeWidget.saveWidgetData<String>('note_id', payload['note_id']!);
       await HomeWidget.saveWidgetData<String>('note_title', payload['note_title']!);
       await HomeWidget.saveWidgetData<String>('note_content', payload['note_content']!);
@@ -193,13 +229,18 @@ class WidgetSyncService {
   }
 
   /// Clears active pinned sticky note data from home widget storage.
-  static Future<void> clearGlanceNote() async {
+  static Future<void> clearGlanceNote({bool clearDrawing = false}) async {
     try {
       await HomeWidget.saveWidgetData<String>('note_id', '');
       await HomeWidget.saveWidgetData<String>('note_title', '');
       await HomeWidget.saveWidgetData<String>('note_content', '');
       await HomeWidget.saveWidgetData<String>('note_author', '');
       await HomeWidget.saveWidgetData<String>('note_color', '');
+      if (clearDrawing) {
+        await HomeWidget.saveWidgetData<String>('widget_mode', 'note');
+        await HomeWidget.saveWidgetData<String>('drawing_image_path', '');
+        await HomeWidget.saveWidgetData<String>('drawing_author', '');
+      }
 
       await HomeWidget.updateWidget(
         name: noteWidgetName,
@@ -553,7 +594,7 @@ class WidgetSyncService {
     if (pinnedNote != null) {
       await updateGlanceNote(pinnedNote, isPortuguese: isPortuguese);
     } else {
-      await clearGlanceNote();
+      await clearGlanceNote(clearDrawing: false);
     }
 
     if (todayQuestion != null) {
@@ -593,7 +634,7 @@ class WidgetSyncService {
         androidName: coupleWidgetName,
       );
 
-      await clearGlanceNote();
+      await clearGlanceNote(clearDrawing: true);
 
       await HomeWidget.saveWidgetData<String>('prompt_text', '');
       await HomeWidget.saveWidgetData<String>('prompt_status', '');

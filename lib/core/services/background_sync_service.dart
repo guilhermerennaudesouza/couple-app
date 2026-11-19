@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:couple_app/core/firebase/firebase_config.dart';
 import 'package:couple_app/core/notifications/local_notification_service.dart';
+import 'package:couple_app/features/drawing/domain/shared_canvas_model.dart';
 import 'package:couple_app/features/home/domain/activity_state_model.dart';
 import 'package:couple_app/features/widgets/widget_sync_service.dart';
 
@@ -49,9 +50,21 @@ class BackgroundSyncService {
   static const String prefMyUid = 'bg_my_uid';
   static const String prefIsPt = 'bg_is_pt';
   static const String prefLastNotifiedEventId = 'last_notified_event_id';
+  static const String prefLastDrawingRevision = 'last_drawing_widget_revision';
 
   /// Bounded timeout so background WorkManager jobs never hang on stalled networks.
   static const Duration firestoreReadTimeout = Duration(seconds: 20);
+
+  /// Pure evaluator for conditional 2nd Firestore read in background WorkManager:
+  /// fetches `shared_canvas/widget_snapshot` ONLY when the couple's active widget
+  /// mode is `'drawing'` and `drawingWidgetRevision` incremented.
+  static bool shouldFetchDrawingSnapshot({
+    required ActivityStateModel state,
+    required int lastAppliedRevision,
+  }) {
+    return state.noteWidgetMode == ActivityStateModel.widgetModeDrawing &&
+        state.drawingWidgetRevision > lastAppliedRevision;
+  }
 
   static bool _initialized = false;
 
@@ -121,6 +134,7 @@ class BackgroundSyncService {
       await prefs.remove(prefMyUid);
       await prefs.remove(prefIsPt);
       await prefs.remove(prefLastNotifiedEventId);
+      await prefs.remove(prefLastDrawingRevision);
     } catch (e) {
       debugPrint('BackgroundSyncService.clearPrefs warning: $e');
     }
@@ -229,9 +243,47 @@ class BackgroundSyncService {
             snapshot: snapshot,
             myUid: myUid,
             isPortuguese: isPt,
+            noteWidgetMode: state.noteWidgetMode,
           );
         },
       );
+
+      // Conditional 2nd Firestore read ONLY when couple switched to drawing mode
+      // with a newer revision than last applied on this device.
+      final lastAppliedDrawingRev = prefs.getInt(prefLastDrawingRevision) ?? 0;
+      if (shouldFetchDrawingSnapshot(
+        state: state,
+        lastAppliedRevision: lastAppliedDrawingRev,
+      )) {
+        final snapDoc = await FirebaseFirestore.instance
+            .collection('couples')
+            .doc(coupleId)
+            .collection('shared_canvas')
+            .doc('widget_snapshot')
+            .get(const GetOptions(source: Source.server))
+            .timeout(firestoreReadTimeout);
+        if (snapDoc.exists && snapDoc.data() != null) {
+          final drawingSnap = DrawingWidgetSnapshotModel.fromMap(snapDoc.data());
+          final pngBytes = drawingSnap.decodeBytes();
+          if (pngBytes != null && pngBytes.isNotEmpty) {
+            await WidgetSyncService.syncDrawingSnapshotToWidget(
+              pngBytes: pngBytes,
+              authorName: drawingSnap.updatedByName,
+              isPortuguese: isPt,
+            );
+            await prefs.setInt(
+              prefLastDrawingRevision,
+              state.drawingWidgetRevision,
+            );
+          }
+        }
+      } else if (state.noteWidgetMode == ActivityStateModel.widgetModeNote) {
+        await HomeWidget.saveWidgetData<String>('widget_mode', 'note');
+        await HomeWidget.updateWidget(
+          name: WidgetSyncService.noteWidgetName,
+          androidName: WidgetSyncService.noteWidgetName,
+        );
+      }
     } catch (e) {
       // Offline, timeout, or transient network error: exit cleanly without crash/retry storm
       debugPrint('BackgroundSyncService.runBackgroundSyncOnce skipped (offline/timeout): $e');
@@ -244,11 +296,13 @@ class BackgroundSyncService {
     required Map<String, dynamic> snapshot,
     required String myUid,
     required bool isPortuguese,
+    String noteWidgetMode = ActivityStateModel.widgetModeNote,
   }) async {
     try {
       final lang = isPortuguese ? 'pt' : 'en';
       await HomeWidget.saveWidgetData<String>('language', lang);
       await HomeWidget.saveWidgetData<String>('app_locale', lang);
+      await HomeWidget.saveWidgetData<String>('widget_mode', noteWidgetMode);
 
       // 1. Couple Stats + Streak widget
       final annivIso = snapshot['anniversaryIso'] as String?;
