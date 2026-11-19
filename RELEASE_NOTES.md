@@ -1,3 +1,27 @@
+# Couple App v1.1.0 — Paridade Krivo, Home Viva "Nosso Dia", Desenhar Juntos & Sync em Segundo Plano 💑✨
+
+### ✨ O que há de novo
+
+- **🏠 Nova Home Viva ("Nosso Dia") & Presença do Casal:**
+  - Nova aba principal com cabeçalho do casal (foto/avatar editável, apelidos e data de namoro), contador de **streak diário**, status do parceiro em tempo real, banner de SOS/cutucada, status da Pergunta do Dia, recado/desenho fixado, raspadinha surpresa e resumo de tarefas e próximos eventos.
+  - Emblemas (badges) na barra de navegação e banner ao vivo de atividades do parceiro.
+- **🔔 Notificações Confiáveis em Segundo Plano (Samsung One UI — R$ 0 Spark Tier):**
+  - Sincronização periódica em segundo plano a cada 15 minutos via Android `WorkManager`.
+  - Canais separados no Android para alertas urgentes (SOS/Cutucar) e atividades rotineiras.
+  - Guia dedicado no Hub (**"Garantir alertas no Samsung"**) com atalho para desativar otimização de bateria.
+- **🎨 Desenhar Juntos + Widget de Desenho + Galeria:**
+  - Tela colaborativa de desenho em tempo real com cores, espessuras, borracha, desfazer, limpar e fundo personalizável.
+  - Fixe um desenho diretamente no Widget Android da tela inicial do parceiro (último fixado entre recado ou desenho vence) ou salve na Galeria do celular.
+- **💘 Swipe de Encontros + Catálogo 40 PT-BR + Match → Calendário:**
+  - Novo modo Swipe com 40 ideias curadas em português, revisão de descartados, sorteio rápido e celebração de **Deu Match!** com agendamento direto no Calendário.
+- **💬 Pergunta do Dia Interativa:**
+  - Reações com emoji, comentários do casal, botão de cutucar parceiro, contagem regressiva para a próxima pergunta, busca no histórico e agendamento de **Perguntas Surpresa** futuras.
+- **✏️ Edição Completa nos 8 Módulos + Estabilização Geral:**
+  - Edição rápida para Tarefas, Checklists, Gastos (com suporte nativo a valores em `R$`), Metas, Memórias, Desejos, Cofre Privado (re-criptografia AES-256-GCM) e Cupons de Amor.
+  - Correções críticas de estabilidade: QR Code de pareamento, fuso horário local nas notificações, Cofre zero-knowledge com sentinel de PIN, limpeza ao sair do espaço e tradução PT-BR/EN nas telas v1.0.4.
+
+---
+
 # Couple App v1.0.3 — Localização Completa & Correção no Verificador de Atualizações 💑📱
 
 ### ✨ O que há de novo / What's New

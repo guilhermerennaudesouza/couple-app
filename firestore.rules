@@ -122,6 +122,16 @@ service cloud.firestore {
         allow read, write: if isCoupleMember(coupleId);
       }
 
+      // 18. Live Activity State & Background Partner Alerts (Phase 2)
+      match /activity_state/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
+      // 19. Shared Realtime Drawing Canvas & Widget Snapshot (Phase 3)
+      match /shared_canvas/{id} {
+        allow read, write: if isCoupleMember(coupleId);
+      }
+
       // Fallback rule for any nested couple subcollection documents
       match /{allSubcollections=**} {
         allow read, write: if isCoupleMember(coupleId);
