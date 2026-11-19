@@ -23,10 +23,15 @@ import 'package:couple_app/features/auth/presentation/edit_couple_profile_sheet.
 import 'package:couple_app/features/auth/presentation/pairing_screen.dart';
 import 'package:couple_app/features/calendar/presentation/calendar_screen.dart';
 import 'package:couple_app/features/daily_question/presentation/daily_question_screen.dart';
+import 'package:couple_app/features/decide/data/decide_repository.dart';
 import 'package:couple_app/features/decide/presentation/decide_screen.dart';
 import 'package:couple_app/features/finance/presentation/finance_screen.dart';
+import 'package:couple_app/features/home/data/activity_state_repository.dart';
+import 'package:couple_app/features/home/domain/activity_state_model.dart';
+import 'package:couple_app/features/home/presentation/couple_home_screen.dart';
 import 'package:couple_app/features/memories/presentation/memories_screen.dart';
 import 'package:couple_app/features/notes/presentation/notes_screen.dart';
+import 'package:couple_app/features/tasks/data/task_repository.dart';
 import 'package:couple_app/features/tasks/presentation/tasks_screen.dart';
 import 'package:couple_app/features/vault/presentation/vault_screen.dart';
 import 'package:couple_app/features/loyalty/presentation/loyalty_screen.dart';
@@ -94,6 +99,10 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
 
   int _currentIndex = 0;
   String? _scheduledDailyForCoupleId;
+  bool _hasSeededActivityState = false;
+  String? _lastSeenEventId;
+  ActivityStateModel? _activePartnerBanner;
+  Timer? _bannerDismissTimer;
 
   @override
   void initState() {
@@ -132,9 +141,24 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
 
   @override
   void dispose() {
+    _bannerDismissTimer?.cancel();
     LocalNotificationService.setNotificationTapHandler(null);
     _widgetRouteChannel.setMethodCallHandler(null);
     super.dispose();
+  }
+
+  void _showLivePartnerBanner(ActivityStateModel state) {
+    _bannerDismissTimer?.cancel();
+    if (state.lastEventType == ActivityStateModel.typePulse ||
+        state.lastEventType == ActivityStateModel.typeSos) {
+      HapticFeedback.mediumImpact();
+    }
+    setState(() => _activePartnerBanner = state);
+    _bannerDismissTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted) {
+        setState(() => _activePartnerBanner = null);
+      }
+    });
   }
 
   void _handleRoute(String route, String coupleId) {
@@ -149,7 +173,16 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
       return;
     }
 
-    if (route == 'notes') {
+    if (route == 'daily_question') {
+      if (_currentIndex != 0) {
+        setState(() => _currentIndex = 0);
+      }
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => DailyQuestionScreen(coupleId: coupleId),
+        ),
+      );
+    } else if (route == 'notes') {
       navigator.push(
         MaterialPageRoute(builder: (_) => NotesScreen(coupleId: coupleId)),
       );
@@ -160,6 +193,10 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     } else if (route == 'adult_games') {
       navigator.push(
         MaterialPageRoute(builder: (_) => AdultGamesScreen(coupleId: coupleId)),
+      );
+    } else if (route == 'loyalty') {
+      navigator.push(
+        MaterialPageRoute(builder: (_) => LoyaltyScreen(coupleId: coupleId)),
       );
     }
   }
@@ -213,15 +250,169 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
         ref.watch(widgetSyncProvider(coupleId));
         ref.watch(reminderSyncProvider(coupleId));
 
+        final myUid = ref.watch(currentUserUidProvider).valueOrNull ??
+            ref.read(pairingRepositoryProvider).currentUserUid ??
+            '';
+        final tasksList =
+            ref.watch(tasksStreamProvider(coupleId)).valueOrNull ?? const [];
+        final decideList =
+            ref.watch(decideSessionsStreamProvider(coupleId)).valueOrNull ??
+                const [];
+        final pendingTasksBadge = countPendingTasks(tasksList);
+        final openBallotsBadge = countOpenBallotsNeedingVote(decideList, myUid);
+
+        // Live foreground partner alert banner (seeded on initial load to avoid stale storms)
+        ref.listen<AsyncValue<ActivityStateModel>>(
+          activityStateStreamProvider(coupleId),
+          (prev, next) {
+            final state = next.valueOrNull;
+            if (state == null) return;
+            if (!_hasSeededActivityState) {
+              _hasSeededActivityState = true;
+              _lastSeenEventId = state.lastEventId;
+              return;
+            }
+            if (shouldShowLivePartnerBanner(
+              state: state,
+              myUid: myUid,
+              hasSeeded: _hasSeededActivityState,
+              lastSeenEventId: _lastSeenEventId,
+            )) {
+              _lastSeenEventId = state.lastEventId;
+              if (mounted) {
+                _showLivePartnerBanner(state);
+              }
+            } else if (state.lastEventId.isNotEmpty) {
+              _lastSeenEventId = state.lastEventId;
+            }
+          },
+        );
+
         return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
+          body: Stack(
             children: [
-              DailyQuestionScreen(coupleId: coupleId),
-              TasksScreen(coupleId: coupleId),
-              CalendarScreen(coupleId: coupleId),
-              DecideScreen(coupleId: coupleId),
-              CoupleHubScreen(coupleId: coupleId),
+              IndexedStack(
+                index: _currentIndex,
+                children: [
+                  CoupleHomeScreen(
+                    coupleId: coupleId,
+                    onSwitchTab: (idx) {
+                      if (_currentIndex != idx) {
+                        setState(() => _currentIndex = idx);
+                      }
+                    },
+                  ),
+                  TasksScreen(coupleId: coupleId),
+                  CalendarScreen(coupleId: coupleId),
+                  DecideScreen(coupleId: coupleId),
+                  CoupleHubScreen(coupleId: coupleId),
+                ],
+              ),
+              if (_activePartnerBanner != null)
+                Positioned(
+                  top: 0,
+                  left: 12,
+                  right: 12,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Material(
+                      elevation: 6,
+                      borderRadius: BorderRadius.circular(20),
+                      color: ActivityStateModel.isUrgentEventType(
+                        _activePartnerBanner!.lastEventType,
+                      )
+                          ? AppTheme.primaryRose
+                          : AppTheme.secondaryPlum,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          final route = _activePartnerBanner!.route;
+                          setState(() => _activePartnerBanner = null);
+                          _handleRoute(route, coupleId);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _activePartnerBanner!.lastEventType ==
+                                        ActivityStateModel.typePulse
+                                    ? Icons.favorite_rounded
+                                    : Icons.notifications_active_rounded,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _activePartnerBanner!.title.isNotEmpty
+                                          ? _activePartnerBanner!.title
+                                          : _activePartnerBanner!.lastActorName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                                    if (_activePartnerBanner!.body.isNotEmpty)
+                                      Text(
+                                        _activePartnerBanner!.body,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12.5,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  final route = _activePartnerBanner!.route;
+                                  setState(() => _activePartnerBanner = null);
+                                  _handleRoute(route, coupleId);
+                                },
+                                child: Text(
+                                  strings.openAlertAction,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white70,
+                                  size: 18,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () =>
+                                    setState(() => _activePartnerBanner = null),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
           bottomNavigationBar: NavigationBar(
@@ -236,8 +427,16 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
                 label: strings.navToday,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                selectedIcon: const Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose),
+                icon: Badge(
+                  isLabelVisible: pendingTasksBadge > 0,
+                  label: Text('$pendingTasksBadge'),
+                  child: const Icon(Icons.check_circle_outline_rounded),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: pendingTasksBadge > 0,
+                  label: Text('$pendingTasksBadge'),
+                  child: const Icon(Icons.check_circle_rounded, color: AppTheme.primaryRose),
+                ),
                 label: strings.navTasks,
               ),
               NavigationDestination(
@@ -246,8 +445,16 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
                 label: strings.navCalendar,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.how_to_vote_outlined),
-                selectedIcon: const Icon(Icons.how_to_vote_rounded, color: AppTheme.primaryRose),
+                icon: Badge(
+                  isLabelVisible: openBallotsBadge > 0,
+                  label: Text('$openBallotsBadge'),
+                  child: const Icon(Icons.how_to_vote_outlined),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: openBallotsBadge > 0,
+                  label: Text('$openBallotsBadge'),
+                  child: const Icon(Icons.how_to_vote_rounded, color: AppTheme.primaryRose),
+                ),
                 label: strings.navDecide,
               ),
               NavigationDestination(

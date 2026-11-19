@@ -117,8 +117,9 @@ void main() {
 
   group('NotificationRoute mapping', () {
     test('parseRouteToTabIndex maps payloads to exact tabs or pushed screens', () {
-      expect(parseRouteToTabIndex('daily_question'), 0);
+      expect(parseRouteToTabIndex('daily_question'), isNull);
       expect(parseRouteToTabIndex('couple'), 0);
+      expect(parseRouteToTabIndex('home'), 0);
       expect(parseRouteToTabIndex('tasks'), 1);
       expect(parseRouteToTabIndex('task:abc123'), 1);
       expect(parseRouteToTabIndex('calendar_event:ev1'), 2);

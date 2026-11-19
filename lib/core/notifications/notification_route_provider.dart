@@ -13,7 +13,7 @@ final pendingNotificationRouteProvider = StateProvider<String?>((ref) => null);
 int? parseRouteToTabIndex(String? payload) {
   if (payload == null || payload.trim().isEmpty) return null;
   final route = payload.trim();
-  if (route == 'daily_question' || route == 'couple' || route == 'home') {
+  if (route == 'couple' || route == 'home') {
     return 0;
   }
   if (route == 'tasks' || route.startsWith('task:')) {
