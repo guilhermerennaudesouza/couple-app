@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ota_update/ota_update.dart';
@@ -109,6 +110,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
   bool _hasSeededActivityState = false;
   String? _lastSeenEventId;
   int _lastSyncedDrawingRevision = 0;
+  String? _lastAppliedNoteWidgetMode;
   ActivityStateModel? _activePartnerBanner;
   Timer? _bannerDismissTimer;
 
@@ -121,6 +123,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     _hasSeededActivityState = false;
     _lastSeenEventId = null;
     _lastSyncedDrawingRevision = 0;
+    _lastAppliedNoteWidgetMode = null;
     _activePartnerBanner = null;
     _currentIndex = 0;
   }
@@ -130,33 +133,57 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     ActivityStateModel state, {
     required bool isPortuguese,
   }) async {
+    // Sync switch back to sticky-note mode immediately when partner pins a note
+    if (state.noteWidgetMode == ActivityStateModel.widgetModeNote) {
+      if (_lastAppliedNoteWidgetMode != ActivityStateModel.widgetModeNote) {
+        _lastAppliedNoteWidgetMode = ActivityStateModel.widgetModeNote;
+        try {
+          await HomeWidget.saveWidgetData<String>('widget_mode', 'note');
+          await HomeWidget.updateWidget(
+            name: WidgetSyncService.noteWidgetName,
+            androidName: WidgetSyncService.noteWidgetName,
+          );
+        } catch (e) {
+          debugPrint('MainNavigationShell note widget mode sync warning: $e');
+        }
+      }
+      return;
+    }
+
     if (!BackgroundSyncService.shouldFetchDrawingSnapshot(
       state: state,
       lastAppliedRevision: _lastSyncedDrawingRevision,
     )) {
       return;
     }
-    _lastSyncedDrawingRevision = state.drawingWidgetRevision;
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedRev =
           prefs.getInt(BackgroundSyncService.prefLastDrawingRevision) ?? 0;
-      if (savedRev >= state.drawingWidgetRevision) return;
+      if (savedRev >= state.drawingWidgetRevision &&
+          _lastAppliedNoteWidgetMode == ActivityStateModel.widgetModeDrawing) {
+        _lastSyncedDrawingRevision = state.drawingWidgetRevision;
+        return;
+      }
 
       final snap = await ref
           .read(sharedCanvasRepositoryProvider)
           .getWidgetSnapshot(coupleId);
       final bytes = snap?.decodeBytes();
       if (bytes != null && bytes.isNotEmpty) {
-        await WidgetSyncService.syncDrawingSnapshotToWidget(
+        final path = await WidgetSyncService.syncDrawingSnapshotToWidget(
           pngBytes: bytes,
           authorName: snap!.updatedByName,
           isPortuguese: isPortuguese,
         );
-        await prefs.setInt(
-          BackgroundSyncService.prefLastDrawingRevision,
-          state.drawingWidgetRevision,
-        );
+        if (path != null) {
+          _lastSyncedDrawingRevision = state.drawingWidgetRevision;
+          _lastAppliedNoteWidgetMode = ActivityStateModel.widgetModeDrawing;
+          await prefs.setInt(
+            BackgroundSyncService.prefLastDrawingRevision,
+            state.drawingWidgetRevision,
+          );
+        }
       }
     } catch (e) {
       debugPrint('MainNavigationShell._syncRemoteDrawingWidgetIfNeeded error: $e');

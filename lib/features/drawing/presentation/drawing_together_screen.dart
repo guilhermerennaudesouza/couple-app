@@ -47,6 +47,7 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
   bool _isSavingGallery = false;
 
   List<CanvasPoint> _activePoints = [];
+  final List<CanvasStroke> _pendingLocalStrokes = [];
 
   String _effectiveUid() {
     if (widget.currentUid != null && widget.currentUid!.isNotEmpty) {
@@ -87,6 +88,7 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(sizePx, sizePx);
+    picture.dispose();
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
     return byteData?.buffer.asUint8List();
@@ -139,12 +141,15 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
     setState(() => _isPublishingWidget = true);
     try {
       HapticFeedback.mediumImpact();
-      Uint8List? pngBytes = await _renderCanvasToPng(canvasModel, sizePx: 512);
-      if (pngBytes == null) throw Exception('Failed to render PNG');
-
-      // Safety downscale if intricate drawing PNG exceeds ~100 KB raw (~133 KB Base64)
-      if (pngBytes.length > 98 * 1024) {
-        pngBytes = await _renderCanvasToPng(canvasModel, sizePx: 384);
+      // Progressive downscale so even intricate multi-color drawings fit under 140 KB Base64 (~102 KB raw)
+      Uint8List? pngBytes;
+      const maxRawBytes = 100 * 1024;
+      for (final dim in const [512, 384, 256, 192]) {
+        final candidate = await _renderCanvasToPng(canvasModel, sizePx: dim);
+        if (candidate != null) {
+          pngBytes = candidate;
+          if (candidate.length <= maxRawBytes) break;
+        }
       }
       if (pngBytes == null) throw Exception('Failed to render PNG');
 
@@ -396,7 +401,6 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
                               onPanEnd: (_) async {
                                 if (_activePoints.isEmpty) return;
                                 final pts = List<CanvasPoint>.from(_activePoints);
-                                setState(() => _activePoints = []);
                                 final stroke = CanvasStroke(
                                   id: _uuid.v4().substring(0, 10),
                                   authorUid: myUid,
@@ -405,19 +409,36 @@ class _DrawingTogetherScreenState extends ConsumerState<DrawingTogetherScreen> {
                                   isEraser: _isEraser,
                                   points: pts,
                                 );
-                                await ref
-                                    .read(sharedCanvasRepositoryProvider)
-                                    .appendStroke(
-                                      widget.coupleId,
-                                      stroke: stroke,
-                                      actorName: myName,
-                                    );
+                                setState(() {
+                                  _activePoints = [];
+                                  _pendingLocalStrokes.add(stroke);
+                                });
+                                try {
+                                  await ref
+                                      .read(sharedCanvasRepositoryProvider)
+                                      .appendStroke(
+                                        widget.coupleId,
+                                        stroke: stroke,
+                                        actorName: myName,
+                                      );
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _pendingLocalStrokes
+                                          .removeWhere((s) => s.id == stroke.id);
+                                    });
+                                  }
+                                }
                               },
                               child: CustomPaint(
                                 size: canvasSize,
                                 painter: _SharedCanvasPainter(
                                   strokes: [
                                     ...canvasModel.strokes,
+                                    ..._pendingLocalStrokes.where(
+                                      (p) => !canvasModel.strokes
+                                          .any((r) => r.id == p.id),
+                                    ),
                                     if (activeStroke != null) activeStroke,
                                   ],
                                   bgColor: bgColor,

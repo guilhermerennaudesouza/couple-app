@@ -398,27 +398,31 @@ class _DateIdeasSwipeViewState extends ConsumerState<DateIdeasSwipeView> {
   }
 }
 
-/// Celebratory "Deu Match! 💕" modal with 1-tap scheduling into the shared Calendar.
+/// Celebratory "Deu Match! 💕" (or Random Pick 🎲) modal with 1-tap scheduling into Calendar.
 Future<void> showMatchCelebrationDialog(
   BuildContext context, {
   required WidgetRef ref,
   required String coupleId,
   required String myUid,
   required DateIdeaModel idea,
+  bool isRandomPick = false,
 }) async {
   final strings = AppStrings.of(context);
+  final dialogTitle = isRandomPick
+      ? (strings.isPortuguese ? 'Encontro Sorteado! 🎲' : 'Random Date Pick! 🎲')
+      : strings.matchDialogTitle;
   await showDialog<void>(
     context: context,
     builder: (dialogCtx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       title: Column(
         children: [
-          const Text('🎉💕🎉', style: TextStyle(fontSize: 38))
+          Text(isRandomPick ? '🎲✨' : '🎉💕🎉', style: const TextStyle(fontSize: 38))
               .animate()
               .scale(duration: 350.ms),
           const SizedBox(height: 8),
           Text(
-            strings.matchDialogTitle,
+            dialogTitle,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontWeight: FontWeight.w900,

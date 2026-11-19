@@ -358,11 +358,13 @@ class DailyQuestionRepository {
 
   /// Pure helper filtering historical daily questions: strictly excludes today
   /// and any future surprise custom prompts (`dq.date.compareTo(todayKey) < 0`),
-  /// and optionally matches [query] against prompt or answer text.
+  /// and optionally matches [query] without ever searching concealed partner
+  /// answers on unrevealed questions.
   static List<DailyQuestionModel> filterPastQuestions(
     List<DailyQuestionModel> items, {
     required String todayKey,
     String query = '',
+    String? myUid,
   }) {
     final normalizedQuery = query.trim().toLowerCase();
     return items.where((dq) {
@@ -370,8 +372,18 @@ class DailyQuestionRepository {
       if (dq.answers.isEmpty) return false;
       if (normalizedQuery.isEmpty) return true;
       if (dq.prompt.toLowerCase().contains(normalizedQuery)) return true;
-      return dq.answers.values
-          .any((a) => a.text.toLowerCase().contains(normalizedQuery));
+      if (dq.isRevealed) {
+        return dq.answers.values
+            .any((a) => a.text.toLowerCase().contains(normalizedQuery));
+      }
+      if (myUid != null && myUid.isNotEmpty) {
+        final myAnswer = dq.getAnswer(myUid);
+        if (myAnswer != null &&
+            myAnswer.text.toLowerCase().contains(normalizedQuery)) {
+          return true;
+        }
+      }
+      return false;
     }).toList();
   }
 
@@ -443,7 +455,8 @@ class DailyQuestionRepository {
   }
 
   /// Schedules a custom surprise prompt proposed by a partner on the next unused
-  /// future date (`>= tomorrow`), keeping it hidden until that day arrives.
+  /// future date (`>= tomorrow`) transactionally so concurrent proposals never
+  /// overwrite each other.
   Future<String> proposeCustomQuestion(
     String coupleId, {
     required String prompt,
@@ -460,19 +473,56 @@ class DailyQuestionRepository {
     final today = todayDateString;
     final futureSnap = await col.where('date', isGreaterThan: today).get();
     final occupied = futureSnap.docs.map((d) => d.id).toSet();
-    final targetDate = findNextAvailableFutureDateKey(occupied);
 
-    final model = DailyQuestionModel(
-      id: targetDate,
-      date: targetDate,
-      prompt: cleanPrompt,
-      answers: const {},
-      isRevealed: false,
-      isCustom: true,
-      proposedByUid: proposedByUid,
-    );
-    await col.doc(targetDate).set(model.toMap());
-    return targetDate;
+    for (var attempt = 0; attempt < 10; attempt++) {
+      final targetDate = findNextAvailableFutureDateKey(occupied);
+      final docRef = col.doc(targetDate);
+      try {
+        final claimed = await _firestore.runTransaction<bool>((tx) async {
+          final snap = await tx.get(docRef);
+          if (snap.exists) return false;
+          final model = DailyQuestionModel(
+            id: targetDate,
+            date: targetDate,
+            prompt: cleanPrompt,
+            answers: const {},
+            isRevealed: false,
+            isCustom: true,
+            proposedByUid: proposedByUid,
+          );
+          tx.set(docRef, model.toMap());
+          return true;
+        });
+        if (claimed) return targetDate;
+        occupied.add(targetDate);
+      } catch (_) {
+        // Offline fallback
+        final model = DailyQuestionModel(
+          id: targetDate,
+          date: targetDate,
+          prompt: cleanPrompt,
+          answers: const {},
+          isRevealed: false,
+          isCustom: true,
+          proposedByUid: proposedByUid,
+        );
+        await docRef.set(model.toMap());
+        return targetDate;
+      }
+    }
+    final fallbackDate = findNextAvailableFutureDateKey(occupied);
+    await col.doc(fallbackDate).set(
+          DailyQuestionModel(
+            id: fallbackDate,
+            date: fallbackDate,
+            prompt: cleanPrompt,
+            answers: const {},
+            isRevealed: false,
+            isCustom: true,
+            proposedByUid: proposedByUid,
+          ).toMap(),
+        );
+    return fallbackDate;
   }
 
   /// Watches all historical daily questions for [coupleId], ordered by date descending.

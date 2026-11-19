@@ -99,8 +99,10 @@ class MainActivity : FlutterFragmentActivity() {
                     if (bytes == null || bytes.isEmpty()) {
                         result.success(false)
                     } else {
-                        val saved = savePngToMediaStore(bytes, fileName)
-                        result.success(saved)
+                        Thread {
+                            val saved = savePngToMediaStore(bytes, fileName)
+                            runOnUiThread { result.success(saved) }
+                        }.start()
                     }
                 }
                 else -> result.notImplemented()
@@ -109,6 +111,7 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private fun savePngToMediaStore(bytes: ByteArray, fileName: String): Boolean {
+        var insertedUri: Uri? = null
         return try {
             val values = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
@@ -120,10 +123,16 @@ class MainActivity : FlutterFragmentActivity() {
             }
             val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
                 ?: return false
-            contentResolver.openOutputStream(uri)?.use { stream ->
+            insertedUri = uri
+            val wrote = contentResolver.openOutputStream(uri)?.use { stream ->
                 stream.write(bytes)
                 stream.flush()
-            } ?: return false
+                true
+            } ?: false
+            if (!wrote) {
+                try { contentResolver.delete(uri, null, null) } catch (_: Throwable) {}
+                return false
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 values.clear()
                 values.put(MediaStore.Images.Media.IS_PENDING, 0)
@@ -131,6 +140,9 @@ class MainActivity : FlutterFragmentActivity() {
             }
             true
         } catch (_: Throwable) {
+            insertedUri?.let { uri ->
+                try { contentResolver.delete(uri, null, null) } catch (_: Throwable) {}
+            }
             false
         }
     }

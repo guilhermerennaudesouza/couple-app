@@ -122,9 +122,19 @@ void main() {
         items,
         todayKey: todayKey,
         query: 'japão',
+        myUid: 'u1',
       );
       expect(searchJapan.length, 1);
       expect(searchJapan.first.id, '2026-11-18');
+
+      // Partner 'u2' has not answered 2026-11-18 yet, so searching 'japão' must not leak u1's answer
+      final partnerSearchJapan = DailyQuestionRepository.filterPastQuestions(
+        items,
+        todayKey: todayKey,
+        query: 'japão',
+        myUid: 'u2',
+      );
+      expect(partnerSearchJapan, isEmpty);
     });
   });
 }

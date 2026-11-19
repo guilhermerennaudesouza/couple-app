@@ -47,6 +47,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
   final FocusNode _answerFocusNode = FocusNode();
   bool _isSubmitting = false;
   bool _isSendingComment = false;
+  bool _isNudging = false;
   String _searchQuery = '';
   Timer? _countdownTimer;
 
@@ -86,53 +87,10 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
     String myUid,
   ) async {
     final strings = AppStrings.of(context);
-    final ctrl = TextEditingController();
     final submitted = await showDialog<String?>(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(strings.proposeCustomQuestionBtn),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              strings.isPortuguese
-                  ? 'Sua pergunta será agendada como surpresa para o próximo dia livre — os dois responderão às cegas quando o dia chegar!'
-                  : 'Your prompt will be scheduled as a surprise for the next open future day — both of you will answer blind when that day arrives!',
-              style: TextStyle(fontSize: 13, color: dialogCtx.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ctrl,
-              maxLines: 3,
-              maxLength: 180,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: strings.isPortuguese
-                    ? 'Ex: Qual momento nosso você gostaria de reviver?'
-                    : 'e.g. Which memory of us would you love to relive?',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(null),
-            child: Text(strings.cancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRose),
-            onPressed: () => Navigator.of(dialogCtx).pop(ctrl.text.trim()),
-            child: Text(strings.save),
-          ),
-        ],
-      ),
+      builder: (_) => const _ProposeCustomQuestionDialog(),
     );
-    ctrl.dispose();
 
     if (submitted == null || submitted.isEmpty || !mounted) return;
     try {
@@ -879,39 +837,56 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         OutlinedButton.icon(
           icon: const Icon(Icons.notifications_active_rounded, size: 18),
           label: Text(strings.nudgePartnerBtn),
-          onPressed: () async {
-            final activityState =
-                ref.read(activityStateStreamProvider(coupleId)).valueOrNull ??
-                    const ActivityStateModel();
-            final myName = couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
-            final partnerName =
-                couple?.getPartnerProfile(myUid)?.displayName ?? 'Seu amor';
-            if (!activityState.canNudgePartner(myUid)) {
-              final mins = activityState
-                  .remainingNudgeCooldown(myUid)
-                  .inMinutes
-                  .clamp(1, 60);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(strings.nudgeCooldownMessage(mins))),
-              );
-              return;
-            }
-            HapticFeedback.lightImpact();
-            await ref
-                .read(activityStateRepositoryProvider)
-                .sendDailyQuestionNudge(
-                  coupleId,
-                  senderUid: myUid,
-                  senderName: myName,
-                );
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(strings.nudgeSentSuccess(partnerName)),
-                backgroundColor: AppTheme.primaryRose,
-              ),
-            );
-          },
+          onPressed: _isNudging
+              ? null
+              : () async {
+                  final activityState =
+                      ref.read(activityStateStreamProvider(coupleId)).valueOrNull ??
+                          const ActivityStateModel();
+                  final myName =
+                      couple?.getMyProfile(myUid)?.displayName ?? 'Seu amor';
+                  final partnerName =
+                      couple?.getPartnerProfile(myUid)?.displayName ?? 'Seu amor';
+                  if (!activityState.canNudgePartner(myUid)) {
+                    final mins = activityState
+                        .remainingNudgeCooldown(myUid)
+                        .inMinutes
+                        .clamp(1, 60);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(strings.nudgeCooldownMessage(mins))),
+                    );
+                    return;
+                  }
+                  setState(() => _isNudging = true);
+                  try {
+                    HapticFeedback.lightImpact();
+                    await ref
+                        .read(activityStateRepositoryProvider)
+                        .sendDailyQuestionNudge(
+                          coupleId,
+                          senderUid: myUid,
+                          senderName: myName,
+                        );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(strings.nudgeSentSuccess(partnerName)),
+                        backgroundColor: AppTheme.primaryRose,
+                      ),
+                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('$e'),
+                          backgroundColor: AppTheme.errorRed,
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isNudging = false);
+                  }
+                },
         ),
       ],
     );
@@ -1052,15 +1027,26 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                     selectedColor: AppTheme.primaryRose.withValues(alpha: 0.18),
                     onSelected: (_) async {
                       HapticFeedback.selectionClick();
-                      await ref
-                          .read(dailyQuestionRepositoryProvider)
-                          .toggleReaction(
-                            coupleId,
-                            dq.id,
-                            uid: myUid,
-                            emoji: emoji,
-                            currentEmoji: myReaction,
+                      try {
+                        await ref
+                            .read(dailyQuestionRepositoryProvider)
+                            .toggleReaction(
+                              coupleId,
+                              dq.id,
+                              uid: myUid,
+                              emoji: emoji,
+                              currentEmoji: myReaction,
+                            );
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('$e'),
+                              backgroundColor: AppTheme.errorRed,
+                            ),
                           );
+                        }
+                      }
                     },
                   );
                 }).toList(),
@@ -1165,6 +1151,15 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                                     ),
                                   );
                               _commentController.clear();
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('$e'),
+                                    backgroundColor: AppTheme.errorRed,
+                                  ),
+                                );
+                              }
                             } finally {
                               if (mounted) {
                                 setState(() => _isSendingComment = false);
@@ -1383,6 +1378,7 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
           questions,
           todayKey: DailyQuestionRepository.todayDateString,
           query: _searchQuery,
+          myUid: myUid,
         );
 
         return Column(
@@ -1759,6 +1755,23 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
                               await ref
                                   .read(dailyQuestionRepositoryProvider)
                                   .submitAnswer(coupleId, question.id, myUid, text);
+                              final couple = ref
+                                      .read(coupleStreamProvider(coupleId))
+                                      .valueOrNull ??
+                                  widget.initialCouple;
+                              final myName =
+                                  couple?.getMyProfile(myUid)?.displayName ??
+                                      'Seu amor';
+                              ref.read(activityStateRepositoryProvider).recordActivity(
+                                    coupleId,
+                                    eventType: ActivityStateModel.typeDailyAnswer,
+                                    actorUid: myUid,
+                                    actorName: myName,
+                                    title: 'Memória desbloqueada ✨',
+                                    body:
+                                        '$myName respondeu uma pergunta anterior! 💕',
+                                    route: 'daily_question',
+                                  );
                               if (sheetCtx.mounted) {
                                 Navigator.of(sheetCtx).pop();
                               }
@@ -1793,5 +1806,80 @@ class _DailyQuestionScreenState extends ConsumerState<DailyQuestionScreen>
         );
       },
     ).whenComplete(controller.dispose);
+  }
+}
+
+class _ProposeCustomQuestionDialog extends StatefulWidget {
+  const _ProposeCustomQuestionDialog();
+
+  @override
+  State<_ProposeCustomQuestionDialog> createState() =>
+      _ProposeCustomQuestionDialogState();
+}
+
+class _ProposeCustomQuestionDialogState
+    extends State<_ProposeCustomQuestionDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Text(
+        strings.isPortuguese
+            ? 'Propor pergunta surpresa ✨'
+            : 'Propose surprise prompt ✨',
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.isPortuguese
+                ? 'Sua pergunta será agendada automaticamente para o próximo dia disponível!'
+                : 'Your prompt will be scheduled for the next available day!',
+            style: TextStyle(fontSize: 13, color: context.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ctrl,
+            maxLines: 3,
+            maxLength: 200,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: strings.isPortuguese
+                  ? 'Ex: Qual foi a viagem mais inesquecível que fizemos juntos?'
+                  : 'E.g. What was our most unforgettable trip together?',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(strings.cancel),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.primaryRose),
+          onPressed: () {
+            final text = _ctrl.text.trim();
+            if (text.isEmpty) return;
+            Navigator.of(context).pop(text);
+          },
+          child: Text(strings.save),
+        ),
+      ],
+    );
   }
 }

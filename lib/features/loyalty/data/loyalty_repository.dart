@@ -151,6 +151,28 @@ class LoyaltyRepository {
     await docRef.set(coupon.copyWith(id: docRef.id).toMap());
   }
 
+  /// Updates only coupon metadata without overwriting concurrent redemptions (`usedCount`).
+  Future<void> updateCouponMetadata(
+    String coupleId,
+    String couponId, {
+    required String title,
+    required String description,
+    required String emoji,
+    required String category,
+    required int maxUses,
+  }) async {
+    await _couponsRef(coupleId).doc(couponId).set(
+      {
+        'title': title,
+        'description': description,
+        'emoji': emoji,
+        'category': category,
+        'maxUses': maxUses,
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> redeemCoupon(
     String coupleId,
     LoyaltyCouponModel coupon,

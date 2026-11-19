@@ -1170,9 +1170,10 @@ class _DateIdeasTabState extends ConsumerState<_DateIdeasTab> {
         ),
       ),
       data: (ideas) {
+        final personalIdeas = DateIdeasRepository.filterIdeasForPersonalList(ideas);
         final filteredIdeas = selectedCategory == 'All'
-            ? ideas
-            : ideas.where((i) => i.category == selectedCategory).toList();
+            ? personalIdeas
+            : personalIdeas.where((i) => i.category == selectedCategory).toList();
 
         DateIdeaModel? weeklyPick;
         try {
@@ -1240,6 +1241,7 @@ class _DateIdeasTabState extends ConsumerState<_DateIdeasTab> {
                         coupleId: coupleId,
                         myUid: myUid,
                         idea: picked,
+                        isRandomPick: true,
                       );
                     },
                   ),

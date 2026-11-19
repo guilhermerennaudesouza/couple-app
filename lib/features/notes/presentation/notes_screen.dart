@@ -426,6 +426,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                         }
                       } else {
                         await repo.pinNoteToWidget(coupleId, note.id);
+                        await WidgetSyncService.updateGlanceNote(
+                          note.copyWith(isPinnedToWidget: true),
+                          isPortuguese: isPt,
+                          switchModeToNote: true,
+                        );
+                        ref
+                            .read(sharedCanvasRepositoryProvider)
+                            .setNoteWidgetModeToNote(coupleId);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

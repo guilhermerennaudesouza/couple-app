@@ -219,6 +219,25 @@ class TaskRepository {
     await docRef.set(list.toMap(), SetOptions(merge: true));
   }
 
+  /// Updates only checklist metadata (`title`, `category`, `updatedAt`) without
+  /// overwriting concurrent partner item toggles/additions.
+  Future<void> updateListMetadata(
+    String coupleId,
+    String listId, {
+    required String title,
+    required String category,
+  }) async {
+    final docRef = _listsCollection(coupleId).doc(listId);
+    await docRef.set(
+      {
+        'title': title,
+        'category': category,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   /// Deletes a checklist.
   Future<void> deleteList(String coupleId, String listId) async {
     final docRef = _listsCollection(coupleId).doc(listId);

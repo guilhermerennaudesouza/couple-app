@@ -155,6 +155,27 @@ class FinanceRepository {
     await docRef.set(toSave.toMap(), SetOptions(merge: true));
   }
 
+  /// Updates only goal metadata (`title`, `targetAmount`, `category`, `isCompleted`)
+  /// without overwriting concurrent partner deposits/contributions.
+  Future<void> updateSavingsGoalMetadata(
+    String coupleId,
+    String goalId, {
+    required String title,
+    required double targetAmount,
+    required String category,
+    required bool isCompleted,
+  }) async {
+    await _savingsCollection(coupleId).doc(goalId).set(
+      {
+        'title': title,
+        'targetAmount': targetAmount,
+        'category': category,
+        'isCompleted': isCompleted,
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   /// Records a contribution toward an existing savings goal.
   ///
   /// Increments [SavingsGoalModel.currentAmount], appends the contribution to the history,

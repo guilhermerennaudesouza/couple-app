@@ -385,19 +385,39 @@ class DateIdeasRepository {
       });
     } catch (e) {
       debugPrint('DateIdeasRepository.recordSwipeVote offline fallback: $e');
-      final updatedVotes = Map<String, String>.from(idea.votes)..[uid] = vote;
+      DateIdeaModel base = idea;
+      try {
+        final cachedSnap =
+            await docRef.get(const GetOptions(source: Source.cache));
+        if (cachedSnap.exists && cachedSnap.data() != null) {
+          base = DateIdeaModel.fromMap(cachedSnap.id, cachedSnap.data()!);
+        }
+      } catch (_) {}
+      final updatedVotes = Map<String, String>.from(base.votes)..[uid] = vote;
       final isNowMatched =
           updatedVotes.values.where((v) => v == DateIdeaModel.voteLike).length >= 2;
       await docRef.set(
         {
-          ...idea.toMap(),
+          ...base.toMap(),
           'votes': updatedVotes,
-          if (isNowMatched) 'matchedAt': nowIso,
+          if (isNowMatched)
+            'matchedAt': base.matchedAt?.toIso8601String() ?? nowIso,
         },
         SetOptions(merge: true),
       );
-      return !idea.isMatched && isNowMatched;
+      return !base.isMatched && isNowMatched;
     }
+  }
+
+  /// Excludes rejected catalog-origin ideas (swiped left with zero likes) from
+  /// the couple's personal List view so swiping left never pollutes their list.
+  static List<DateIdeaModel> filterIdeasForPersonalList(
+    List<DateIdeaModel> ideas,
+  ) {
+    return ideas.where((idea) {
+      if (idea.createdBy != 'catalog') return true;
+      return idea.isMatched || idea.likeCount > 0;
+    }).toList();
   }
 
   /// Clears all `'pass'` votes cast by [uid] so skipped ideas return to the Swipe deck.
@@ -419,22 +439,25 @@ class DateIdeasRepository {
     return count;
   }
 
-  /// Picks a random incomplete date idea, prioritizing matched ideas when [preferMatched] is true.
+  /// Picks a random incomplete date idea, excluding rejected catalog cards and
+  /// prioritizing matched ideas when [preferMatched] is true.
   static DateIdeaModel? pickRandomIdea(
     List<DateIdeaModel> ideas, {
     bool preferMatched = true,
     Random? random,
   }) {
-    final incomplete = ideas.where((i) => !i.isCompleted).toList();
-    if (incomplete.isEmpty) return null;
+    final eligible = filterIdeasForPersonalList(ideas)
+        .where((i) => !i.isCompleted)
+        .toList();
+    if (eligible.isEmpty) return null;
     final rng = random ?? Random();
     if (preferMatched) {
-      final matched = incomplete.where((i) => i.isMatched).toList();
+      final matched = eligible.where((i) => i.isMatched).toList();
       if (matched.isNotEmpty) {
         return matched[rng.nextInt(matched.length)];
       }
     }
-    return incomplete[rng.nextInt(incomplete.length)];
+    return eligible[rng.nextInt(eligible.length)];
   }
 
   Future<void> _clearOtherWeeklyPicks(String coupleId, {String? exceptId}) async {

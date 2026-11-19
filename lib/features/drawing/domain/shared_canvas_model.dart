@@ -153,7 +153,8 @@ class SharedCanvasModel {
     return result;
   }
 
-  /// Trims oldest strokes so the serialized JSON payload stays strictly <= [maxBytes].
+  /// Trims oldest strokes (and decimates even a single giant continuous stroke)
+  /// so the serialized JSON payload stays strictly <= [maxBytes].
   static List<CanvasStroke> trimStrokesToBudget(
     List<CanvasStroke> strokes, {
     int maxBytes = maxStrokesPayloadBytes,
@@ -165,10 +166,33 @@ class SharedCanvasModel {
           .encode(jsonEncode(working.map((s) => s.toMap()).toList()))
           .length;
       if (bytes <= maxBytes) break;
-      // Drop oldest 10% (at least 1) for fast convergence
       final dropCount = max(1, working.length ~/ 10);
       working.removeRange(0, min(dropCount, working.length - 1));
     }
+
+    // Also guard a single huge continuous finger scribble from blowing the 200 KB cap
+    if (working.length == 1) {
+      var single = working.first;
+      while (single.points.length > 2) {
+        final bytes = utf8.encode(jsonEncode([single.toMap()])).length;
+        if (bytes <= maxBytes) break;
+        final decimated = <CanvasPoint>[single.points.first];
+        for (var i = 2; i < single.points.length - 1; i += 2) {
+          decimated.add(single.points[i]);
+        }
+        decimated.add(single.points.last);
+        single = CanvasStroke(
+          id: single.id,
+          authorUid: single.authorUid,
+          colorHex: single.colorHex,
+          strokeWidth: single.strokeWidth,
+          isEraser: single.isEraser,
+          points: decimated,
+        );
+      }
+      working[0] = single;
+    }
+
     return working;
   }
 
