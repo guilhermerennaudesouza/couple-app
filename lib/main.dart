@@ -12,6 +12,7 @@ import 'package:couple_app/core/firebase/firebase_config.dart';
 import 'package:couple_app/core/l10n/app_strings.dart';
 import 'package:couple_app/core/l10n/locale_provider.dart';
 import 'package:couple_app/core/notifications/local_notification_service.dart';
+import 'package:couple_app/core/notifications/notification_route_provider.dart';
 import 'package:couple_app/core/services/app_update_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/core/theme/theme_provider.dart';
@@ -87,11 +88,66 @@ class MainNavigationShell extends ConsumerStatefulWidget {
 
 class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
   int _currentIndex = 0;
+  String? _scheduledDailyForCoupleId;
+
+  @override
+  void initState() {
+    super.initState();
+    LocalNotificationService.setNotificationTapHandler((payload) {
+      if (mounted) {
+        ref.read(pendingNotificationRouteProvider.notifier).state = payload;
+      }
+    });
+    _checkInitialNotificationRoute();
+  }
+
+  Future<void> _checkInitialNotificationRoute() async {
+    final launchRoute = await LocalNotificationService.consumeLaunchRoute();
+    if (launchRoute != null && mounted) {
+      ref.read(pendingNotificationRouteProvider.notifier).state = launchRoute;
+    }
+  }
+
+  void _handleRoute(String route, String coupleId) {
+    final tabIdx = parseRouteToTabIndex(route);
+    if (tabIdx != null) {
+      if (_currentIndex != tabIdx) {
+        setState(() => _currentIndex = tabIdx);
+      }
+      return;
+    }
+
+    final navigator = Navigator.of(context);
+    if (route == 'notes') {
+      navigator.push(
+        MaterialPageRoute(builder: (_) => NotesScreen(coupleId: coupleId)),
+      );
+    } else if (route == 'cycle') {
+      navigator.push(
+        MaterialPageRoute(builder: (_) => CycleScreen(coupleId: coupleId)),
+      );
+    } else if (route == 'adult_games') {
+      navigator.push(
+        MaterialPageRoute(builder: (_) => AdultGamesScreen(coupleId: coupleId)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final coupleIdAsync = ref.watch(currentCoupleIdProvider);
     final strings = AppStrings.of(context);
+
+    ref.listen<String?>(pendingNotificationRouteProvider, (prev, next) {
+      final cid = ref.read(currentCoupleIdProvider).valueOrNull;
+      if (next != null && next.isNotEmpty && cid != null && cid.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(pendingNotificationRouteProvider.notifier).state = null;
+          _handleRoute(next, cid);
+        });
+      }
+    });
 
     return coupleIdAsync.when(
       data: (coupleId) {
@@ -103,8 +159,28 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
           );
         }
 
-        // Keep all Android Glance home screen widgets automatically synchronized
+        // Auto-schedule recurring 20:00 Daily Question reminder once per paired session
+        if (_scheduledDailyForCoupleId != coupleId) {
+          _scheduledDailyForCoupleId = coupleId;
+          LocalNotificationService.scheduleDailyPrompt(hour: 20, minute: 0);
+        }
+
+        // Consume any pending cold-start notification/widget route once paired
+        final pendingRoute = ref.read(pendingNotificationRouteProvider);
+        if (pendingRoute != null && pendingRoute.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final routeNow = ref.read(pendingNotificationRouteProvider);
+            if (routeNow != null && routeNow.isNotEmpty) {
+              ref.read(pendingNotificationRouteProvider.notifier).state = null;
+              _handleRoute(routeNow, coupleId);
+            }
+          });
+        }
+
+        // Keep all Android Glance home screen widgets & partner reminders synchronized
         ref.watch(widgetSyncProvider(coupleId));
+        ref.watch(reminderSyncProvider(coupleId));
 
         return Scaffold(
           body: IndexedStack(

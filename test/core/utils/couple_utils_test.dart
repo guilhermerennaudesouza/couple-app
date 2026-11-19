@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:couple_app/core/utils/couple_date_utils.dart';
 import 'package:couple_app/core/utils/currency_parser.dart';
 import 'package:couple_app/core/utils/photo_budget_utils.dart';
+import 'package:couple_app/core/notifications/notification_route_provider.dart';
 import 'package:couple_app/features/wishlist/domain/wish_model.dart';
 
 void main() {
@@ -111,6 +112,20 @@ void main() {
       expect(a.estimatedPrice, 150.50);
       expect(a == b, isFalse);
       expect(a == c, isFalse);
+    });
+  });
+
+  group('NotificationRoute mapping', () {
+    test('parseRouteToTabIndex maps payloads to exact tabs or pushed screens', () {
+      expect(parseRouteToTabIndex('daily_question'), 0);
+      expect(parseRouteToTabIndex('couple'), 0);
+      expect(parseRouteToTabIndex('tasks'), 1);
+      expect(parseRouteToTabIndex('task:abc123'), 1);
+      expect(parseRouteToTabIndex('calendar_event:ev1'), 2);
+      expect(parseRouteToTabIndex('decide'), 3);
+      expect(parseRouteToTabIndex('notes'), isNull);
+      expect(parseRouteToTabIndex('cycle'), isNull);
+      expect(parseRouteToTabIndex('adult_games'), isNull);
     });
   });
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../../features/calendar/domain/calendar_event_model.dart';
+import '../../features/tasks/domain/task_model.dart';
 
 /// Central local notification scheduler for the Couple App.
 ///
@@ -22,22 +24,62 @@ class LocalNotificationService {
   static FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  static void Function(String payload)? _onNotificationTap;
+
+  /// Registers a tap handler for active/background notification clicks.
+  static void setNotificationTapHandler(void Function(String payload)? handler) {
+    _onNotificationTap = handler;
+  }
+
+  /// Returns the notification payload if the app was cold-launched by tapping
+  /// a local notification, or `null` otherwise.
+  static Future<String?> consumeLaunchRoute() async {
+    try {
+      final details = await _notificationsPlugin.getNotificationAppLaunchDetails();
+      if (details != null && details.didNotificationLaunchApp) {
+        final payload = details.notificationResponse?.payload;
+        if (payload != null && payload.trim().isNotEmpty) {
+          return payload.trim();
+        }
+      }
+    } catch (e) {
+      debugPrint('LocalNotificationService.consumeLaunchRoute error: $e');
+    }
+    return null;
+  }
+
   /// Allows replacing the notification plugin in unit tests.
   @visibleForTesting
   static void setMockPlugin(FlutterLocalNotificationsPlugin plugin) {
     _notificationsPlugin = plugin;
   }
 
-  /// Initializes the local notification plugin, timezones, and configures the Android
-  /// high-importance notification channel.
-  ///
-  /// Executed safely in a try/catch block to avoid crashing on unsupported
-  /// test harnesses or missing OS permissions.
-  static Future<void> initialize() async {
+  /// Initializes the local notification plugin, real device timezone (with
+  /// `America/Sao_Paulo` fallback), and high-importance Android channel.
+  static Future<void> initialize({
+    void Function(String payload)? onNotificationTap,
+  }) async {
+    if (onNotificationTap != null) {
+      _onNotificationTap = onNotificationTap;
+    }
     try {
-      // Initialize timezone database for zoned scheduling
+      // Initialize timezone database and set actual device local timezone
       try {
         tz.initializeTimeZones();
+        String tzId = 'America/Sao_Paulo';
+        try {
+          final info = await FlutterTimezone.getLocalTimezone();
+          if (info.identifier.trim().isNotEmpty) {
+            tzId = info.identifier.trim();
+          }
+        } catch (tzLookupErr) {
+          debugPrint('LocalNotificationService: timezone lookup fallback to BRT: $tzLookupErr');
+        }
+        try {
+          tz.setLocalLocation(tz.getLocation(tzId));
+        } catch (_) {
+          tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
+        }
       } catch (tzErr) {
         debugPrint('LocalNotificationService: timezone init fallback: $tzErr');
       }
@@ -57,7 +99,11 @@ class LocalNotificationService {
       await _notificationsPlugin.initialize(
         settings,
         onDidReceiveNotificationResponse: (NotificationResponse details) {
-          debugPrint('LocalNotificationService: payload clicked: ${details.payload}');
+          final payload = details.payload;
+          debugPrint('LocalNotificationService: payload clicked: $payload');
+          if (payload != null && payload.trim().isNotEmpty) {
+            _onNotificationTap?.call(payload.trim());
+          }
         },
       );
 
@@ -149,6 +195,7 @@ class LocalNotificationService {
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
+        payload: 'daily_question',
       );
     } catch (e) {
       debugPrint('LocalNotificationService.scheduleDailyPrompt error: $e');
@@ -241,6 +288,58 @@ class LocalNotificationService {
       await _notificationsPlugin.cancel(reminderId);
     } catch (e) {
       debugPrint('LocalNotificationService.cancelEventReminder error: $e');
+    }
+  }
+
+  /// Schedules a local 09:00 reminder on [task.dueDate] for incomplete tasks.
+  static Future<void> scheduleTaskReminder(TaskModel task) async {
+    if (task.isCompleted || task.dueDate == null) return;
+    try {
+      final due = task.dueDate!;
+      final reminderId = (task.id.hashCode.abs() % 50000) + 140000;
+      tz.TZDateTime scheduledDate;
+      try {
+        scheduledDate = tz.TZDateTime(
+          tz.local,
+          due.year,
+          due.month,
+          due.day,
+          9,
+          0,
+        );
+      } catch (_) {
+        scheduledDate = tz.TZDateTime.from(
+          DateTime(due.year, due.month, due.day, 9, 0),
+          tz.UTC,
+        );
+      }
+
+      final now = tz.TZDateTime.now(scheduledDate.location);
+      if (scheduledDate.isAfter(now)) {
+        await _notificationsPlugin.zonedSchedule(
+          reminderId,
+          'Tarefa de Hoje ☑️',
+          'Lembrete do casal: ${task.title}',
+          scheduledDate,
+          _notificationDetails(),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'task:${task.id}',
+        );
+      }
+    } catch (e) {
+      debugPrint('LocalNotificationService.scheduleTaskReminder error: $e');
+    }
+  }
+
+  /// Cancels a scheduled task due-date reminder.
+  static Future<void> cancelTaskReminder(String taskId) async {
+    try {
+      final reminderId = (taskId.hashCode.abs() % 50000) + 140000;
+      await _notificationsPlugin.cancel(reminderId);
+    } catch (e) {
+      debugPrint('LocalNotificationService.cancelTaskReminder error: $e');
     }
   }
 
