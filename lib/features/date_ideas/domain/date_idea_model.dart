@@ -10,6 +10,9 @@ class DateIdeaModel {
   static const String categoryAdventurous = 'Adventurous';
   static const String categoryBudget = 'Budget';
 
+  static const String voteLike = 'like';
+  static const String votePass = 'pass';
+
   static const List<String> allCategories = [
     categoryCozy,
     categoryOutdoor,
@@ -28,6 +31,8 @@ class DateIdeaModel {
   final bool isWeeklyPick;
   final String createdBy;
   final DateTime createdAt;
+  final Map<String, String> votes;
+  final DateTime? matchedAt;
 
   DateIdeaModel({
     required this.id,
@@ -39,7 +44,16 @@ class DateIdeaModel {
     this.isWeeklyPick = false,
     required this.createdBy,
     DateTime? createdAt,
+    this.votes = const {},
+    this.matchedAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  String? userVote(String uid) => votes[uid];
+
+  int get likeCount => votes.values.where((v) => v == voteLike).length;
+
+  /// True when both partners liked this idea (or `matchedAt` was explicitly recorded).
+  bool get isMatched => matchedAt != null || likeCount >= 2;
 
   /// Toggles completion state. Sets completedAt when completed, or clears it when unmarked.
   DateIdeaModel toggleCompleted({DateTime? completedAt}) {
@@ -61,20 +75,35 @@ class DateIdeaModel {
       'isWeeklyPick': isWeeklyPick,
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
+      if (votes.isNotEmpty) 'votes': votes,
+      if (matchedAt != null) 'matchedAt': matchedAt!.toIso8601String(),
     };
   }
 
   factory DateIdeaModel.fromMap(String id, Map<String, dynamic> map) {
+    final parsedVotes = <String, String>{};
+    final rawVotes = map['votes'];
+    if (rawVotes is Map) {
+      rawVotes.forEach((key, value) {
+        if (value != null) {
+          parsedVotes[key.toString()] = value.toString();
+        }
+      });
+    }
     return DateIdeaModel(
       id: id,
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
       category: map['category'] as String? ?? categoryCozy,
       isCompleted: map['isCompleted'] as bool? ?? false,
-      completedAt: map['completedAt'] != null ? _parseDateTime(map['completedAt']) : null,
+      completedAt:
+          map['completedAt'] != null ? _parseDateTime(map['completedAt']) : null,
       isWeeklyPick: map['isWeeklyPick'] as bool? ?? false,
       createdBy: map['createdBy'] as String? ?? '',
       createdAt: _parseDateTime(map['createdAt']),
+      votes: parsedVotes,
+      matchedAt:
+          map['matchedAt'] != null ? _parseDateTime(map['matchedAt']) : null,
     );
   }
 
@@ -89,6 +118,9 @@ class DateIdeaModel {
     bool? isWeeklyPick,
     String? createdBy,
     DateTime? createdAt,
+    Map<String, String>? votes,
+    DateTime? matchedAt,
+    bool clearMatchedAt = false,
   }) {
     return DateIdeaModel(
       id: id ?? this.id,
@@ -100,6 +132,8 @@ class DateIdeaModel {
       isWeeklyPick: isWeeklyPick ?? this.isWeeklyPick,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
+      votes: votes ?? this.votes,
+      matchedAt: clearMatchedAt ? null : (matchedAt ?? this.matchedAt),
     );
   }
 
@@ -125,7 +159,9 @@ class DateIdeaModel {
           category == other.category &&
           isCompleted == other.isCompleted &&
           isWeeklyPick == other.isWeeklyPick &&
-          createdBy == other.createdBy;
+          createdBy == other.createdBy &&
+          mapEquals(votes, other.votes) &&
+          matchedAt == other.matchedAt;
 
   @override
   int get hashCode =>
@@ -134,9 +170,11 @@ class DateIdeaModel {
       category.hashCode ^
       isCompleted.hashCode ^
       isWeeklyPick.hashCode ^
-      createdBy.hashCode;
+      createdBy.hashCode ^
+      votes.length.hashCode ^
+      matchedAt.hashCode;
 
   @override
   String toString() =>
-      'DateIdeaModel(id: $id, title: $title, category: $category, isCompleted: $isCompleted, isWeeklyPick: $isWeeklyPick)';
+      'DateIdeaModel(id: $id, title: $title, category: $category, isCompleted: $isCompleted, isMatched: $isMatched)';
 }

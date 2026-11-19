@@ -14,6 +14,7 @@ import '../../date_ideas/data/date_ideas_repository.dart';
 import '../../date_ideas/domain/date_idea_model.dart';
 import '../data/decide_repository.dart';
 import '../domain/decide_model.dart';
+import 'date_ideas_swipe_view.dart';
 
 /// Screen offering collaborative decision maker ballots ("This or That")
 /// and shared bucket list date ideas.
@@ -1099,7 +1100,7 @@ class _CoinTossDialogState extends State<_CoinTossDialog>
 // TAB 2: DATE IDEAS (BUCKET LIST & WEEKLY PICK)
 // =============================================================================
 
-class _DateIdeasTab extends ConsumerWidget {
+class _DateIdeasTab extends ConsumerStatefulWidget {
   final String coupleId;
   final String myUid;
   final CoupleModel? couple;
@@ -1113,66 +1114,6 @@ class _DateIdeasTab extends ConsumerWidget {
     required this.selectedCategory,
     required this.onCategorySelected,
   });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ideasAsync = ref.watch(dateIdeasStreamProvider(coupleId));
-
-    return ideasAsync.when(
-      loading: () => Center(
-        child: CircularProgressIndicator(color: AppTheme.primaryRose),
-      ),
-      error: (err, stack) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            AppStrings.of(context).isPortuguese
-                ? 'Erro ao carregar ideias de encontro: $err'
-                : 'Error loading date ideas: $err',
-          ),
-        ),
-      ),
-      data: (ideas) {
-        final filteredIdeas = selectedCategory == 'All'
-            ? ideas
-            : ideas.where((i) => i.category == selectedCategory).toList();
-
-        DateIdeaModel? weeklyPick;
-        try {
-          weeklyPick = ideas.firstWhere((i) => i.isWeeklyPick);
-        } catch (_) {}
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-          children: [
-            // FEATURED WEEKLY PICK BANNER
-            if (weeklyPick != null) ...[
-              _WeeklyPickBanner(
-                idea: weeklyPick,
-                coupleId: coupleId,
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // CATEGORY FILTER CHIPS
-            _buildCategoryFilterRow(context),
-            const SizedBox(height: 16),
-
-            // IDEAS LIST
-            if (filteredIdeas.isEmpty)
-              _buildEmptyCategoryState(context)
-            else
-              ...filteredIdeas.map((idea) {
-                return _DateIdeaCard(
-                  idea: idea,
-                  coupleId: coupleId,
-                );
-              }),
-          ],
-        );
-      },
-    );
-  }
 
   static String getCategoryLabel(String category, AppStrings strings) {
     if (!strings.isPortuguese) return category;
@@ -1194,6 +1135,157 @@ class _DateIdeasTab extends ConsumerWidget {
       default:
         return category;
     }
+  }
+
+  @override
+  ConsumerState<_DateIdeasTab> createState() => _DateIdeasTabState();
+}
+
+class _DateIdeasTabState extends ConsumerState<_DateIdeasTab> {
+  bool _swipeMode = true;
+
+  String get coupleId => widget.coupleId;
+  String get myUid => widget.myUid;
+  CoupleModel? get couple => widget.couple;
+  String get selectedCategory => widget.selectedCategory;
+  ValueChanged<String> get onCategorySelected => widget.onCategorySelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final ideasAsync = ref.watch(dateIdeasStreamProvider(coupleId));
+
+    return ideasAsync.when(
+      loading: () => Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryRose),
+      ),
+      error: (err, stack) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            strings.isPortuguese
+                ? 'Erro ao carregar ideias de encontro: $err'
+                : 'Error loading date ideas: $err',
+          ),
+        ),
+      ),
+      data: (ideas) {
+        final filteredIdeas = selectedCategory == 'All'
+            ? ideas
+            : ideas.where((i) => i.category == selectedCategory).toList();
+
+        DateIdeaModel? weeklyPick;
+        try {
+          weeklyPick = ideas.firstWhere((i) => i.isWeeklyPick);
+        } catch (_) {}
+
+        return Column(
+          children: [
+            // Mode Switcher (Swipe Discover vs List) + Random Picker CTA
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<bool>(
+                      showSelectedIcon: false,
+                      segments: [
+                        ButtonSegment<bool>(
+                          value: true,
+                          icon: const Icon(Icons.swipe_rounded, size: 17),
+                          label: Text(
+                            strings.swipeDiscoverTab,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        ButtonSegment<bool>(
+                          value: false,
+                          icon: const Icon(Icons.list_rounded, size: 17),
+                          label: Text(
+                            strings.listViewTab,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                      selected: {_swipeMode},
+                      onSelectionChanged: (sel) {
+                        setState(() => _swipeMode = sel.first);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    tooltip: strings.randomDatePickerBtn,
+                    icon: const Icon(Icons.casino_rounded),
+                    onPressed: () {
+                      final picked = DateIdeasRepository.pickRandomIdea(
+                        ideas,
+                        preferMatched: true,
+                      );
+                      if (picked == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              strings.isPortuguese
+                                  ? 'Adicione ou curta ideias primeiro para sortear! 💕'
+                                  : 'Add or like ideas first to pick randomly! 💕',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      showMatchCelebrationDialog(
+                        context,
+                        ref: ref,
+                        coupleId: coupleId,
+                        myUid: myUid,
+                        idea: picked,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: _buildCategoryFilterRow(context),
+            ),
+
+            Expanded(
+              child: _swipeMode
+                  ? DateIdeasSwipeView(
+                      coupleId: coupleId,
+                      myUid: myUid,
+                      coupleIdeas: ideas,
+                      selectedCategory: selectedCategory,
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                      children: [
+                        if (weeklyPick != null) ...[
+                          _WeeklyPickBanner(
+                            idea: weeklyPick,
+                            coupleId: coupleId,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (filteredIdeas.isEmpty)
+                          _buildEmptyCategoryState(context)
+                        else
+                          ...filteredIdeas.map((idea) {
+                            return _DateIdeaCard(
+                              idea: idea,
+                              coupleId: coupleId,
+                            );
+                          }),
+                      ],
+                    ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildCategoryFilterRow(BuildContext context) {

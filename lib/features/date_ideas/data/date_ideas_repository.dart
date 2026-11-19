@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'curated_date_ideas_catalog.dart';
 import '../domain/date_idea_model.dart';
 
 /// Repository managing shared bucket list ideas, date nights, and weekly picks.
@@ -289,6 +291,150 @@ class DateIdeasRepository {
       debugPrint('DateIdeasRepository.deleteIdea error: $e');
       rethrow;
     }
+  }
+
+  /// Builds the Swipe discovery deck by merging couple-stored ideas with the
+  /// 40-item built-in PT-BR catalog (without writing untouched catalog items to
+  /// Firestore). Cards already voted on by [myUid] or completed are excluded;
+  /// cards the partner already liked bubble to the top to surface matches fast.
+  static List<DateIdeaModel> buildSwipeDeck({
+    required List<DateIdeaModel> coupleIdeas,
+    required String myUid,
+    String? categoryFilter,
+  }) {
+    final byId = <String, DateIdeaModel>{};
+    for (final idea in coupleIdeas) {
+      byId[idea.id] = idea;
+    }
+    for (final catIdea in kCuratedDateIdeasPtBr) {
+      byId.putIfAbsent(catIdea.id, () => catIdea);
+    }
+
+    final candidates = byId.values.where((idea) {
+      if (idea.isCompleted) return false;
+      if (myUid.isNotEmpty && idea.userVote(myUid) != null) return false;
+      if (categoryFilter != null &&
+          categoryFilter.isNotEmpty &&
+          categoryFilter != 'All' &&
+          idea.category != categoryFilter) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    // Prioritize cards where the other partner already voted 'like'
+    candidates.sort((a, b) {
+      final aPartnerLiked = a.votes.entries
+          .any((e) => e.key != myUid && e.value == DateIdeaModel.voteLike);
+      final bPartnerLiked = b.votes.entries
+          .any((e) => e.key != myUid && e.value == DateIdeaModel.voteLike);
+      if (aPartnerLiked != bPartnerLiked) {
+        return aPartnerLiked ? -1 : 1;
+      }
+      final aCustom = a.createdBy != 'catalog';
+      final bCustom = b.createdBy != 'catalog';
+      if (aCustom != bCustom) {
+        return aCustom ? -1 : 1;
+      }
+      return a.id.compareTo(b.id);
+    });
+
+    return candidates;
+  }
+
+  /// Records a swipe vote (`'like'` or `'pass'`) atomically inside a Firestore
+  /// transaction (with offline cache fallback), persisting catalog cards on demand
+  /// and returning `true` if this vote just created a new Match.
+  Future<bool> recordSwipeVote(
+    String coupleId,
+    DateIdeaModel idea, {
+    required String uid,
+    required String vote,
+  }) async {
+    if (coupleId.trim().isEmpty || uid.trim().isEmpty) return false;
+    final docRef = _ideasCollection(coupleId).doc(idea.id);
+    final nowIso = DateTime.now().toIso8601String();
+
+    try {
+      return await _firestore.runTransaction<bool>((tx) async {
+        final snap = await tx.get(docRef);
+        final existing = snap.exists && snap.data() != null
+            ? DateIdeaModel.fromMap(snap.id, snap.data()!)
+            : idea;
+        final wasMatched = existing.isMatched;
+
+        final updatedVotes = Map<String, String>.from(existing.votes)
+          ..[uid] = vote;
+        final likeCount =
+            updatedVotes.values.where((v) => v == DateIdeaModel.voteLike).length;
+        final isNowMatched = likeCount >= 2;
+
+        final payload = <String, dynamic>{
+          'title': existing.title,
+          'description': existing.description,
+          'category': existing.category,
+          'isCompleted': existing.isCompleted,
+          'isWeeklyPick': existing.isWeeklyPick,
+          'createdBy': existing.createdBy,
+          'createdAt': existing.createdAt.toIso8601String(),
+          'votes': updatedVotes,
+          if (isNowMatched) 'matchedAt': existing.matchedAt?.toIso8601String() ?? nowIso,
+        };
+        tx.set(docRef, payload, SetOptions(merge: true));
+        return !wasMatched && isNowMatched;
+      });
+    } catch (e) {
+      debugPrint('DateIdeasRepository.recordSwipeVote offline fallback: $e');
+      final updatedVotes = Map<String, String>.from(idea.votes)..[uid] = vote;
+      final isNowMatched =
+          updatedVotes.values.where((v) => v == DateIdeaModel.voteLike).length >= 2;
+      await docRef.set(
+        {
+          ...idea.toMap(),
+          'votes': updatedVotes,
+          if (isNowMatched) 'matchedAt': nowIso,
+        },
+        SetOptions(merge: true),
+      );
+      return !idea.isMatched && isNowMatched;
+    }
+  }
+
+  /// Clears all `'pass'` votes cast by [uid] so skipped ideas return to the Swipe deck.
+  Future<int> resetPassedVotes(String coupleId, String uid) async {
+    if (coupleId.trim().isEmpty || uid.trim().isEmpty) return 0;
+    final snap = await _ideasCollection(coupleId).get();
+    final batch = _firestore.batch();
+    int count = 0;
+    for (final doc in snap.docs) {
+      final idea = DateIdeaModel.fromMap(doc.id, doc.data());
+      if (idea.votes[uid] == DateIdeaModel.votePass) {
+        batch.update(doc.reference, {'votes.$uid': FieldValue.delete()});
+        count++;
+      }
+    }
+    if (count > 0) {
+      await batch.commit();
+    }
+    return count;
+  }
+
+  /// Picks a random incomplete date idea, prioritizing matched ideas when [preferMatched] is true.
+  static DateIdeaModel? pickRandomIdea(
+    List<DateIdeaModel> ideas, {
+    bool preferMatched = true,
+    Random? random,
+  }) {
+    final incomplete = ideas.where((i) => !i.isCompleted).toList();
+    if (incomplete.isEmpty) return null;
+    final rng = random ?? Random();
+    if (preferMatched) {
+      final matched = incomplete.where((i) => i.isMatched).toList();
+      if (matched.isNotEmpty) {
+        return matched[rng.nextInt(matched.length)];
+      }
+    }
+    return incomplete[rng.nextInt(incomplete.length)];
   }
 
   Future<void> _clearOtherWeeklyPicks(String coupleId, {String? exceptId}) async {
