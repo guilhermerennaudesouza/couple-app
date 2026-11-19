@@ -14,6 +14,7 @@ import 'package:couple_app/core/l10n/locale_provider.dart';
 import 'package:couple_app/core/notifications/local_notification_service.dart';
 import 'package:couple_app/core/notifications/notification_route_provider.dart';
 import 'package:couple_app/core/services/app_update_service.dart';
+import 'package:couple_app/core/services/background_sync_service.dart';
 import 'package:couple_app/core/theme/app_theme.dart';
 import 'package:couple_app/core/theme/theme_provider.dart';
 import 'package:couple_app/core/utils/couple_date_utils.dart';
@@ -47,6 +48,7 @@ Future<void> main() async {
   await initializeDateFormatting('pt_BR', null);
   await initializeDateFormatting('en_US', null);
   await WidgetSyncService.initialize();
+  await BackgroundSyncService.initialize();
 
   runApp(
     const ProviderScope(
@@ -99,6 +101,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
 
   int _currentIndex = 0;
   String? _scheduledDailyForCoupleId;
+  String? _registeredBgSyncSignature;
   bool _hasSeededActivityState = false;
   String? _lastSeenEventId;
   ActivityStateModel? _activePartnerBanner;
@@ -253,6 +256,16 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
         final myUid = ref.watch(currentUserUidProvider).valueOrNull ??
             ref.read(pairingRepositoryProvider).currentUserUid ??
             '';
+        final activeLocale = ref.watch(localeProvider);
+        final bgSignature = '$coupleId|$myUid|${activeLocale.languageCode}';
+        if (myUid.isNotEmpty && _registeredBgSyncSignature != bgSignature) {
+          _registeredBgSyncSignature = bgSignature;
+          BackgroundSyncService.registerPeriodicSync(
+            coupleId: coupleId,
+            myUid: myUid,
+            isPortuguese: activeLocale.languageCode == 'pt',
+          );
+        }
         final tasksList =
             ref.watch(tasksStreamProvider(coupleId)).valueOrNull ?? const [];
         final decideList =
@@ -270,6 +283,11 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
             if (!_hasSeededActivityState) {
               _hasSeededActivityState = true;
               _lastSeenEventId = state.lastEventId;
+              if (state.lastEventId.isNotEmpty) {
+                BackgroundSyncService.markEventSeenInForeground(
+                  state.lastEventId,
+                );
+              }
               return;
             }
             if (shouldShowLivePartnerBanner(
@@ -279,11 +297,13 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
               lastSeenEventId: _lastSeenEventId,
             )) {
               _lastSeenEventId = state.lastEventId;
+              BackgroundSyncService.markEventSeenInForeground(state.lastEventId);
               if (mounted) {
                 _showLivePartnerBanner(state);
               }
             } else if (state.lastEventId.isNotEmpty) {
               _lastSeenEventId = state.lastEventId;
+              BackgroundSyncService.markEventSeenInForeground(state.lastEventId);
             }
           },
         );
@@ -535,14 +555,44 @@ class CoupleHubScreen extends ConsumerStatefulWidget {
 }
 
 class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
+  static const MethodChannel _deviceSettingsChannel =
+      MethodChannel('com.personal.couple_app/device_settings');
+
   String _installedVersion = '1.0.0';
   bool _isCheckingUpdate = false;
+  bool _isIgnoringBatteryOptimizations = false;
   static bool _hasAutoCheckedOnLaunch = false;
 
   @override
   void initState() {
     super.initState();
     _loadPackageInfo();
+    _refreshBatteryOptimizationStatus();
+  }
+
+  Future<void> _refreshBatteryOptimizationStatus() async {
+    try {
+      final ignoring = await _deviceSettingsChannel
+          .invokeMethod<bool>('isIgnoringBatteryOptimizations');
+      if (mounted && ignoring != null) {
+        setState(() => _isIgnoringBatteryOptimizations = ignoring);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openBatteryOptimizationSettings() async {
+    try {
+      await _deviceSettingsChannel
+          .invokeMethod<bool>('openBatteryOptimizationSettings');
+      await Future<void>.delayed(const Duration(seconds: 1));
+      await _refreshBatteryOptimizationStatus();
+    } catch (_) {}
+  }
+
+  Future<void> _openExactAlarmSettings() async {
+    try {
+      await _deviceSettingsChannel.invokeMethod<bool>('openExactAlarmSettings');
+    } catch (_) {}
   }
 
   Future<void> _loadPackageInfo() async {
@@ -1266,6 +1316,80 @@ class _CoupleHubScreenState extends ConsumerState<CoupleHubScreen> {
                           ),
                           onPressed: () => _checkForUpdate(silent: false),
                         ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+
+                  // Samsung One UI Background Sync & Alert Reliability Guide
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.battery_saver_rounded,
+                            color: AppTheme.primaryRose,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              strings.samsungReliabilityTitle,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        strings.samsungReliabilityDesc,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: context.textSecondary,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _openBatteryOptimizationSettings,
+                            icon: Icon(
+                              _isIgnoringBatteryOptimizations
+                                  ? Icons.check_circle_rounded
+                                  : Icons.bolt_rounded,
+                              size: 16,
+                              color: _isIgnoringBatteryOptimizations
+                                  ? AppTheme.successGreen
+                                  : AppTheme.primaryRose,
+                            ),
+                            label: Text(
+                              _isIgnoringBatteryOptimizations
+                                  ? strings.samsungBatteryAlreadyOk
+                                  : strings.samsungBatteryBtn,
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _openExactAlarmSettings,
+                            icon: const Icon(
+                              Icons.alarm_on_rounded,
+                              size: 16,
+                              color: AppTheme.primaryRose,
+                            ),
+                            label: Text(
+                              strings.samsungExactAlarmsBtn,
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ],

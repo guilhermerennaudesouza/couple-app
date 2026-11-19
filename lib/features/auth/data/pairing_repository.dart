@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/notifications/local_notification_service.dart';
+import '../../../core/services/background_sync_service.dart';
 import '../../calendar/domain/calendar_event_model.dart';
 import '../domain/couple_model.dart';
 import '../domain/partner_profile.dart';
@@ -386,6 +387,7 @@ class PairingRepository {
       }
     }
     await LocalNotificationService.cancelAll();
+    await BackgroundSyncService.cancelPeriodicSync();
     await clearCurrentCoupleId();
   }
 

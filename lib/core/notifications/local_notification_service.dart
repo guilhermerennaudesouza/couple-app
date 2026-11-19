@@ -4,22 +4,39 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../../features/calendar/domain/calendar_event_model.dart';
+import '../../features/home/domain/activity_state_model.dart';
 import '../../features/tasks/domain/task_model.dart';
 
 /// Central local notification scheduler for the Couple App.
 ///
 /// Dispatches on-device local notifications using [FlutterLocalNotificationsPlugin]
 /// without requiring paid push servers or exceeding Firebase Spark limits:
-/// - Exact 20:00 (8:00 PM) daily question prompts using [zonedSchedule].
-/// - Calendar anniversary countdowns and event alarms scheduled N days prior at 10:00 AM.
+/// - Channel 1 ("Urgentes do Par"): SOS Carinho, Saudade/Carinho, Convite Picante.
+/// - Channel 2 ("Rotina do Casal"): Pergunta do Dia, Tarefas, Calendário, Recados, Cupons.
 class LocalNotificationService {
-  static const String channelId = 'krivo_couples_channel';
-  static const String channelName = 'Lembretes e Perguntas do Casal';
-  static const String channelDescription =
-      'Perguntas diárias, aniversários e lembretes de encontros';
+  static const String routineChannelId = 'krivo_couples_channel';
+  static const String routineChannelName = 'Rotina do Casal';
+  static const String routineChannelDescription =
+      'Pergunta do Dia, tarefas, calendário, recados e cupons do casal';
+
+  static const String urgentChannelId = 'krivo_urgent_partner_channel';
+  static const String urgentChannelName = 'Urgentes do Par';
+  static const String urgentChannelDescription =
+      'SOS Carinho, Saudade/Beijo e Convite Picante com alerta prioritário';
+
+  static const String channelId = routineChannelId;
+  static const String channelName = routineChannelName;
+  static const String channelDescription = routineChannelDescription;
 
   static const int dailyPromptNotificationId = 1001;
   static const int anniversaryPromptNotificationId = 2001;
+
+  /// Routes an activity event type to either [urgentChannelId] or [routineChannelId].
+  static String channelIdForEventType(String eventType) {
+    return ActivityStateModel.isUrgentEventType(eventType)
+        ? urgentChannelId
+        : routineChannelId;
+  }
 
   static FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -107,20 +124,29 @@ class LocalNotificationService {
         },
       );
 
-      // Configure Android notification channel with high priority
+      // Configure both Android notification channels (Urgent vs Routine)
       final androidImplementation = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidImplementation != null) {
-        const channel = AndroidNotificationChannel(
-          channelId,
-          channelName,
-          description: channelDescription,
+        const routineChannel = AndroidNotificationChannel(
+          routineChannelId,
+          routineChannelName,
+          description: routineChannelDescription,
           importance: Importance.high,
           enableVibration: true,
           playSound: true,
         );
-        await androidImplementation.createNotificationChannel(channel);
+        const urgentChannel = AndroidNotificationChannel(
+          urgentChannelId,
+          urgentChannelName,
+          description: urgentChannelDescription,
+          importance: Importance.max,
+          enableVibration: true,
+          playSound: true,
+        );
+        await androidImplementation.createNotificationChannel(routineChannel);
+        await androidImplementation.createNotificationChannel(urgentChannel);
         await androidImplementation.requestNotificationsPermission();
       }
     } catch (e) {
@@ -347,6 +373,49 @@ class LocalNotificationService {
       await _notificationsPlugin.cancel(reminderId);
     } catch (e) {
       debugPrint('LocalNotificationService.cancelTaskReminder error: $e');
+    }
+  }
+
+  /// Displays an immediate partner alert routed to either the Urgent or Routine
+  /// Android channel based on [eventType].
+  static Future<void> showPartnerAlert({
+    required String eventId,
+    required String eventType,
+    required String title,
+    required String body,
+    required String route,
+  }) async {
+    try {
+      final isUrgent = ActivityStateModel.isUrgentEventType(eventType);
+      final notifId = (eventId.hashCode.abs() % 50000) + 200000;
+      final details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          isUrgent ? urgentChannelId : routineChannelId,
+          isUrgent ? urgentChannelName : routineChannelName,
+          channelDescription:
+              isUrgent ? urgentChannelDescription : routineChannelDescription,
+          importance: isUrgent ? Importance.max : Importance.high,
+          priority: isUrgent ? Priority.max : Priority.high,
+          icon: '@mipmap/ic_launcher',
+          enableVibration: true,
+          playSound: true,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
+
+      await _notificationsPlugin.show(
+        notifId,
+        title.trim().isNotEmpty ? title.trim() : 'Novidade do seu amor 💕',
+        body.trim().isNotEmpty ? body.trim() : 'Abra o app para ver!',
+        details,
+        payload: route.trim().isNotEmpty ? route.trim() : 'home',
+      );
+    } catch (e) {
+      debugPrint('LocalNotificationService.showPartnerAlert error: $e');
     }
   }
 
