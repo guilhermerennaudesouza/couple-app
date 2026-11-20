@@ -1,3 +1,15 @@
+# Couple App v1.1.2 — Recuperação Automática de Sessão do Casal 🔐💕
+
+### ✨ O que foi corrigido
+
+- **🔄 Tela de Recuperação de Sessão (`permission-denied`):**
+  - Quando a sessão anônima de um aparelho perde o vínculo com o espaço do casal (por exemplo após reinstalação ou restauração de backup), o app agora detecta automaticamente e exibe a tela **"Reconectar sua sessão"**.
+  - Basta tocar no próprio perfil (**"Sou eu"**) para restaurar o acesso ao espaço e migrar o histórico sem precisar digitar código nem perder dados.
+- **🛡️ Prevenção no Android:**
+  - `android:allowBackup="false"` ativado no manifesto Android para impedir que reinstalações restaurem o ID do casal sem a sessão correspondente do Firebase Auth.
+
+---
+
 # Couple App v1.1.1 — 100% Português (Brasil) por Padrão 🇧🇷💕
 
 ### ✨ O que foi corrigido

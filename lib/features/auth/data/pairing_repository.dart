@@ -19,6 +19,103 @@ class PairingException implements Exception {
   String toString() => message;
 }
 
+/// Returns `true` when a loaded [couple] document exists and the current
+/// authenticated [myUid] is not listed in `couple.members` (meaning member-gated
+/// Firestore reads/writes will fail with `permission-denied`).
+bool isSessionOutOfSyncWithCouple({
+  required CoupleModel? couple,
+  required String myUid,
+}) {
+  final trimmedUid = myUid.trim();
+  if (couple == null || trimmedUid.isEmpty) return false;
+  return !couple.members.contains(trimmedUid);
+}
+
+/// Pure transition builder for reclaiming or joining a partner slot inside
+/// [couple] using [newUid]. Preserves partner profile metadata and records
+/// [uidAliases] when replacing an existing member UID.
+CoupleModel buildReclaimedCouple(
+  CoupleModel couple, {
+  required String newUid,
+  String? replacingOldUid,
+  String? fallbackName,
+  String? avatarUrl,
+  String? fcmToken,
+}) {
+  final cleanNewUid = newUid.trim();
+  if (cleanNewUid.isEmpty) {
+    throw const PairingException(
+      'Sessão de autenticação inválida. Tente novamente.',
+    );
+  }
+  if (couple.members.contains(cleanNewUid)) {
+    return couple;
+  }
+
+  if (replacingOldUid != null && replacingOldUid.trim().isNotEmpty) {
+    final oldUid = replacingOldUid.trim();
+    if (!couple.members.contains(oldUid)) {
+      throw const PairingException(
+        'Perfil selecionado não faz mais parte deste espaço.',
+      );
+    }
+    final oldProfile = couple.partnerProfiles[oldUid];
+    final resolvedName = (oldProfile?.name.trim().isNotEmpty == true)
+        ? oldProfile!.name.trim()
+        : (fallbackName?.trim().isNotEmpty == true ? fallbackName!.trim() : 'Você');
+    final reclaimedProfile = PartnerProfile(
+      uid: cleanNewUid,
+      name: resolvedName,
+      avatarUrl: avatarUrl ?? oldProfile?.avatarUrl,
+      fcmToken: fcmToken ?? oldProfile?.fcmToken,
+      joinedAt: oldProfile?.joinedAt ?? DateTime.now(),
+    );
+
+    final updatedMembers = couple.members
+        .map((m) => m == oldUid ? cleanNewUid : m)
+        .toList();
+    final updatedProfiles =
+        Map<String, PartnerProfile>.from(couple.partnerProfiles)
+          ..remove(oldUid)
+          ..[cleanNewUid] = reclaimedProfile;
+    final updatedAliases = Map<String, String>.from(couple.uidAliases)
+      ..[oldUid] = cleanNewUid;
+
+    return couple.copyWith(
+      members: updatedMembers,
+      partnerProfiles: updatedProfiles,
+      uidAliases: updatedAliases,
+    );
+  }
+
+  if (couple.isFull) {
+    throw const PairingException(
+      'Selecione qual perfil é o seu para reconectar este aparelho.',
+    );
+  }
+
+  final name = (fallbackName != null && fallbackName.trim().isNotEmpty)
+      ? fallbackName.trim()
+      : 'Você';
+  final newProfile = PartnerProfile(
+    uid: cleanNewUid,
+    name: name,
+    avatarUrl: avatarUrl,
+    fcmToken: fcmToken,
+    joinedAt: DateTime.now(),
+  );
+
+  final updatedMembers = [...couple.members, cleanNewUid];
+  final updatedProfiles =
+      Map<String, PartnerProfile>.from(couple.partnerProfiles)
+        ..[cleanNewUid] = newProfile;
+
+  return couple.copyWith(
+    members: updatedMembers,
+    partnerProfiles: updatedProfiles,
+  );
+}
+
 class PairingRepository {
   static const String currentCoupleIdKey = 'current_couple_id';
   static const String couplesCollection = 'couples';
@@ -233,6 +330,74 @@ class PairingRepository {
         updatedCouple.id,
         oldUid: migratedOldUid!,
         newUid: uid,
+      );
+    }
+
+    return updatedCouple;
+  }
+
+  /// Reclaims an existing partner slot (or joins an open slot) inside
+  /// [coupleId] for the current authenticated [newUid], then migrates
+  /// historical subcollection references if an old UID was replaced.
+  Future<CoupleModel> reclaimPartnerSlot(
+    String coupleId, {
+    required String newUid,
+    String? replacingOldUid,
+    String? fallbackName,
+    String? avatarUrl,
+    String? fcmToken,
+  }) async {
+    final cleanCoupleId = coupleId.trim();
+    final cleanNewUid = newUid.trim();
+    if (cleanCoupleId.isEmpty || cleanNewUid.isEmpty) {
+      throw const PairingException(
+        'Não foi possível reconectar a sessão. Tente novamente.',
+      );
+    }
+
+    final docRef = _firestore.collection(couplesCollection).doc(cleanCoupleId);
+    String? migratedOldUid;
+
+    final updatedCouple = await _firestore.runTransaction<CoupleModel>((tx) async {
+      final freshSnap = await tx.get(docRef);
+      if (!freshSnap.exists || freshSnap.data() == null) {
+        throw const PairingException(
+          'Este espaço do casal não foi encontrado no servidor.',
+        );
+      }
+      final couple = CoupleModel.fromMap(freshSnap.id, freshSnap.data()!);
+      if (couple.members.contains(cleanNewUid)) {
+        return couple;
+      }
+
+      final nextCouple = buildReclaimedCouple(
+        couple,
+        newUid: cleanNewUid,
+        replacingOldUid: replacingOldUid,
+        fallbackName: fallbackName,
+        avatarUrl: avatarUrl,
+        fcmToken: fcmToken,
+      );
+
+      if (replacingOldUid != null &&
+          replacingOldUid.trim().isNotEmpty &&
+          couple.members.contains(replacingOldUid.trim())) {
+        migratedOldUid = replacingOldUid.trim();
+        tx.set(docRef, nextCouple.toMap());
+      } else {
+        tx.set(docRef, nextCouple.toMap(), SetOptions(merge: true));
+      }
+
+      return nextCouple;
+    });
+
+    await _storage.write(key: currentCoupleIdKey, value: updatedCouple.id);
+
+    if (migratedOldUid != null && migratedOldUid != cleanNewUid) {
+      await migratePartnerUid(
+        updatedCouple.id,
+        oldUid: migratedOldUid!,
+        newUid: cleanNewUid,
       );
     }
 

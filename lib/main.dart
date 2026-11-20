@@ -24,6 +24,7 @@ import 'package:couple_app/core/widgets/partner_avatar_widget.dart';
 import 'package:couple_app/features/auth/data/pairing_repository.dart';
 import 'package:couple_app/features/auth/presentation/edit_couple_profile_sheet.dart';
 import 'package:couple_app/features/auth/presentation/pairing_screen.dart';
+import 'package:couple_app/features/auth/presentation/session_recovery_screen.dart';
 import 'package:couple_app/features/calendar/presentation/calendar_screen.dart';
 import 'package:couple_app/features/daily_question/presentation/daily_question_screen.dart';
 import 'package:couple_app/features/decide/data/decide_repository.dart';
@@ -330,6 +331,17 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
           _activeCoupleId = coupleId;
         }
 
+        final myUid = ref.watch(currentUserUidProvider).valueOrNull ??
+            ref.read(pairingRepositoryProvider).currentUserUid ??
+            '';
+        final couple = ref.watch(coupleStreamProvider(coupleId)).valueOrNull;
+        if (isSessionOutOfSyncWithCouple(couple: couple, myUid: myUid)) {
+          return SessionRecoveryScreen(
+            couple: couple!,
+            myUid: myUid,
+          );
+        }
+
         // Auto-schedule recurring 20:00 Daily Question reminder once per paired session
         if (_scheduledDailyForCoupleId != coupleId) {
           _scheduledDailyForCoupleId = coupleId;
@@ -353,9 +365,6 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
         ref.watch(widgetSyncProvider(coupleId));
         ref.watch(reminderSyncProvider(coupleId));
 
-        final myUid = ref.watch(currentUserUidProvider).valueOrNull ??
-            ref.read(pairingRepositoryProvider).currentUserUid ??
-            '';
         final activeLocale = ref.watch(localeProvider);
         final bgSignature = '$coupleId|$myUid|${activeLocale.languageCode}';
         if (myUid.isNotEmpty && _registeredBgSyncSignature != bgSignature) {
